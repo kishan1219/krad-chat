@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+  <defs>
+    <!-- Dark Cyber Radial Background -->
+    <radialGradient id="iconBg" cx="50%" cy="35%" r="75%">
+      <stop offset="0%" stop-color="#0f2147" />
+      <stop offset="50%" stop-color="#09142b" />
+      <stop offset="100%" stop-color="#030816" />
+    </radialGradient>
+
+    <!-- Metallic Chrome Gradient -->
+    <linearGradient id="iconChrome" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="25%" stop-color="#F1F5F9" />
+      <stop offset="50%" stop-color="#64748B" />
+      <stop offset="55%" stop-color="#94A3B8" />
+      <stop offset="80%" stop-color="#CBD5E1" />
+      <stop offset="100%" stop-color="#FFFFFF" />
+    </linearGradient>
+
+    <!-- Chrome Border Stroke -->
+    <linearGradient id="iconBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.9" />
+      <stop offset="50%" stop-color="#00E5FF" stop-opacity="0.4" />
+      <stop offset="100%" stop-color="#0284C7" stop-opacity="0.9" />
+    </linearGradient>
+
+    <!-- Cyan Flare in 'A' -->
+    <linearGradient id="iconCyanA" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="35%" stop-color="#00E5FF" />
+      <stop offset="100%" stop-color="#0284C7" />
+    </linearGradient>
+
+    <!-- Subtle Glow -->
+    <filter id="iconGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Squircle Rounded Container -->
+  <rect x="4" y="4" width="120" height="120" rx="28" fill="url(#iconBg)" stroke="url(#iconBorder)" stroke-width="2.5" />
+
+  <!-- Center Glow Flare -->
+  <ellipse cx="64" cy="62" rx="36" ry="14" fill="#00E5FF" opacity="0.35" filter="url(#iconGlow)" />
+  <circle cx="64" cy="60" r="3" fill="#FFFFFF" opacity="0.9" filter="url(#iconGlow)" />
+
+  <g transform="translate(14, 18) scale(0.78)">
+    <!-- "K" -->
+    <path d="M 12 16 L 32 16 L 32 46 L 58 16 L 82 16 L 48 52 L 86 90 L 60 90 L 32 59 L 32 90 L 12 90 Z"
+          fill="url(#iconChrome)" stroke="#00E5FF" stroke-width="1.2" stroke-linejoin="round" />
+    <line x1="18" y1="24" x2="26" y2="24" stroke="#00E5FF" stroke-width="1.5" />
+    <line x1="18" y1="32" x2="26" y2="32" stroke="#00E5FF" stroke-width="1.5" />
+
+    <!-- "A" with Cyan Triangle Cutout -->
+    <path d="M 68 16 L 92 16 L 124 90 L 102 90 L 95 72 L 65 72 L 58 90 L 36 90 Z M 71 56 L 89 56 L 80 32 Z"
+          fill="url(#iconChrome)" stroke="#00E5FF" stroke-width="1.2" stroke-linejoin="round" />
+    <polygon points="80,38 93,70 67,70" fill="url(#iconCyanA)" filter="url(#iconGlow)" />
+    <polygon points="65,72 95,72 80,90" fill="#00E5FF" opacity="0.9" />
+  </g>
+
+  <!-- Bottom Accent Badge "SMS" -->
+  <rect x="36" y="94" width="56" height="18" rx="9" fill="#00E5FF" fill-opacity="0.18" stroke="#00E5FF" stroke-width="1" />
+  <text x="64" y="107"
+        font-family="system-ui, -apple-system, sans-serif"
+        font-size="11"
+        font-weight="900"
+        letter-spacing="1.5"
+        text-anchor="middle"
+        fill="#00E5FF">
+    SMS
+  </text>
+</svg>

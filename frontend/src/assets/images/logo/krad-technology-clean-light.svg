@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 96" width="100%" height="100%">
+  <defs>
+    <!-- Dark Navy Slate Gradient for Light Mode KRAD -->
+    <linearGradient id="chromeGradCleanLight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A" />
+      <stop offset="25%" stop-color="#1E293B" />
+      <stop offset="48%" stop-color="#334155" />
+      <stop offset="50%" stop-color="#0F172A" />
+      <stop offset="54%" stop-color="#1E293B" />
+      <stop offset="80%" stop-color="#334155" />
+      <stop offset="100%" stop-color="#0F172A" />
+    </linearGradient>
+
+    <!-- Chrome Bevel Stroke Gradient for Light Mode -->
+    <linearGradient id="chromeStrokeCleanLight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284C7" stop-opacity="0.9" />
+      <stop offset="40%" stop-color="#38BDF8" stop-opacity="0.6" />
+      <stop offset="70%" stop-color="#0F172A" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#0284C7" stop-opacity="0.9" />
+    </linearGradient>
+
+    <!-- Electric Cyan Gradient for Flare & Badge -->
+    <linearGradient id="cyanGradCleanLight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00E5FF" />
+      <stop offset="40%" stop-color="#0284C7" />
+      <stop offset="100%" stop-color="#0369A1" />
+    </linearGradient>
+
+    <!-- Technology Badge Fill Gradient for Light Mode -->
+    <linearGradient id="techBadgeCleanLight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="rgba(2, 132, 199, 0.08)" />
+      <stop offset="100%" stop-color="rgba(14, 165, 233, 0.16)" />
+    </linearGradient>
+
+    <!-- Soft Glow Filter -->
+    <filter id="kradGlowCleanLight" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2.5" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <g id="krad-wordmark-clean-light">
+    <!-- Ambient cyan glow behind central emblem -->
+    <ellipse cx="210" cy="46" rx="42" ry="12" fill="#0284C7" opacity="0.2" filter="url(#kradGlowCleanLight)" />
+    <circle cx="210" cy="46" r="3.5" fill="#0284C7" opacity="0.85" filter="url(#kradGlowCleanLight)" />
+
+    <!-- "K" -->
+    <path d="M 12 12 L 34 12 L 34 44 L 62 12 L 88 12 L 52 48 L 92 86 L 64 86 L 34 54 L 34 86 L 12 86 Z"
+          fill="url(#chromeGradCleanLight)" stroke="url(#chromeStrokeCleanLight)" stroke-width="1.2" stroke-linejoin="round" />
+    <line x1="18" y1="22" x2="28" y2="22" stroke="#0284C7" stroke-width="1.5" opacity="0.85" />
+    <line x1="18" y1="30" x2="28" y2="30" stroke="#0284C7" stroke-width="1.5" opacity="0.85" />
+    <line x1="18" y1="38" x2="25" y2="38" stroke="#0284C7" stroke-width="1.5" opacity="0.85" />
+
+    <!-- "R" -->
+    <path d="M 100 12 L 148 12 C 168 12 178 22 178 37 C 178 48 170 56 156 59 L 182 86 L 154 86 L 132 61 L 122 61 L 122 86 L 100 86 Z M 122 28 L 122 46 L 145 46 C 153 46 157 43 157 37 C 157 31 153 28 145 28 Z"
+          fill="url(#chromeGradCleanLight)" stroke="url(#chromeStrokeCleanLight)" stroke-width="1.2" stroke-linejoin="round" />
+
+    <!-- "A" with Illuminated Cyan Triangle Center -->
+    <path d="M 208 12 L 232 12 L 266 86 L 243 86 L 235 68 L 205 68 L 197 86 L 174 86 Z M 211 52 L 229 52 L 220 28 Z"
+          fill="url(#chromeGradCleanLight)" stroke="url(#chromeStrokeCleanLight)" stroke-width="1.2" stroke-linejoin="round" />
+    <polygon points="220,32 233,65 207,65" fill="url(#cyanGradCleanLight)" filter="url(#kradGlowCleanLight)" />
+    <polygon points="205,68 235,68 220,86" fill="#0284C7" opacity="0.95" />
+
+    <!-- "D" -->
+    <path d="M 276 12 L 318 12 C 344 12 362 26 362 49 C 362 72 344 86 318 86 L 276 86 Z M 298 28 L 298 70 L 317 70 C 331 70 340 62 340 49 C 340 36 331 28 317 28 Z"
+          fill="url(#chromeGradCleanLight)" stroke="url(#chromeStrokeCleanLight)" stroke-width="1.2" stroke-linejoin="round" />
+
+    <!-- "TECHNOLOGY" Section -->
+    <rect x="376" y="20" width="212" height="58" rx="8"
+          fill="url(#techBadgeCleanLight)" stroke="#0284C7" stroke-width="1.5" stroke-opacity="0.8" />
+    <path d="M 376 34 L 384 20" stroke="#0284C7" stroke-width="1.5" />
+    <path d="M 580 78 L 588 64" stroke="#0284C7" stroke-width="1.5" />
+    <circle cx="388" cy="28" r="2" fill="#0284C7" />
+    <circle cx="576" cy="70" r="2" fill="#0284C7" />
+
+    <text x="482" y="58"
+          font-family="'Gilroy-Bold', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+          font-size="27"
+          font-weight="900"
+          letter-spacing="3.5"
+          text-anchor="middle"
+          fill="#0F172A">
+      TECHNOLOGY
+    </text>
+  </g>
+</svg>

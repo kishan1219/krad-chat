@@ -1,0 +1,11 @@
+.react-slidedown {
+  transition: all 0.3s ease;
+}
+
+.react-slidedown__wrapper {
+  overflow: hidden;
+}
+
+.react-slidedown__content {
+  display: block;
+}

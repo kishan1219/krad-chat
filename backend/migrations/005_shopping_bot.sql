@@ -1,0 +1,3 @@
+ALTER TABLE automation_flows ADD COLUMN flow_kind TEXT NOT NULL DEFAULT 'reply' CHECK(flow_kind IN ('reply','shop'));
+ALTER TABLE automation_runs ADD COLUMN flow_kind TEXT NOT NULL DEFAULT 'reply' CHECK(flow_kind IN ('reply','shop'));
+CREATE TABLE shopping_sessions(tenant_id BIGINT NOT NULL REFERENCES tenants(id),conversation_id BIGINT NOT NULL,stage TEXT NOT NULL DEFAULT 'browsing' CHECK(stage IN ('browsing','name','address','review')),items JSONB NOT NULL DEFAULT '[]',customer_name TEXT,address JSONB,updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),PRIMARY KEY(tenant_id,conversation_id),FOREIGN KEY(conversation_id,tenant_id) REFERENCES conversations(id,tenant_id));

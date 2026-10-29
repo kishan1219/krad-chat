@@ -1,0 +1,92 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-test:
+    name: Backend Build & Test
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (v22)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate TypeScript build
+        run: npm run build
+
+      - name: Run unit & integration tests (PGlite)
+        env:
+          NODE_ENV: test
+          PROVIDER_MODE: mock
+          DATABASE_URL: local-embedded
+          JWT_SECRET: test_jwt_secret_must_be_over_thirty_two_characters_long_for_security
+          ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+        run: npm test
+
+  frontend-build:
+    name: Frontend Build Check
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (v20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Build frontend bundle
+        env:
+          CI: false
+          NODE_OPTIONS: --max-old-space-size=4096
+        run: npm run build
+
+  security-scan:
+    name: Secret & Credential Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify no private secrets or .env files committed
+        run: |
+          echo "Scanning repository for forbidden secret files..."
+          FORBIDDEN_FILES=$(find . -maxdepth 3 -name ".env*" -not -name ".env.example" -o -name "LOCAL-SECRETS.md")
+          if [ -n "$FORBIDDEN_FILES" ]; then
+            echo "ERROR: Found unignored secret files in working tree:"
+            echo "$FORBIDDEN_FILES"
+            exit 1
+          fi
+          echo "Secret scan passed: No forbidden credentials or private configs found."

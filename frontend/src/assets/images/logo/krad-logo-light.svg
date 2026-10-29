@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 140" width="100%" height="100%">
+  <defs>
+    <!-- Polished Titanium / Dark Chrome Gradient for KRAD (Light Mode High Contrast) -->
+    <linearGradient id="chromeLight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#334155" />
+      <stop offset="25%" stop-color="#1E293B" />
+      <stop offset="48%" stop-color="#0F172A" />
+      <stop offset="50%" stop-color="#475569" />
+      <stop offset="54%" stop-color="#1E293B" />
+      <stop offset="78%" stop-color="#0F172A" />
+      <stop offset="100%" stop-color="#334155" />
+    </linearGradient>
+
+    <!-- Bevel Stroke Gradient -->
+    <linearGradient id="chromeStrokeLight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#475569" />
+      <stop offset="40%" stop-color="#0F172A" />
+      <stop offset="60%" stop-color="#0284C7" />
+      <stop offset="100%" stop-color="#00B4D8" />
+    </linearGradient>
+
+    <!-- Intense Cyan Gradient for SMS in Light Mode -->
+    <linearGradient id="cyanSMSLight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0284C7" />
+      <stop offset="50%" stop-color="#0099FF" />
+      <stop offset="100%" stop-color="#0077B6" />
+    </linearGradient>
+
+    <!-- Cyan Flare in 'A' Light Mode -->
+    <linearGradient id="cyanALight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="50%" stop-color="#00B4D8" />
+      <stop offset="100%" stop-color="#0284C7" />
+    </linearGradient>
+  </defs>
+
+  <g transform="translate(10, 10)">
+    <!-- Subtle glow behind center -->
+    <ellipse cx="275" cy="46" rx="45" ry="10" fill="#00B4D8" opacity="0.15" />
+
+    <!-- "K" -->
+    <path d="M 12 12 L 32 12 L 32 42 L 58 12 L 82 12 L 48 48 L 86 86 L 60 86 L 32 55 L 32 86 L 12 86 Z"
+          fill="url(#chromeLight)" stroke="url(#chromeStrokeLight)" stroke-width="1.2" stroke-linejoin="round" />
+
+    <!-- Tech Circuit Hatch Inside K's Left Bar -->
+    <line x1="18" y1="20" x2="26" y2="20" stroke="#0099FF" stroke-width="1.5" opacity="0.9" />
+    <line x1="18" y1="28" x2="26" y2="28" stroke="#0099FF" stroke-width="1.5" opacity="0.9" />
+    <line x1="18" y1="36" x2="23" y2="36" stroke="#0099FF" stroke-width="1.5" opacity="0.9" />
+
+    <!-- "R" -->
+    <path d="M 94 12 L 140 12 C 158 12 168 21 168 36 C 168 47 160 55 148 58 L 172 86 L 146 86 L 126 61 L 114 61 L 114 86 L 94 86 Z M 114 28 L 114 46 L 137 46 C 144 46 148 43 148 37 C 148 31 144 28 137 28 Z"
+          fill="url(#chromeLight)" stroke="url(#chromeStrokeLight)" stroke-width="1.2" stroke-linejoin="round" />
+
+    <!-- "A" with Cyan Triangle Center -->
+    <path d="M 198 12 L 222 12 L 254 86 L 232 86 L 225 68 L 195 68 L 188 86 L 166 86 Z M 201 52 L 219 52 L 210 28 Z"
+          fill="url(#chromeLight)" stroke="url(#chromeStrokeLight)" stroke-width="1.2" stroke-linejoin="round" />
+    <!-- Cyan illuminated bottom legs / chevron of 'A' -->
+    <polygon points="210,34 223,66 197,66" fill="url(#cyanALight)" />
+    <polygon points="195,68 225,68 210,86" fill="#0099FF" opacity="0.9" />
+
+    <!-- "D" -->
+    <path d="M 262 12 L 302 12 C 326 12 344 26 344 49 C 344 72 326 86 302 86 L 262 86 Z M 282 28 L 282 70 L 301 70 C 314 70 323 62 323 49 C 323 36 314 28 301 28 Z"
+          fill="url(#chromeLight)" stroke="url(#chromeStrokeLight)" stroke-width="1.2" stroke-linejoin="round" />
+
+    <!-- "SMS" (Tall bold electric cyan) -->
+    <!-- S -->
+    <path d="M 396 26 C 390 17 379 12 366 12 C 352 12 344 19 344 29 C 344 38 351 43 364 46 L 377 49 C 395 53 404 61 404 72 C 404 83 392 90 376 90 C 361 90 350 83 344 74 L 357 65 C 361 71 368 76 376 76 C 383 76 388 73 388 67 C 388 60 382 56 369 53 L 357 50 C 341 46 331 38 331 27 C 331 16 343 8 365 8 C 378 8 389 13 397 22 Z"
+          transform="translate(26, -2)" fill="url(#cyanSMSLight)" />
+
+    <!-- M -->
+    <path d="M 436 8 L 452 8 L 468 48 L 484 8 L 500 8 L 500 86 L 486 86 L 486 32 L 473 66 L 463 66 L 450 32 L 450 86 L 436 86 Z"
+          transform="translate(14, 0)" fill="url(#cyanSMSLight)" />
+
+    <!-- S -->
+    <path d="M 396 26 C 390 17 379 12 366 12 C 352 12 344 19 344 29 C 344 38 351 43 364 46 L 377 49 C 395 53 404 61 404 72 C 404 83 392 90 376 90 C 361 90 350 83 344 74 L 357 65 C 361 71 368 76 376 76 C 383 76 388 73 388 67 C 388 60 382 56 369 53 L 357 50 C 341 46 331 38 331 27 C 331 16 343 8 365 8 C 378 8 389 13 397 22 Z"
+          transform="translate(126, -2)" fill="url(#cyanSMSLight)" />
+
+    <!-- Subtitle: WhatsApp Business API | AI Chatbots | Automation | AI Voice -->
+    <text x="260" y="116"
+          font-family="system-ui, -apple-system, 'Gilroy-Medium', 'Segoe UI', Roboto, sans-serif"
+          font-size="14.5"
+          font-weight="600"
+          letter-spacing="0.5"
+          text-anchor="middle"
+          fill="#334155">
+      WhatsApp Business API <tspan fill="#0284C7" font-weight="700">|</tspan> AI Chatbots <tspan fill="#0284C7" font-weight="700">|</tspan> Automation <tspan fill="#0284C7" font-weight="700">|</tspan> AI Voice
+    </text>
+  </g>
+</svg>

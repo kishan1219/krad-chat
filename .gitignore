@@ -1,0 +1,40 @@
+# Dependencies
+**/node_modules/
+**/.npm-cache/
+
+# Build artifacts
+**/build/
+**/dist/
+**/*.tsbuildinfo
+
+# Environment & Secret files (DO NOT COMMIT)
+**/.env
+**/.env.local
+**/.env.production
+**/.env.staging
+**/.env.*
+!**/.env.example
+LOCAL-SECRETS.md
+
+# Local persistent data & storage
+**/.local-data/
+**/storage/
+*.log
+/tmp/
+/output/
+/*-verification.jpg
+
+# Internal task planning, tracking, ADRs & agent instruction files (DO NOT COMMIT)
+agent.md
+BLOCKERS.md
+CHANGELOG.md
+CURRENT-SPRINT.md
+FRONTEND_COMPARISON.md
+LIVE_SETUP_REQUIREMENTS.md
+LOCAL_VERIFICATION.md
+MODULE-STATUS.md
+PLAN.md
+ROADMAP.md
+create_capabilities_pdf.py
+docs/
+frontend/TS_MIGRATION_STATUS.md

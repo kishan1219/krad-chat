@@ -1,0 +1,105 @@
+@use "sass:color";
+// Overrides user _variables-components
+@import '../../bootstrap-extended/include';
+
+// Google Color Palette defined: http://www.google.com/design/spec/style/color.html
+
+$white-color: (
+  'base': #ffffff
+);
+$black-color: (
+  'base': #000000
+);
+$dark-color: (
+  'base': $dark,
+  'darken-1': #343434,
+  'darken-2': #1e1e1e,
+  'darken-3': #626262
+);
+$light-color: (
+  'base': $light
+);
+
+$primary-color: (
+  'lighten-4': color.adjust($primary, $lightness: 20%),
+  'lighten-3': color.adjust($primary, $lightness: 15%),
+  'lighten-2': color.adjust($primary, $lightness: 10%),
+  'lighten-1': color.adjust($primary, $lightness: 5%),
+  'base': $primary,
+  'darken-1': color.adjust($primary, $lightness: -5%),
+  'darken-2': color.adjust($primary, $lightness: -10%),
+  'darken-3': color.adjust($primary, $lightness: -15%),
+  'darken-4': color.adjust($primary, $lightness: -20%)
+);
+$secondary-color: (
+  'lighten-4': color.adjust($secondary, $lightness: 20%),
+  'lighten-3': color.adjust($secondary, $lightness: 15%),
+  'lighten-2': color.adjust($secondary, $lightness: 10%),
+  'lighten-1': color.adjust($secondary, $lightness: 5%),
+  'base': $secondary,
+  'darken-1': color.adjust($secondary, $lightness: -5%),
+  'darken-2': color.adjust($secondary, $lightness: -10%),
+  'darken-3': color.adjust($secondary, $lightness: -15%),
+  'darken-4': color.adjust($secondary, $lightness: -20%)
+);
+
+// #4839EB
+//
+$success-color: (
+  'lighten-4': color.adjust($success, $lightness: 20%),
+  'lighten-3': color.adjust($success, $lightness: 15%),
+  'lighten-2': color.adjust($success, $lightness: 10%),
+  'lighten-1': color.adjust($success, $lightness: 5%),
+  'base': $success,
+  'darken-1': color.adjust($success, $lightness: -5%),
+  'darken-2': color.adjust($success, $lightness: -10%),
+  'darken-3': color.adjust($success, $lightness: -15%),
+  'darken-4': color.adjust($success, $lightness: -20%)
+);
+$info-color: (
+  'lighten-4': color.adjust($info, $lightness: 20%),
+  'lighten-3': color.adjust($info, $lightness: 15%),
+  'lighten-2': color.adjust($info, $lightness: 10%),
+  'lighten-1': color.adjust($info, $lightness: 5%),
+  'base': $info,
+  'darken-1': color.adjust($info, $lightness: -5%),
+  'darken-2': color.adjust($info, $lightness: -10%),
+  'darken-3': color.adjust($info, $lightness: -15%),
+  'darken-4': color.adjust($info, $lightness: -20%)
+);
+$warning-color: (
+  'lighten-4': color.adjust($warning, $lightness: 20%),
+  'lighten-3': color.adjust($warning, $lightness: 15%),
+  'lighten-2': color.adjust($warning, $lightness: 10%),
+  'lighten-1': color.adjust($warning, $lightness: 5%),
+  'base': $warning,
+  // #FFAC5D
+  'darken-1': color.adjust($warning, $lightness: -5%),
+  'darken-2': color.adjust($warning, $lightness: -10%),
+  'darken-3': color.adjust($warning, $lightness: -15%),
+  'darken-4': color.adjust($warning, $lightness: -20%)
+);
+$danger-color: (
+  'lighten-4': color.adjust($danger, $lightness: 20%),
+  'lighten-3': color.adjust($danger, $lightness: 15%),
+  'lighten-2': color.adjust($danger, $lightness: 10%),
+  'lighten-1': color.adjust($danger, $lightness: 5%),
+  'base': $danger,
+  'darken-1': color.adjust($danger, $lightness: -5%),
+  'darken-2': color.adjust($danger, $lightness: -10%),
+  'darken-3': color.adjust($danger, $lightness: -15%),
+  'darken-4': color.adjust($danger, $lightness: -20%)
+);
+
+$colors: (
+  'white': $white-color,
+  'black': $black-color,
+  'dark': $dark-color,
+  'light': $light-color,
+  'primary': $primary-color,
+  'secondary': $secondary-color,
+  'success': $success-color,
+  'info': $info-color,
+  'warning': $warning-color,
+  'danger': $danger-color
+);

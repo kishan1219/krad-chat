@@ -1,0 +1,124 @@
+@import '../../../base/bootstrap-extended/include';
+@import '../../../base/components/include';
+
+.rdw-editor-wrapper {
+  background-color: $white;
+  .rdw-editor-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+    margin-bottom: 0;
+    padding: 0.5rem;
+    padding-bottom: 0;
+    background-color: $white;
+    border-color: $border-color;
+    border-top-left-radius: $border-radius;
+    border-top-right-radius: $border-radius;
+    .rdw-option-wrapper {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      background: transparent;
+      border: none;
+      border-radius: $border-radius-sm;
+      border: none;
+      padding: 13px 5px;
+      color: $body-color;
+      &.rdw-option-active {
+        box-shadow: none;
+        background-color: rgba($color: $primary, $alpha: 0.2);
+      }
+      &:hover {
+        box-shadow: none;
+        background-color: rgba($color: $primary, $alpha: 0.08);
+      }
+      &:focus {
+        outline: none;
+      }
+    }
+  }
+  .rdw-editor-main {
+    min-height: 10rem;
+    padding: 0.5rem 1.2rem;
+    border: 1px solid $border-color;
+    border-bottom-left-radius: $border-radius;
+    border-bottom-right-radius: $border-radius;
+    cursor: text;
+    .DraftEditor-root {
+      min-height: 9rem;
+    }
+    .DraftEditor-editorContainer,
+    .public-DraftEditor-content {
+      min-height: 9rem;
+    }
+    .public-DraftEditorPlaceholder-root {
+      color: $text-muted;
+      padding: 0;
+    }
+  }
+  .rdw-editor-toolbar ~ .rdw-editor-main {
+    border-top: none;
+  }
+
+  &.toolbar-bottom {
+    display: flex;
+    flex-direction: column;
+    .rdw-editor-toolbar {
+      order: 2;
+      border-top-left-radius: 0;
+      border-top-right-radius: 0;
+      border-bottom-left-radius: $border-radius;
+      border-bottom-right-radius: $border-radius;
+    }
+    .rdw-editor-main {
+      border-top: 1px solid $border-color;
+      border-bottom: 0;
+      border-top-left-radius: $border-radius;
+      border-top-right-radius: $border-radius;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+      order: 1;
+    }
+  }
+}
+
+.rdw-block-align-left {
+  text-align: left;
+}
+
+.rdw-block-align-center {
+  text-align: center;
+}
+
+.rdw-block-align-right {
+  text-align: right;
+}
+
+.dark-layout {
+  .rdw-editor-wrapper {
+    background: $theme-dark-body-bg;
+    .rdw-editor-toolbar {
+      background: $theme-dark-body-bg;
+      border-color: $theme-dark-border-color;
+      .rdw-option-wrapper {
+        background: $theme-dark-body-bg;
+        color: $theme-dark-body-color;
+        &.rdw-option-active {
+          background-color: rgba($color: $primary, $alpha: 0.2) !important;
+        }
+      }
+    }
+    .rdw-editor-main {
+      background: $theme-dark-body-bg;
+      color: $theme-dark-body-color;
+      border-color: $theme-dark-border-color;
+    }
+    .public-DraftEditorPlaceholder-root {
+      color: $theme-dark-body-color;
+      opacity: 0.65;
+    }
+  }
+}

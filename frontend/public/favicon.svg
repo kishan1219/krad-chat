@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+  <defs>
+    <radialGradient id="favBg" cx="50%" cy="35%" r="75%">
+      <stop offset="0%" stop-color="#0f2147" />
+      <stop offset="50%" stop-color="#09142b" />
+      <stop offset="100%" stop-color="#030816" />
+    </radialGradient>
+    <linearGradient id="favChrome" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="30%" stop-color="#E2E8F0" />
+      <stop offset="50%" stop-color="#64748B" />
+      <stop offset="70%" stop-color="#94A3B8" />
+      <stop offset="100%" stop-color="#FFFFFF" />
+    </linearGradient>
+    <linearGradient id="favBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="50%" stop-color="#00E5FF" />
+      <stop offset="100%" stop-color="#0284C7" />
+    </linearGradient>
+    <filter id="favGlow">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect x="4" y="4" width="120" height="120" rx="28" fill="url(#favBg)" stroke="url(#favBorder)" stroke-width="3" />
+  <ellipse cx="64" cy="58" rx="36" ry="14" fill="#00E5FF" opacity="0.38" filter="url(#favGlow)" />
+  <circle cx="64" cy="56" r="3" fill="#FFFFFF" opacity="0.9" filter="url(#favGlow)" />
+
+  <g transform="translate(14, 16) scale(0.78)">
+    <path d="M 12 16 L 32 16 L 32 46 L 58 16 L 82 16 L 48 52 L 86 90 L 60 90 L 32 59 L 32 90 L 12 90 Z"
+          fill="url(#favChrome)" stroke="#00E5FF" stroke-width="1.2" stroke-linejoin="round" />
+    <line x1="18" y1="24" x2="26" y2="24" stroke="#00E5FF" stroke-width="1.5" />
+    <line x1="18" y1="32" x2="26" y2="32" stroke="#00E5FF" stroke-width="1.5" />
+
+    <path d="M 68 16 L 92 16 L 124 90 L 102 90 L 95 72 L 65 72 L 58 90 L 36 90 Z M 71 56 L 89 56 L 80 32 Z"
+          fill="url(#favChrome)" stroke="#00E5FF" stroke-width="1.2" stroke-linejoin="round" />
+    <polygon points="80,38 93,70 67,70" fill="#00E5FF" filter="url(#favGlow)" />
+    <polygon points="65,72 95,72 80,90" fill="#00E5FF" opacity="0.95" />
+  </g>
+
+  <!-- Bottom Accent Badge "TECH" -->
+  <rect x="30" y="93" width="68" height="20" rx="10" fill="#00E5FF" fill-opacity="0.18" stroke="#00E5FF" stroke-width="1.2" />
+  <text x="64" y="107"
+        font-family="system-ui, -apple-system, sans-serif"
+        font-size="10.5"
+        font-weight="900"
+        letter-spacing="2"
+        text-anchor="middle"
+        fill="#00E5FF">
+    TECH
+  </text>
+</svg>

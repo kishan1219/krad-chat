@@ -1,0 +1,1502 @@
+/*================================================================================
+	Item Name: Vuexy - Vuejs, HTML & Laravel Admin Dashboard Template
+	Version: 2.0
+	Author: PIXINVENT
+	Author URL: http://www.themeforest.net/user/pixinvent
+================================================================================
+
+NOTE:
+------
+PLACE HERE YOUR OWN SCSS CODES AND IF NEEDED, OVERRIDE THE STYLES FROM THE OTHER STYLESHEETS.
+WE WILL RELEASE FUTURE UPDATES SO IN ORDER TO NOT OVERWRITE YOUR STYLES IT'S BETTER LIKE THIS.  */
+
+// React select
+@import "../../@core/scss/base/bootstrap-extended/include";
+@import "variables/variables";
+@import "./custom-template";
+
+.react-select {
+  &.is-invalid {
+    .select__control {
+      border-color: #dc3545;
+      padding-right: calc(1.5em + 0.75rem);
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right calc(0.375em + 0.1875rem) center;
+      background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+    }
+  }
+}
+
+.is-invalid {
+  z-index: 0 !important;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.flex-2 {
+  flex: 2;
+}
+
+.flex-3 {
+  flex: 3;
+}
+
+.flex-4 {
+  flex: 4;
+}
+
+.form-label {
+  color: #5e5873;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.gelpCx {
+  overflow-x: unset !important;
+  overflow-y: unset !important;
+}
+
+.navigation li a i,
+.navigation li a svg {
+  height: 16px !important;
+  width: 16px !important;
+}
+
+.notification-title {
+  font-weight: 700;
+}
+
+.form-label {
+  color: #000000 !important;
+  font-weight: 700 !important;
+}
+.dark-layout {
+  .form-label {
+    color: #ffffff !important;
+  }
+}
+
+.rdt_TableCell {
+  height: auto !important;
+}
+
+.not-important {
+  max-width: 800px !important;
+}
+
+// .card-body {
+//     z-index: 10 !important;
+// }
+.mobile {
+  margin: 0;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+}
+
+.mobile-phone {
+  margin: auto;
+  // margin-top: 170px;
+  padding: 10px 10px 30px;
+  width: 350px;
+  height: 600px;
+  box-shadow: 0 0 20px #e2e2e2;
+  border-radius: 30px;
+}
+
+.screen {
+  width: 100%;
+  height: 100%;
+  background: #ffffff;
+  border-radius: 10px;
+  overflow-y: auto;
+}
+
+.brove {
+  width: 125px;
+  height: 20px;
+  background: white;
+  position: absolute;
+  margin: 0 100px;
+  border-radius: 0 0 20px 20px;
+}
+
+.speaker {
+  width: 60px;
+  height: 5px;
+  background: #d2d2d2;
+  display: block;
+  margin: auto;
+  margin-top: 5px;
+  border-radius: 20px;
+  // justify-content: center;
+}
+
+.ck-editor__editable:not(.ck-editor__nested-editable) {
+  min-height: 200px;
+  border: 1px solid #ccc !important;
+  border-top: 0 !important;
+}
+.iphone {
+  box-shadow: inset 0 0 3px 0 rgba(0, 0, 0, 0.2), 0 0 0 1px #999,
+    0 0 30px 0px rgba(0, 0, 0, 0.7);
+  border: 5px solid #d9dbdc;
+  background: #f8f8f8;
+  padding: 15px;
+  border-radius: 50px;
+  height: 877px;
+  width: 423px;
+  position: relative;
+  margin: 5px auto;
+  // Scale so that the iPhone fits in view
+  transform: scale(0.8);
+}
+
+.iphone-top {
+  padding: 5px 110px 40px;
+  position: relative;
+  .speakers {
+    display: block;
+    width: 70px;
+    height: 6px;
+    margin: 0 auto;
+    border-radius: 6px;
+    background: #292728;
+  }
+
+  .camera {
+    display: block;
+    margin: 0 auto;
+    height: 10px;
+    width: 10px;
+    border-radius: 50%;
+    margin-bottom: 13px;
+    background: #333;
+  }
+
+  .sensor {
+    display: block;
+    width: 15px;
+    height: 15px;
+    float: left;
+    background: #333;
+    margin-top: -5px;
+    border-radius: 50%;
+  }
+}
+
+.top-bar,
+.bottom-bar {
+  display: block;
+  width: 423px;
+  height: 15px;
+  border: {
+    left: 5px solid #bbb;
+    right: 5px solid #bbb;
+  }
+  position: absolute;
+  left: -5px;
+}
+.top-bar {
+  top: 65px;
+  display: none;
+}
+
+.bottom-bar {
+  bottom: 65px;
+}
+
+.iphone-screen {
+  background: #ffffff;
+  border: 1px solid #fff;
+  height: 677px;
+  width: 375px;
+  margin: 0 auto;
+  border: 2px solid rgba(0, 0, 0, 0.9);
+  border-radius: 3px;
+  overflow: hidden;
+  // background-image: url("https://assets.codepen.io/285131/paintbg.jpg");
+  background-size: cover;
+  background-repeat: no-repeat;
+  img {
+    width: 100%;
+  }
+}
+
+.buttons {
+  .on-off,
+  .up,
+  .down,
+  .sleep {
+    display: block;
+    background: #ccc;
+    position: absolute;
+    border-radius: 2px 0px 0px 2px;
+  }
+  .on-off {
+    height: 40px;
+    width: 3px;
+    top: 100px;
+    left: -8px;
+  }
+
+  .up,
+  .down,
+  .sleep {
+    height: 60px;
+    width: 5px;
+    left: -10px;
+  }
+
+  .up {
+    top: 170px;
+  }
+
+  .down {
+    top: 250px;
+  }
+
+  .sleep {
+    left: auto;
+    right: -10px;
+    top: 170px;
+    border-radius: 0px 2px 2px 0px;
+  }
+}
+
+.iphone-bottom {
+  padding: 10px 0 0;
+  span {
+    display: block;
+    margin: 0 auto;
+    width: 68px;
+    height: 68px;
+    background: #ccc;
+    border-radius: 50%;
+    background: linear-gradient(
+      135deg,
+      #303233 0%,
+      #b5b7b9 50%,
+      #f0f2f2 69%,
+      #303233 100%
+    );
+    position: relative;
+    &:after {
+      content: "";
+      display: block;
+      width: 60px;
+      height: 60px;
+      background: #fff;
+      border-radius: 50%;
+      position: absolute;
+      left: 4px;
+      top: 4px;
+    }
+  }
+}
+
+#module {
+  margin: 30px auto;
+  border: 2px solid #000;
+  border-radius: 10px;
+  width: 600px;
+  height: 700px;
+  padding: 25px 25px 30px 25px;
+  background-color: #2e2e2e;
+  box-shadow: 10px 10px 40px #000;
+}
+
+.screens {
+  background-color: #ffffff;
+  height: 95%;
+}
+
+/* CONTENT AREA  */
+#content {
+  height: 100%;
+  padding: 15px;
+  overflow: auto;
+  background-color: white;
+}
+/*  MENU AREA */
+// .menu {
+//   height: 100%;
+//   background-color: #fff;
+//   color:#fff;
+//   font-weight: 700;
+// }
+
+.menu-hide {
+  background-color: #fff;
+  //   color: lightcoral;
+}
+
+.menu-toggle {
+  margin-top: 5px;
+}
+.menu-content {
+  margin-top: 30px;
+}
+
+.menu-content li a {
+  color: #fff;
+  padding: 4px;
+}
+.menu-content li a:hover {
+  color: #ffffff;
+  background: transparent;
+}
+
+.power {
+  border: 2px solid #fff;
+  width: 40px;
+  height: 40px;
+  margin: 10px auto;
+  border-radius: 100%;
+}
+
+/// iPhone 10
+.iphone-xt {
+  position: relative;
+  margin: 40px auto;
+  width: 360px;
+  height: 780px;
+  background-color: #ffffff;
+  //   background-image: linear-gradient(60deg, #7371ee 1%,#a1d9d6 100%);
+  border-radius: 40px;
+  box-shadow: 0px 0px 0px 11px #1f1f1f, 0px 0px 0px 13px #191919,
+    0px 0px 0px 20px #111;
+
+  &:before,
+  &:after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  // home button indicator
+  &:after {
+    bottom: 7px;
+    width: 140px;
+    height: 4px;
+    background-color: #f2f2f2;
+    border-radius: 10px;
+  }
+
+  // frontal camera/speaker frame
+  &:before {
+    top: 0px;
+    width: 56%;
+    height: 30px;
+    background-color: #1f1f1f;
+    border-radius: 0px 0px 40px 40px;
+  }
+}
+
+.blank-page {
+  height: 100vh !important;
+  width: auto !important;
+}
+// .full-display {
+//   height: 100vh !important;
+//   width: auto !important;
+// }
+
+/*
+ * CKEditor 5 (v36.0.1) content styles.
+ * Generated on Thu, 02 Mar 2023 07:44:56 GMT.
+ * For more information, check out https://ckeditor.com/docs/ckeditor5/latest/installation/advanced/content-styles.html
+ */
+
+:root {
+  --ck-color-image-caption-background: hsl(0, 0%, 97%);
+  --ck-color-image-caption-text: hsl(0, 0%, 20%);
+  --ck-color-mention-background: hsla(341, 100%, 30%, 0.1);
+  --ck-color-mention-text: hsl(341, 100%, 30%);
+  --ck-color-table-caption-background: hsl(0, 0%, 97%);
+  --ck-color-table-caption-text: hsl(0, 0%, 20%);
+  --ck-highlight-marker-blue: hsl(201, 97%, 72%);
+  --ck-highlight-marker-green: hsl(120, 93%, 68%);
+  --ck-highlight-marker-pink: hsl(345, 96%, 73%);
+  --ck-highlight-marker-yellow: hsl(60, 97%, 73%);
+  --ck-highlight-pen-green: hsl(112, 100%, 27%);
+  --ck-highlight-pen-red: hsl(0, 85%, 49%);
+  --ck-image-style-spacing: 1.5em;
+  --ck-inline-image-style-spacing: calc(var(--ck-image-style-spacing) / 2);
+  --ck-todo-list-checkmark-size: 16px;
+}
+
+/* @ckeditor/ckeditor5-font/theme/fontsize.css */
+.ck-content .text-tiny {
+  font-size: 0.7em;
+}
+/* @ckeditor/ckeditor5-font/theme/fontsize.css */
+.ck-content .text-small {
+  font-size: 0.85em;
+}
+/* @ckeditor/ckeditor5-font/theme/fontsize.css */
+.ck-content .text-big {
+  font-size: 1.4em;
+}
+/* @ckeditor/ckeditor5-font/theme/fontsize.css */
+.ck-content .text-huge {
+  font-size: 1.8em;
+}
+/* @ckeditor/ckeditor5-basic-styles/theme/code.css */
+.ck-content code {
+  background-color: hsla(0, 0%, 78%, 0.3);
+  padding: 0.15em;
+  border-radius: 2px;
+}
+/* @ckeditor/ckeditor5-highlight/theme/highlight.css */
+.ck-content .marker-yellow {
+  background-color: var(--ck-highlight-marker-yellow);
+}
+/* @ckeditor/ckeditor5-highlight/theme/highlight.css */
+.ck-content .marker-green {
+  background-color: var(--ck-highlight-marker-green);
+}
+/* @ckeditor/ckeditor5-highlight/theme/highlight.css */
+.ck-content .marker-pink {
+  background-color: var(--ck-highlight-marker-pink);
+}
+/* @ckeditor/ckeditor5-highlight/theme/highlight.css */
+.ck-content .marker-blue {
+  background-color: var(--ck-highlight-marker-blue);
+}
+/* @ckeditor/ckeditor5-highlight/theme/highlight.css */
+.ck-content .pen-red {
+  color: var(--ck-highlight-pen-red);
+  background-color: transparent;
+}
+/* @ckeditor/ckeditor5-highlight/theme/highlight.css */
+.ck-content .pen-green {
+  color: var(--ck-highlight-pen-green);
+  background-color: transparent;
+}
+/* @ckeditor/ckeditor5-block-quote/theme/blockquote.css */
+.ck-content blockquote {
+  overflow: hidden;
+  padding-right: 1.5em;
+  padding-left: 1.5em;
+  margin-left: 0;
+  margin-right: 0;
+  font-style: italic;
+  border-left: solid 5px hsl(0, 0%, 80%);
+}
+/* @ckeditor/ckeditor5-block-quote/theme/blockquote.css */
+.ck-content[dir="rtl"] blockquote {
+  border-left: 0;
+  border-right: solid 5px hsl(0, 0%, 80%);
+}
+/* @ckeditor/ckeditor5-image/theme/imagecaption.css */
+.ck-content .image > figcaption {
+  display: table-caption;
+  caption-side: bottom;
+  word-break: break-word;
+  color: var(--ck-color-image-caption-text);
+  background-color: var(--ck-color-image-caption-background);
+  padding: 0.6em;
+  font-size: 0.75em;
+  outline-offset: -1px;
+}
+/* @ckeditor/ckeditor5-image/theme/image.css */
+.ck-content .image {
+  display: table;
+  clear: both;
+  text-align: center;
+  margin: 0.9em auto;
+  min-width: 50px;
+}
+/* @ckeditor/ckeditor5-image/theme/image.css */
+.ck-content .image img {
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+  min-width: 100%;
+}
+/* @ckeditor/ckeditor5-image/theme/image.css */
+.ck-content .image-inline {
+  /*
+     * Normally, the .image-inline would have "display: inline-block" and "img { width: 100% }" (to follow the wrapper while resizing).;
+     * Unfortunately, together with "srcset", it gets automatically stretched up to the width of the editing root.
+     * This strange behavior does not happen with inline-flex.
+     */
+  display: inline-flex;
+  max-width: 100%;
+  align-items: flex-start;
+}
+/* @ckeditor/ckeditor5-image/theme/image.css */
+.ck-content .image-inline picture {
+  display: flex;
+}
+/* @ckeditor/ckeditor5-image/theme/image.css */
+.ck-content .image-inline picture,
+.ck-content .image-inline img {
+  flex-grow: 1;
+  flex-shrink: 1;
+  max-width: 100%;
+}
+/* @ckeditor/ckeditor5-image/theme/imageresize.css */
+.ck-content .image.image_resized {
+  max-width: 100%;
+  display: block;
+  box-sizing: border-box;
+}
+/* @ckeditor/ckeditor5-image/theme/imageresize.css */
+.ck-content .image.image_resized img {
+  width: 100%;
+}
+/* @ckeditor/ckeditor5-image/theme/imageresize.css */
+.ck-content .image.image_resized > figcaption {
+  display: block;
+}
+/* @ckeditor/ckeditor5-image/theme/imagestyle.css */
+.ck-content .image-style-block-align-left,
+.ck-content .image-style-block-align-right {
+  max-width: calc(100% - var(--ck-image-style-spacing));
+}
+/* @ckeditor/ckeditor5-image/theme/imagestyle.css */
+.ck-content .image-style-align-left,
+.ck-content .image-style-align-right {
+  clear: none;
+}
+/* @ckeditor/ckeditor5-image/theme/imagestyle.css */
+.ck-content .image-style-side {
+  float: right;
+  margin-left: var(--ck-image-style-spacing);
+  max-width: 50%;
+}
+/* @ckeditor/ckeditor5-image/theme/imagestyle.css */
+.ck-content .image-style-align-left {
+  float: left;
+  margin-right: var(--ck-image-style-spacing);
+}
+/* @ckeditor/ckeditor5-image/theme/imagestyle.css */
+.ck-content .image-style-align-center {
+  margin-left: auto;
+  margin-right: auto;
+}
+/* @ckeditor/ckeditor5-image/theme/imagestyle.css */
+.ck-content .image-style-align-right {
+  float: right;
+  margin-left: var(--ck-image-style-spacing);
+}
+/* @ckeditor/ckeditor5-image/theme/imagestyle.css */
+.ck-content .image-style-block-align-right {
+  margin-right: 0;
+  margin-left: auto;
+}
+/* @ckeditor/ckeditor5-image/theme/imagestyle.css */
+.ck-content .image-style-block-align-left {
+  margin-left: 0;
+  margin-right: auto;
+}
+/* @ckeditor/ckeditor5-image/theme/imagestyle.css */
+.ck-content p + .image-style-align-left,
+.ck-content p + .image-style-align-right,
+.ck-content p + .image-style-side {
+  margin-top: 0;
+}
+/* @ckeditor/ckeditor5-image/theme/imagestyle.css */
+.ck-content .image-inline.image-style-align-left,
+.ck-content .image-inline.image-style-align-right {
+  margin-top: var(--ck-inline-image-style-spacing);
+  margin-bottom: var(--ck-inline-image-style-spacing);
+}
+/* @ckeditor/ckeditor5-image/theme/imagestyle.css */
+.ck-content .image-inline.image-style-align-left {
+  margin-right: var(--ck-inline-image-style-spacing);
+}
+/* @ckeditor/ckeditor5-image/theme/imagestyle.css */
+.ck-content .image-inline.image-style-align-right {
+  margin-left: var(--ck-inline-image-style-spacing);
+}
+/* @ckeditor/ckeditor5-language/theme/language.css */
+.ck-content span[lang] {
+  font-style: italic;
+}
+/* @ckeditor/ckeditor5-media-embed/theme/mediaembed.css */
+.ck-content .media {
+  clear: both;
+  margin: 0.9em 0;
+  display: block;
+  min-width: 15em;
+}
+/* @ckeditor/ckeditor5-list/theme/todolist.css */
+.ck-content .todo-list {
+  list-style: none;
+}
+/* @ckeditor/ckeditor5-list/theme/todolist.css */
+.ck-content .todo-list li {
+  margin-bottom: 5px;
+}
+/* @ckeditor/ckeditor5-list/theme/todolist.css */
+.ck-content .todo-list li .todo-list {
+  margin-top: 5px;
+}
+/* @ckeditor/ckeditor5-list/theme/todolist.css */
+.ck-content .todo-list .todo-list__label > input {
+  -webkit-appearance: none;
+  display: inline-block;
+  position: relative;
+  width: var(--ck-todo-list-checkmark-size);
+  height: var(--ck-todo-list-checkmark-size);
+  vertical-align: middle;
+  border: 0;
+  left: -25px;
+  margin-right: -15px;
+  right: 0;
+  margin-left: 0;
+}
+/* @ckeditor/ckeditor5-list/theme/todolist.css */
+.ck-content .todo-list .todo-list__label > input::before {
+  display: block;
+  position: absolute;
+  box-sizing: border-box;
+  content: "";
+  width: 100%;
+  height: 100%;
+  border: 1px solid hsl(0, 0%, 20%);
+  border-radius: 2px;
+  transition: 250ms ease-in-out box-shadow, 250ms ease-in-out background,
+    250ms ease-in-out border;
+}
+/* @ckeditor/ckeditor5-list/theme/todolist.css */
+.ck-content .todo-list .todo-list__label > input::after {
+  display: block;
+  position: absolute;
+  box-sizing: content-box;
+  pointer-events: none;
+  content: "";
+  left: calc(var(--ck-todo-list-checkmark-size) / 3);
+  top: calc(var(--ck-todo-list-checkmark-size) / 5.3);
+  width: calc(var(--ck-todo-list-checkmark-size) / 5.3);
+  height: calc(var(--ck-todo-list-checkmark-size) / 2.6);
+  border-style: solid;
+  border-color: transparent;
+  border-width: 0 calc(var(--ck-todo-list-checkmark-size) / 8)
+    calc(var(--ck-todo-list-checkmark-size) / 8) 0;
+  transform: rotate(45deg);
+}
+/* @ckeditor/ckeditor5-list/theme/todolist.css */
+.ck-content .todo-list .todo-list__label > input[checked]::before {
+  background: hsl(126, 64%, 41%);
+  border-color: hsl(126, 64%, 41%);
+}
+/* @ckeditor/ckeditor5-list/theme/todolist.css */
+.ck-content .todo-list .todo-list__label > input[checked]::after {
+  border-color: hsl(0, 0%, 100%);
+}
+/* @ckeditor/ckeditor5-list/theme/todolist.css */
+.ck-content .todo-list .todo-list__label .todo-list__label__description {
+  vertical-align: middle;
+}
+/* @ckeditor/ckeditor5-list/theme/list.css */
+.ck-content ol {
+  list-style-type: decimal;
+}
+/* @ckeditor/ckeditor5-list/theme/list.css */
+.ck-content ol ol {
+  list-style-type: lower-latin;
+}
+/* @ckeditor/ckeditor5-list/theme/list.css */
+.ck-content ol ol ol {
+  list-style-type: lower-roman;
+}
+/* @ckeditor/ckeditor5-list/theme/list.css */
+.ck-content ol ol ol ol {
+  list-style-type: upper-latin;
+}
+/* @ckeditor/ckeditor5-list/theme/list.css */
+.ck-content ol ol ol ol ol {
+  list-style-type: upper-roman;
+}
+/* @ckeditor/ckeditor5-list/theme/list.css */
+.ck-content ul {
+  list-style-type: disc;
+}
+/* @ckeditor/ckeditor5-list/theme/list.css */
+.ck-content ul ul {
+  list-style-type: circle;
+}
+/* @ckeditor/ckeditor5-list/theme/list.css */
+.ck-content ul ul ul {
+  list-style-type: square;
+}
+/* @ckeditor/ckeditor5-list/theme/list.css */
+.ck-content ul ul ul ul {
+  list-style-type: square;
+}
+/* @ckeditor/ckeditor5-page-break/theme/pagebreak.css */
+.ck-content .page-break {
+  position: relative;
+  clear: both;
+  padding: 5px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* @ckeditor/ckeditor5-page-break/theme/pagebreak.css */
+.ck-content .page-break::after {
+  content: "";
+  position: absolute;
+  border-bottom: 2px dashed hsl(0, 0%, 77%);
+  width: 100%;
+}
+/* @ckeditor/ckeditor5-page-break/theme/pagebreak.css */
+.ck-content .page-break__label {
+  position: relative;
+  z-index: 1;
+  padding: 0.3em 0.6em;
+  display: block;
+  text-transform: uppercase;
+  border: 1px solid hsl(0, 0%, 77%);
+  border-radius: 2px;
+  font-family: Helvetica, Arial, Tahoma, Verdana, Sans-Serif;
+  font-size: 0.75em;
+  font-weight: bold;
+  color: hsl(0, 0%, 20%);
+  background: hsl(0, 0%, 100%);
+  box-shadow: 2px 2px 1px hsla(0, 0%, 0%, 0.15);
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+/* @ckeditor/ckeditor5-table/theme/tablecolumnresize.css */
+.ck-content .table .ck-table-resized {
+  table-layout: fixed;
+}
+/* @ckeditor/ckeditor5-table/theme/tablecolumnresize.css */
+.ck-content .table table {
+  overflow: hidden;
+}
+/* @ckeditor/ckeditor5-table/theme/tablecolumnresize.css */
+.ck-content .table td,
+.ck-content .table th {
+  position: relative;
+}
+/* @ckeditor/ckeditor5-table/theme/table.css */
+.ck-content .table {
+  margin: 0.9em auto;
+  display: table;
+}
+/* @ckeditor/ckeditor5-table/theme/table.css */
+.ck-content .table table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  width: 100%;
+  height: 100%;
+  border: 1px double hsl(0, 0%, 70%);
+}
+/* @ckeditor/ckeditor5-table/theme/table.css */
+.ck-content .table table td,
+.ck-content .table table th {
+  min-width: 2em;
+  padding: 0.4em;
+  border: 1px solid hsl(0, 0%, 75%);
+}
+/* @ckeditor/ckeditor5-table/theme/table.css */
+.ck-content .table table th {
+  font-weight: bold;
+  background: hsla(0, 0%, 0%, 5%);
+}
+/* @ckeditor/ckeditor5-table/theme/table.css */
+.ck-content[dir="rtl"] .table th {
+  text-align: right;
+}
+/* @ckeditor/ckeditor5-table/theme/table.css */
+.ck-content[dir="ltr"] .table th {
+  text-align: left;
+}
+/* @ckeditor/ckeditor5-table/theme/tablecaption.css */
+.ck-content .table > figcaption {
+  display: table-caption;
+  caption-side: top;
+  word-break: break-word;
+  text-align: center;
+  color: var(--ck-color-table-caption-text);
+  background-color: var(--ck-color-table-caption-background);
+  padding: 0.6em;
+  font-size: 0.75em;
+  outline-offset: -1px;
+}
+/* @ckeditor/ckeditor5-code-block/theme/codeblock.css */
+.ck-content pre {
+  padding: 1em;
+  color: hsl(0, 0%, 20.8%);
+  background: hsla(0, 0%, 78%, 0.3);
+  border: 1px solid hsl(0, 0%, 77%);
+  border-radius: 2px;
+  text-align: left;
+  direction: ltr;
+  tab-size: 4;
+  white-space: pre-wrap;
+  font-style: normal;
+  min-width: 200px;
+}
+/* @ckeditor/ckeditor5-code-block/theme/codeblock.css */
+.ck-content pre code {
+  background: unset;
+  padding: 0;
+  border-radius: 0;
+}
+/* @ckeditor/ckeditor5-horizontal-line/theme/horizontalline.css */
+.ck-content hr {
+  margin: 15px 0;
+  height: 4px;
+  background: hsl(0, 0%, 87%);
+  border: 0;
+}
+/* @ckeditor/ckeditor5-mention/theme/mention.css */
+.ck-content .mention {
+  background: var(--ck-color-mention-background);
+  color: var(--ck-color-mention-text);
+}
+@media print {
+  /* @ckeditor/ckeditor5-page-break/theme/pagebreak.css */
+  .ck-content .page-break {
+    padding: 0;
+  }
+  /* @ckeditor/ckeditor5-page-break/theme/pagebreak.css */
+  .ck-content .page-break::after {
+    display: none;
+  }
+}
+.hljs {
+  pre {
+    background-color: inherit;
+    padding: 20px;
+    font-family: "Source Code Pro", monospace;
+    font-size: 14px;
+  }
+}
+
+// whatsapp chat
+
+/* Style for the chat container */
+// .chatBox {
+//   max-width: 600px;
+//   margin: 20px auto;
+//   background-color: #f5f5f5;
+//   border-radius: 8px;
+//   overflow: hidden;
+//   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+// }
+
+/* Style for the chat messages */
+// .chat {
+//   padding: 20px;
+// }
+
+/* Style for individual chat messages */
+// .message {
+//   display: flex;
+//   margin-bottom: 10px;
+//    justify-content: flex-end;
+// }
+
+// .incoming {
+//   justify-content: flex-start;
+// }
+
+// .outgoing {
+//   justify-content: flex-end;
+// }
+
+/* Style for avatar */
+
+/* Style for message text */
+// .textSnip {
+//   background-color: #e5f7ff;
+//   padding: 10px;
+//   border-radius: 10px;
+//   max-width: 70%;
+//   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+// }
+
+// /* Style for message timestamp */
+// .time {
+//   color: #888;
+//   font-size: 0.8em;
+//   margin-top: 5px;
+// }
+
+.page {
+  width: auto;
+  //   height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.marvel-device .screen {
+  text-align: left;
+}
+
+.screen-container {
+  height: 100%;
+}
+
+/* Status Bar */
+
+.status-bar {
+  height: 25px;
+  background: #004e45;
+  color: #fff;
+  font-size: 14px;
+  padding: 0 8px;
+}
+
+.status-bar:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+.status-bar div {
+  float: right;
+  position: relative;
+  top: 50%;
+  transform: translateY(-50%);
+  margin: 0 0 0 8px;
+  font-weight: 600;
+}
+
+/* Chat */
+
+.chat {
+  height: calc(100% - 69px);
+}
+
+.chat-container {
+  height: 100%;
+}
+
+/* User Bar */
+
+.user-bar {
+  height: 55px;
+  background: #005e54;
+  color: #fff;
+  padding: 0 8px;
+  font-size: 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.user-bar:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+.user-bar div {
+  float: left;
+  transform: translateY(-50%);
+  position: relative;
+  top: 50%;
+}
+
+.user-bar .actions {
+  float: right;
+  margin: 0 0 0 20px;
+}
+
+.user-bar .actions.more {
+  margin: 0 12px 0 32px;
+}
+
+.user-bar .actions.attachment {
+  margin: 0 0 0 30px;
+}
+
+.user-bar .actions.attachment i {
+  display: block;
+  transform: rotate(-45deg);
+}
+
+.user-bar .avatar {
+  margin: 0 0 0 5px;
+  width: 36px;
+  height: 36px;
+}
+
+.user-bar .avatar img {
+  border-radius: 50%;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1);
+  display: block;
+  width: 100%;
+}
+
+.user-bar .name {
+  font-size: 17px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  letter-spacing: 0.3px;
+  margin: 0 0 0 8px;
+  overflow: hidden;
+  white-space: nowrap;
+  width: 110px;
+}
+
+.user-bar .status {
+  display: block;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+/* Conversation */
+
+.conversation {
+  height: calc(100% - 12px);
+  position: relative;
+  background: #efe7dd
+    url("https://cloud.githubusercontent.com/assets/398893/15136779/4e765036-1639-11e6-9201-67e728e86f39.jpg")
+    repeat;
+  z-index: 0;
+}
+
+.conversation ::-webkit-scrollbar {
+  transition: all 0.5s;
+  width: 5px;
+  height: 1px;
+  z-index: 10;
+}
+
+.conversation ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.conversation ::-webkit-scrollbar-thumb {
+  background: #b3ada7;
+}
+
+.conversation .conversation-container {
+  height: calc(100% - 68px);
+  box-shadow: inset 0 10px 10px -10px #000000;
+  overflow-x: hidden;
+  padding: 0 16px;
+  margin-bottom: 5px;
+}
+
+.conversation .conversation-container:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+/* Messages */
+
+.message {
+  color: #000;
+  clear: both;
+  line-height: 18px;
+  font-size: 15px;
+  padding: 8px;
+  position: relative;
+  margin: 8px 0;
+  width: 300px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  z-index: -1;
+}
+
+.message:after {
+  position: absolute;
+  content: "";
+  width: 0;
+  height: 0;
+  border-style: solid;
+}
+
+.metadata {
+  display: inline-block;
+  float: right;
+  padding: 0 0 0 7px;
+  position: relative;
+  bottom: -4px;
+}
+
+.metadata .time {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 11px;
+  display: inline-block;
+}
+
+.metadata .tick {
+  display: inline-block;
+  margin-left: 2px;
+  position: relative;
+  top: 4px;
+  height: 16px;
+  width: 16px;
+}
+
+.metadata .tick svg {
+  position: absolute;
+  transition: 0.5s ease-in-out;
+}
+
+.metadata .tick svg:first-child {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  -webkit-transform: perspective(800px) rotateY(180deg);
+  transform: perspective(800px) rotateY(180deg);
+}
+
+.metadata .tick svg:last-child {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  -webkit-transform: perspective(800px) rotateY(0deg);
+  transform: perspective(800px) rotateY(0deg);
+}
+
+.metadata .tick-animation svg:first-child {
+  -webkit-transform: perspective(800px) rotateY(0);
+  transform: perspective(800px) rotateY(0);
+}
+
+.metadata .tick-animation svg:last-child {
+  -webkit-transform: perspective(800px) rotateY(-179.9deg);
+  transform: perspective(800px) rotateY(-179.9deg);
+}
+
+.message:first-child {
+  margin: 16px 0 8px;
+}
+
+.message.received {
+  background: #fff;
+  border-radius: 0px 5px 5px 5px;
+  float: left;
+}
+
+.message.received .metadata {
+  padding: 0 0 0 16px;
+}
+
+.message.received:after {
+  border-width: 0px 10px 10px 0;
+  border-color: transparent #fff transparent transparent;
+  top: 0;
+  left: -10px;
+}
+
+.message.sent {
+  background: #e1ffc7;
+  border-radius: 5px 0px 5px 5px;
+  float: right;
+}
+
+.message.sent:after {
+  border-width: 0px 0 10px 10px;
+  border-color: transparent transparent transparent #e1ffc7;
+  top: 0;
+  right: -10px;
+}
+
+/* Compose */
+
+.conversation-compose {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  overflow: hidden;
+  height: 50px;
+  width: 100%;
+  z-index: 2;
+  pointer-events: auto;
+  background: white;
+  border: 1px solid #ebebeb;
+  border-radius: 0 0 10px 10px;
+}
+
+.conversation-compose div,
+.conversation-compose input {
+  background: #fff;
+  height: 100%;
+}
+
+.conversation-compose .emoji {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 5px 0 0 5px;
+  flex: 0 0 auto;
+  margin-left: 8px;
+  width: 48px;
+}
+
+.conversation-compose .input-msg {
+  border: 0;
+  flex: 1 1 auto;
+  font-size: 16px;
+  margin: 0;
+  outline: none;
+  min-width: 50px;
+}
+
+.conversation-compose .photo {
+  flex: 0 0 auto;
+  border-radius: 0 0 5px 0;
+  text-align: center;
+  position: relative;
+  width: 48px;
+}
+
+.conversation-compose .photo:after {
+  border-width: 0px 0 10px 10px;
+  border-color: transparent transparent transparent #fff;
+  border-style: solid;
+  position: absolute;
+  width: 0;
+  height: 0;
+  content: "";
+  top: 0;
+  right: -10px;
+}
+
+.conversation-compose .photo i {
+  display: block;
+  color: #7d8488;
+  font-size: 24px;
+  transform: translate(-50%, -50%);
+  position: relative;
+  top: 50%;
+  left: 50%;
+}
+
+.conversation-compose .send {
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  flex: 0 0 auto;
+  margin-left: 8px;
+  margin-right: 0px;
+  padding: 4px;
+  position: relative;
+  outline: none;
+}
+
+.conversation-compose .send .circle {
+  background: #008a7c;
+  border-radius: 50%;
+  color: #fff;
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.conversation-compose .send .circle i {
+  font-size: 24px;
+  margin-left: 5px;
+}
+.tfoot {
+  background-color: #f3f2f7;
+}
+
+table.summary_report th:first-child,
+table.summary_report td:first-child {
+  text-align: left;
+}
+
+table.summary_report th,
+table.summary_report td {
+  text-align: right;
+}
+
+.viewCode {
+  color: #ffaf2e;
+  padding: 2rem;
+  overflow: auto;
+  font-size: 100%;
+  line-height: 1.45;
+  border-left: 3px solid #ffaf2e;
+  border-radius: 3px;
+  -moz-tab-size: 4;
+  -o-tab-size: 4;
+  tab-size: 4;
+  text-shadow: 0 1px #fff;
+  -webkit-hyphens: none;
+  -moz-hyphens: none;
+  -ms-hyphens: none;
+  hyphens: none;
+}
+
+.newUnderLineColor {
+  color: #001bff;
+}
+
+.newStyle {
+  padding: 0.29rem !important;
+}
+
+/* Small Screens */
+
+// @media (max-width: 768px) {
+//   .marvel-device.nexus5 {
+//     border-radius: 0;
+//     flex: none;
+//     padding: 0;
+//     max-width: none;
+//     overflow: hidden;
+//     height: 100%;
+//     width: 100%;
+//   }
+
+//   .marvel-device > .screen .chat {
+//     visibility: visible;
+//   }
+
+//   .marvel-device {
+//     visibility: hidden;
+//   }
+
+//   .marvel-device .status-bar {
+//     display: none;
+//   }
+
+//   .screen-container {
+//     position: absolute;
+//     top: 0;
+//     left: 0;
+//     right: 0;
+//     bottom: 0;
+//   }
+
+//   .conversation {
+//     height: calc(100vh - 55px);
+//   }
+//   .conversation .conversation-container {
+//     height: calc(100vh - 120px);
+//   }
+// }
+code {
+  padding: 0 !important;
+}
+.extraParagraph {
+  margin-bottom: 0% !important;
+}
+
+.footerTextStyle {
+  font-size: 14px;
+  color: #8696a0;
+  font-style: oblique;
+  font-weight: bold;
+}
+@media (max-width: 1199px) {
+  .extra-md {
+    width: 100%;
+  }
+}
+
+pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em;
+}
+code.hljs {
+  padding: 3px 5px;
+}
+.hljs {
+  color: #abb2bf;
+  background: #282c34;
+}
+.hljs-comment,
+.hljs-quote {
+  color: #5c6370;
+  font-style: italic;
+}
+.hljs-doctag,
+.hljs-formula,
+.hljs-keyword {
+  color: #c678dd;
+}
+.hljs-deletion,
+.hljs-name,
+.hljs-section,
+.hljs-selector-tag,
+.hljs-subst {
+  color: #e06c75;
+}
+.hljs-literal {
+  color: #56b6c2;
+}
+.hljs-addition,
+.hljs-attribute,
+.hljs-meta .hljs-string,
+.hljs-regexp,
+.hljs-string {
+  color: #98c379;
+}
+.hljs-attr,
+.hljs-number,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-pseudo,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable {
+  color: #d19a66;
+}
+.hljs-bullet,
+.hljs-link,
+.hljs-meta,
+.hljs-selector-id,
+.hljs-symbol,
+.hljs-title {
+  color: #61aeee;
+}
+.hljs-built_in,
+.hljs-class .hljs-title,
+.hljs-title.class_ {
+  color: #e6c07b;
+}
+.hljs-emphasis {
+  font-style: italic;
+}
+.hljs-strong {
+  font-weight: 700;
+}
+.hljs-link {
+  text-decoration: underline;
+}
+
+.modal-wa {
+  width: 200px !important;
+}
+
+.chat-users-list .contact-list .media-list li.active-contact {
+  background-color: orange !important;
+  color: white !important;
+
+  .chat-info {
+    h5 {
+      color: white !important;
+    }
+    .text-truncate {
+      color: white !important;
+    }
+  }
+}
+
+.whatsapp-summary-table {
+  .rdt_TableCol:first-child {
+    .rdt_Expander {
+      svg {
+        color: #ff9b36;
+      }
+    }
+  }
+}

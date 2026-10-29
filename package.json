@@ -1,0 +1,17 @@
+{
+  "name": "krad_chat",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Krad Chat - Enterprise WhatsApp Cloud API & Messaging Automation Platform",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "start:backend": "npm --prefix backend run dev",
+    "start:frontend": "npm --prefix frontend start",
+    "test:backend": "npm --prefix backend test",
+    "build:backend": "npm --prefix backend run build",
+    "build:frontend": "npm --prefix frontend run build"
+  }
+}
