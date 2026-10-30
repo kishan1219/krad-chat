@@ -25,6 +25,7 @@ COPY backend/package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=builder /app/backend/dist ./dist
 COPY --from=builder /app/backend/migrations ./migrations
+COPY --from=builder /app/backend/migrations /app/migrations
 
 EXPOSE 4000
 CMD ["node", "dist/main.js"]
