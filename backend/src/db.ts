@@ -15,7 +15,7 @@ export class Db {
     } else {
       const pool = new Pool({
         connectionString: config.DATABASE_URL,
-        ssl: (config.DATABASE_SSL || config.DATABASE_URL.includes('supabase.co')) ? { rejectUnauthorized: false } : undefined,
+        ssl: (config.DATABASE_SSL || config.DATABASE_URL.includes('supabase')) ? { rejectUnauthorized: false } : undefined,
         max: 10,
         statement_timeout: 15000
       });

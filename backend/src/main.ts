@@ -115,6 +115,15 @@ export async function createApplication(options: { config?: ReturnType<typeof lo
     // Authenticate before allocating upload memory.
     void auth.authenticate(req.headers.authorization || '', req.ip).then(() => upload(req, res, next)).catch(next);
   });
+  app.use('/health', (_req: Request, res: Response) => {
+    res.status(200).json({ status: 'ok', service: 'krad-chat', timestamp: new Date().toISOString() });
+  });
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    if (req.method === 'GET' && (req.path === '/' || req.path === '')) {
+      return res.status(200).json({ status: 'ok', service: 'krad-chat', timestamp: new Date().toISOString() });
+    }
+    next();
+  });
   app.use('/api', (req: Request, res: Response, next: NextFunction) => { void api.handle(req, res).catch(next); });
   app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
     const status = err instanceof ApiError ? err.status : err instanceof ZodError ? 422 : err?.code === '23505' ? 409 : err?.code === '22P02' ? 422 : err?.code === 'LIMIT_FILE_SIZE' ? 413 : err?.type === 'entity.parse.failed' ? 400 : 500;
@@ -152,6 +161,13 @@ export async function createApplication(options: { config?: ReturnType<typeof lo
   const shutdown = async () => { if (timer) clearInterval(timer); realtime.close(); await app.close(); await db.pool.end(); };
   return { app, db, shutdown, cfg };
 }
+process.on('unhandledRejection', reason => {
+  console.error('Unhandled Promise Rejection:', reason);
+});
+process.on('uncaughtException', err => {
+  console.error('Uncaught Exception:', err);
+  process.exit(1);
+});
 if (require.main === module) createApplication().then(async ({ app, shutdown, cfg }) => {
   const host = process.env.HOST || '0.0.0.0';
   await app.listen(cfg.PORT, host);
