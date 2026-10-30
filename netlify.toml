@@ -5,9 +5,8 @@
 
 [build.environment]
   NODE_VERSION = "20"
-  NODE_ENV = "production"
   FAST_REFRESH = "false"
-  NPM_FLAGS = "--legacy-peer-deps"
+  NPM_FLAGS = "--legacy-peer-deps --include=dev"
   GENERATE_SOURCEMAP = "false"
   CI = "false"
   REACT_APP_API_URL = "https://krad-chat.onrender.com/api/"
