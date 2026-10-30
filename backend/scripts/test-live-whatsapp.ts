@@ -8,10 +8,15 @@ async function run() {
   const db = new Db(cfg);
   const providers = new Providers(cfg, db);
 
-  const phoneId = '1456492210872100';
-  const wabaId = '982014231041693';
-  const token = 'EAAkwsfQGYhcBSybm6Cp8bjJUi9Xit2eKfj5euVbDzINLKOsZC3d5j7E3FGSpo70FzYKEcbfPgh1SLZCDY4i9QwDgBVjdtNB7V9IO1uXj15ybNOLIyHBhGRWA6AGLq27eDNt5YZBDUPu5Hje5cjOYm9LTjq61UkMyTxxo5ZCgNLCt3xSuneaVEzrwkifOaXt4rnX17OAape0CIfzeZC4yvKawQhCSvDCBZCW0bZA0jEhNI2f80xZCsHWDkt3f1PXKJRvX7ZBgrwKMVYZCWQ3TMYvUpH';
-  const recipient = '+919516871900';
+  const phoneId = process.env.META_PHONE_NUMBER_ID || '1456492210872100';
+  const wabaId = process.env.META_WABA_ID || '982014231041693';
+  const token = process.env.META_ACCESS_TOKEN || process.env.META_USER_ACCESS_TOKEN || '';
+  const recipient = process.env.TEST_RECIPIENT || '+919516871900';
+
+  if (!token) {
+    console.error('Error: META_ACCESS_TOKEN environment variable is required to execute live test.');
+    process.exit(1);
+  }
 
   console.log('1. Querying live phone number details from Meta Graph API...');
   const phoneInfo = await providers.meta(`${phoneId}?fields=id,display_phone_number,verified_name,quality_rating,status`, 'GET', undefined, token);

@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { React, useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useDispatch, useSelector } from 'react-redux'
 import { Card, CardBody, Col, Form, Input, Row } from 'reactstrap'

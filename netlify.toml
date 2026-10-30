@@ -6,6 +6,14 @@
 [build.environment]
   NODE_VERSION = "20"
   NPM_FLAGS = "--legacy-peer-deps"
+  GENERATE_SOURCEMAP = "false"
+  CI = "false"
+  REACT_APP_API_URL = "https://krad-chat.onrender.com/api/"
+  REACT_APP_ASSET_URL = "https://krad-chat.onrender.com/"
+  REACT_APP_WS_URL = "wss://krad-chat.onrender.com/ws"
+  REACT_APP_META_APP_ID = "2586815651799575"
+  REACT_APP_META_GRAPH_VERSION = "v22.0"
+  REACT_APP_ENABLE_FAKE_DB = "false"
 
 [[redirects]]
   from = "/*"
