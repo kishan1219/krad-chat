@@ -1,5 +1,5 @@
 {
-    "name": "krad_chat",
+    "name": "krad-chat",
     "version": "8.0.0",
     "private": true,
     "dependencies": {

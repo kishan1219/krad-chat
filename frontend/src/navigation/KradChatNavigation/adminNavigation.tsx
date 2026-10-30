@@ -20,7 +20,7 @@ import Message from '@mui/icons-material/Message'
 import WhatsApp from '@mui/icons-material/WhatsApp'
 import VpnKey from '@mui/icons-material/VpnKey'
 
-const userData = JSON.parse(localStorage.getItem('nrtData'))
+const userData = JSON.parse(localStorage.getItem('kradChatData') || 'null')
 
 
 export default [

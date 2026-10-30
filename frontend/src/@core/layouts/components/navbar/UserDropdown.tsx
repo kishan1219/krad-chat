@@ -42,7 +42,7 @@ const UserDropdown = () => {
     //** ComponentDidMount
     useEffect(() => {
         if (isUserLoggedIn() !== null) {
-            setUserData(JSON.parse(localStorage.getItem('nrtData')))
+            setUserData(JSON.parse(localStorage.getItem('kradChatData') || 'null'))
         }
     }, [])
 

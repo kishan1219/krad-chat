@@ -72,14 +72,14 @@ const DetailedReportPage = lazy(() => import('../../views/Report/DetailedReport'
 const ExportAllReport = lazy(() => import('../../views/Report/ExportAllReport'))
 const WhatsappChatbotsSelfWebhook = lazy(() => import('../../views/whatsapp/WhatsappChatbotsSelfWebhook'))
 
-const userData = JSON.parse(localStorage.getItem('nrtData'))
+const userData = JSON.parse(localStorage.getItem('kradChatData') || 'null')
 
 
 const TeamInvitations = lazy(() => import('../../views/TeamInvitations'))
 const WebhookEvents = lazy(() => import('../../views/whatsapp/WebhookEvents'))
 const WorkflowBuilder = lazy(() => import('../../views/whatsapp/WorkflowBuilder'))
 const WhatsappConnections = lazy(() => import('../../views/whatsapp/Connections'))
-const NrtRoutes = [
+const KradChatRoutes = [
     { path: '/whatsapp-workflows', element: <WorkflowBuilder />, meta: { ...Permissions.whatsappSmsList } },
     { path: '/whatsapp-broadcasts', element: <SendWhatsapp />, meta: { ...Permissions.whatsappSmsList } },
     { path: '/whatsapp-connections', element: <WhatsappConnections />, meta: { ...Permissions.whatsappConfigList } },
@@ -721,4 +721,4 @@ const NrtRoutes = [
 
 ]
 
-export default NrtRoutes
+export default KradChatRoutes

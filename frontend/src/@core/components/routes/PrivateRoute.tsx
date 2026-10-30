@@ -10,7 +10,7 @@ import { log } from '../../../utility/helpers/common'
 const PrivateRoute = ({ children, route }) => {
     // ** Hooks & Vars
     const ability = useContext(AbilityContext)
-    const user = JSON.parse(localStorage.getItem('nrtData'))
+    const user = JSON.parse(localStorage.getItem('kradChatData') || 'null')
 
     if (route) {
         let action = null

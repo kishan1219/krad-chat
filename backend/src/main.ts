@@ -35,7 +35,7 @@ class ApplicationModule {}
 export async function createApplication(options: { config?: ReturnType<typeof loadConfig>; db?: Db; staticDir?:string } = {}) {
   const cfg = options.config || loadConfig();
   const db = options.db || new Db(cfg);
-  if (!options.db && cfg.DATABASE_URL === 'local-embedded') {
+  if (!options.db && (cfg.DATABASE_URL === 'local-embedded' || process.env.AUTO_MIGRATE === 'true')) {
     await migrate(db);
   }
   const providers = new Providers(cfg,db); const auth = new Auth(db, cfg, providers);
@@ -153,7 +153,8 @@ export async function createApplication(options: { config?: ReturnType<typeof lo
   return { app, db, shutdown, cfg };
 }
 if (require.main === module) createApplication().then(async ({ app, shutdown, cfg }) => {
-  await app.listen(cfg.PORT, '127.0.0.1');
-  console.log(`Backend listening at http://127.0.0.1:${cfg.PORT}/api (${cfg.PROVIDER_MODE} providers)`);
+  const host = process.env.HOST || '0.0.0.0';
+  await app.listen(cfg.PORT, host);
+  console.log(`Backend listening at http://${host}:${cfg.PORT}/api (${cfg.PROVIDER_MODE} providers)`);
   for (const signal of ['SIGINT', 'SIGTERM'] as const) process.once(signal, () => { void shutdown().then(() => process.exit(0)); });
 }).catch(e => { console.error(e.message); process.exitCode = 1; });

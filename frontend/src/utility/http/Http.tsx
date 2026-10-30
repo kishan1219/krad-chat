@@ -71,14 +71,14 @@ export default class HttpService {
     isUnauthenticated = (data) => {
         if (data?.code === 401 || data?.code === 302) {
             Emitter.emit(Events.Unauthenticated, true)
-            localStorage.removeItem("nrtData")
+            localStorage.removeItem("kradChatData")
             // localStorage.removeItem("access_token")
         } else if (data?.code === 422) {
-            if (!localStorage.getItem("nrtData")) {
+            if (!localStorage.getItem("kradChatData")) {
                 Emitter.emit(Events.Unauthenticated, true)
             }
         } else if (data?.code === 400) {
-            if (!localStorage.getItem("nrtData")) {
+            if (!localStorage.getItem("kradChatData")) {
                 Emitter.emit(Events.Unauthenticated, true)
             }
         } else {

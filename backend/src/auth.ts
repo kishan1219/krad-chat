@@ -34,7 +34,7 @@ export class Auth {
   }
   async authenticate(bearer: string, ip?: string): Promise<Actor> {
     if (!bearer.startsWith('Bearer ')) throw new ApiError(401, 'Authentication required.');
-    if (bearer.startsWith('Bearer nrt_')) {
+    if (bearer.startsWith('Bearer krad_')) {
       const row = (await this.db.query('SELECT k.*,u.role,u.permissions,t.status AS tenant_status FROM api_keys k JOIN users u ON u.id=k.user_id JOIN tenants t ON t.id=u.tenant_id WHERE k.key_hash=$1 AND k.revoked_at IS NULL AND u.active=true', [sha256(bearer.slice(7))])).rows[0];
       if (!row) throw new ApiError(401, 'Invalid API key.');
       if (row.tenant_status !== 'active') throw new ApiError(403, `Organization is ${row.tenant_status}. Access suspended.`);
@@ -44,7 +44,7 @@ export class Auth {
       return { id: Number(row.user_id), tenant_id: Number(row.tenant_id), role: 'operator', permissions: allowed, session_id: `api:${row.id}` };
     }
     let payload: jwt.JwtPayload;
-    try { payload = jwt.verify(bearer.slice(7), this.cfg.JWT_SECRET, { algorithms: ['HS256'], issuer: 'nrt-backend', audience: 'nrt-frontend' }) as jwt.JwtPayload; }
+    try { payload = jwt.verify(bearer.slice(7), this.cfg.JWT_SECRET, { algorithms: ['HS256'], issuer: 'krad-backend', audience: 'krad-frontend' }) as jwt.JwtPayload; }
     catch { throw new ApiError(401, 'Session expired or invalid.'); }
     const row = (await this.db.query(`SELECT u.*,s.id AS session_id,t.status AS tenant_status FROM sessions s JOIN users u ON u.id=s.user_id JOIN tenants t ON t.id=u.tenant_id
       WHERE s.id=$1 AND u.id=$2 AND s.revoked_at IS NULL AND s.expires_at>now() AND u.active=true`, [payload.sid, payload.sub])).rows[0];
@@ -55,7 +55,7 @@ export class Auth {
   private async session(user: Record<string, any>) {
     const sid = randomUUID();
     await this.db.query("INSERT INTO sessions(id,user_id,expires_at) VALUES($1,$2,now()+interval '8 hours')", [sid, user.id]);
-    const access_token = jwt.sign({ sid }, this.cfg.JWT_SECRET, { subject: String(user.id), expiresIn: '8h', issuer: 'nrt-backend', audience: 'nrt-frontend', algorithm: 'HS256' });
+    const access_token = jwt.sign({ sid }, this.cfg.JWT_SECRET, { subject: String(user.id), expiresIn: '8h', issuer: 'krad-backend', audience: 'krad-frontend', algorithm: 'HS256' });
     const refreshToken = token();
     await this.db.query("INSERT INTO auth_tokens(user_id,kind,token_hash,challenge,expires_at) VALUES($1,'refresh',$2,$3,now()+interval '7 days')", [user.id, sha256(refreshToken), sid]);
     return { ...publicUser(user), access_token, refresh_token: refreshToken, ask_for_otp: false };

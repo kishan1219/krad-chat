@@ -26,9 +26,9 @@ import PrivateRoute from '@components/routes/PrivateRoute'
 
 // ** Utils
 import { isObjEmpty } from '@utils'
-import NrtDashboard from './Dashboard'
+import KradChatDashboard from './Dashboard'
 import UserRoutes from './User'
-import NrtRoutes from './NrtRoutes'
+import KradChatRoutes from './KradChatRoutes'
 
 const getLayout = {
   blank: <BlankLayout />,
@@ -51,8 +51,8 @@ const Routes = [
   ...PagesRoutes,
   ...UiElementRoutes,
   ...ExtensionsRoutes,
-  ...NrtDashboard,
-  ...NrtRoutes,
+  ...KradChatDashboard,
+  ...KradChatRoutes,
   ...PageLayoutsRoutes,
   ...FormRoutes,
   ...TablesRoutes,

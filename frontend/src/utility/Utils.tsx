@@ -83,8 +83,8 @@ export const getUniqId = (prefix) => {
  ** This is completely up to you and how you want to store the token in your frontend application
  *  ? e.g. If you are using cookies to store the application please update this function
  */
-export const isUserLoggedIn = () => localStorage.getItem('nrtData')
-export const getUserData = () => JSON.parse(localStorage.getItem('nrtData'))
+export const isUserLoggedIn = () => localStorage.getItem('kradChatData')
+export const getUserData = () => JSON.parse(localStorage.getItem('kradChatData') || 'null')
 
 /**
  ** This function is used for demo purpose route navigation

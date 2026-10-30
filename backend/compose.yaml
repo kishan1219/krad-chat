@@ -2,15 +2,15 @@ services:
   postgres:
     image: postgres:17-alpine
     environment:
-      POSTGRES_USER: nrt
-      POSTGRES_PASSWORD: nrt_local_only
-      POSTGRES_DB: nrt
+      POSTGRES_USER: krad
+      POSTGRES_PASSWORD: krad_local_only
+      POSTGRES_DB: krad
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U nrt -d nrt"]
+      test: ["CMD-SHELL", "pg_isready -U krad -d krad"]
       interval: 5s
       retries: 10
 volumes:

@@ -62,7 +62,7 @@ export class Operations {
       if (actor.role !== 'admin' && scopes.some(s => !actor.permissions.includes(s))) throw new ApiError(403, 'Cannot issue a key broader than your own permissions.');
       if (actor.role !== 'admin' && user.role === 'admin') throw new ApiError(403, 'Only administrators can issue administrator API keys.');
       if (user.role !== 'admin' && scopes.some(s => !user.permissions.includes(s))) throw new ApiError(403, 'API key cannot exceed user permissions.');
-      const key = `nrt_${token()}`; const id = randomUUID();
+      const key = `krad_${token()}`; const id = randomUUID();
       await this.db.transaction(async c => {
         await c.query('UPDATE api_keys SET revoked_at=now() WHERE user_id=$1 AND revoked_at IS NULL', [userId]);
         await c.query('INSERT INTO api_keys(id,tenant_id,user_id,key_hash,scopes) VALUES($1,$2,$3,$4,$5)', [id, actor.tenant_id, userId, sha256(key), scopes]);

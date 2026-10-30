@@ -8,7 +8,7 @@
 // import charts from './charts'
 // import dashboards from './dashboards'
 // import uiElements from './ui-elements'
-import adminNavigation from '../NrtNavigation'
+import adminNavigation from '../KradChatNavigation'
 
 // ** Merge & Export
 export default [

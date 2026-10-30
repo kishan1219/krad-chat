@@ -23,7 +23,7 @@ interface AuthState {
 const config = useJwt.jwtConfig as JwtConfig
 
 const initialUser = (): UserPayload => {
-    const item = window.localStorage.getItem('nrtData')
+    const item = window.localStorage.getItem('kradChatData')
     // Parse stored json or return an empty object.
     return item ? JSON.parse(item) : {}
 }
@@ -45,7 +45,7 @@ export const authSlice = createSlice({
             state[config.storageTokenKeyName] = action.payload?.[config.storageTokenKeyName] ?? null
             state[config.storageRefreshTokenKeyName] = action.payload?.[config.storageRefreshTokenKeyName] ?? null
 
-            localStorage.setItem('nrtData', JSON.stringify(action.payload))
+            localStorage.setItem('kradChatData', JSON.stringify(action.payload))
             localStorage.setItem(config.storageTokenKeyName, JSON.stringify(action.payload?.access_token ?? null))
             localStorage.setItem(config.storageRefreshTokenKeyName, JSON.stringify(action.payload?.access_token ?? null))
         },
@@ -55,7 +55,7 @@ export const authSlice = createSlice({
             state[config.storageRefreshTokenKeyName] = null
 
             // Remove user, accessToken & refreshToken from localStorage.
-            localStorage.removeItem('nrtData')
+            localStorage.removeItem('kradChatData')
             localStorage.removeItem(config.storageTokenKeyName)
             localStorage.removeItem(config.storageRefreshTokenKeyName)
         },

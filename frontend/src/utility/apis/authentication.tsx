@@ -224,7 +224,7 @@ export const logout = ({
         success: () => {
             // dispatch(logoutUser())
             // ** Remove user, accessToken & refreshToken from localStorage
-            localStorage.removeItem('nrtData')
+            localStorage.removeItem('kradChatData')
             localStorage.removeItem('otpData')
             localStorage.removeItem('access_token')
             // dispatch(handleRemoveOtp())

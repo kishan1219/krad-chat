@@ -9,8 +9,8 @@ type StoredUserData = {
   ability?: unknown[]
 }
 
-const storedNrtData = localStorage.getItem('nrtData')
-const userData: StoredUserData | null = storedNrtData ? JSON.parse(storedNrtData) : null
+const storedKradData = localStorage.getItem('kradChatData')
+const userData: StoredUserData | null = storedKradData ? JSON.parse(storedKradData) : null
 const existingAbility = userData ? (userData.ability as any) : null
 
 export default new Ability(existingAbility || initialAbility)

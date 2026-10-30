@@ -63,6 +63,9 @@ test('Security Hardening Suite: Protections, Reliability, Health, and Performanc
       email: 'admin@test.com',
       password: 'long-test-password'
     });
+    if (!('access_token' in loginRes) || !('refresh_token' in loginRes)) {
+      assert.fail('Expected loginRes to return session tokens');
+    }
     assert.ok(loginRes.access_token, 'Access token issued');
     assert.ok(loginRes.refresh_token, 'Refresh token issued');
 

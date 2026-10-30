@@ -6,7 +6,7 @@ const ModernDashboard = lazy(() => import('../../views/Dashboards/ModernDashboar
 const ClassicDashboard = lazy(() => import('../../views/Dashboards/Dashboard'))
 
 
-const NrtDashboard = [
+const KradChatDashboard = [
     {
         path: '/dashboard',
         element: <ModernDashboard />,
@@ -27,4 +27,4 @@ const NrtDashboard = [
     //   }
 ]
 
-export default NrtDashboard
+export default KradChatDashboard

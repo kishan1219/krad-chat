@@ -7,10 +7,10 @@ import jwtDefaultConfig from '@src/@core/auth/jwt/jwtDefaultConfig'
  */
 // eslint-disable-next-line arrow-body-style
 export const isUserLoggedIn = () => {
-    return Boolean(localStorage.getItem('nrtData') && localStorage.getItem(jwtDefaultConfig.storageTokenKeyName))
+    return Boolean(localStorage.getItem('kradChatData') && localStorage.getItem(jwtDefaultConfig.storageTokenKeyName))
 }
 
-export const getUserData = () => JSON.parse(localStorage.getItem('nrtData') || 'null')
+export const getUserData = () => JSON.parse(localStorage.getItem('kradChatData') || 'null')
 
 /**
  * This function is used for demo purpose route navigation

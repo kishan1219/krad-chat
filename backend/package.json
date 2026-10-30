@@ -1,5 +1,5 @@
 {
-  "name": "krad_chat-backend",
+  "name": "krad-chat-backend",
   "version": "0.1.0",
   "private": true,
   "engines": {
@@ -12,7 +12,7 @@
     "start": "node dist/main.js",
     "migrate": "tsx src/migrate.ts",
     "bootstrap": "tsx src/bootstrap.ts",
-    "test": "tsx --test test/*.test.ts",
+    "test": "tsx --test --test-concurrency=1 test/*.test.ts",
     "seed": "tsx scripts/seed.ts",
     "verify:local": "tsx scripts/verify-local.ts",
     "inventory": "tsx scripts/inventory.ts"
