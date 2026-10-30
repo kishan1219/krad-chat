@@ -1,5 +1,5 @@
 # Multi-stage build for Krad Chat Platform backend
-FROM node:22-alpine AS builder
+FROM node:22-slim AS builder
 WORKDIR /app/backend
 
 # Copy backend dependencies definition
@@ -15,7 +15,7 @@ COPY backend/migrations/ ./migrations/
 RUN npm run build
 
 # Stage 2: Production runtime
-FROM node:22-alpine AS runner
+FROM node:22-slim AS runner
 WORKDIR /app/backend
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0

@@ -156,5 +156,22 @@ if (require.main === module) createApplication().then(async ({ app, shutdown, cf
   const host = process.env.HOST || '0.0.0.0';
   await app.listen(cfg.PORT, host);
   console.log(`Backend listening at http://${host}:${cfg.PORT}/api (${cfg.PROVIDER_MODE} providers)`);
-  for (const signal of ['SIGINT', 'SIGTERM'] as const) process.once(signal, () => { void shutdown().then(() => process.exit(0)); });
-}).catch(e => { console.error(e.message); process.exitCode = 1; });
+}).catch(async e => {
+  console.error('Fatal startup error:', e);
+  try {
+    const { Client } = require('pg');
+    const dbUrl = process.env.DATABASE_URL;
+    if (dbUrl && dbUrl.startsWith('postgresql://')) {
+      const client = new Client({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
+      await client.connect();
+      await client.query('INSERT INTO audit_logs(tenant_id, user_id, action, target) VALUES(1, 1, $1, $2)', [
+        'server.startup.fatal',
+        String(e?.stack || e?.message || e).slice(0, 4000)
+      ]);
+      await client.end();
+    }
+  } catch (logErr) {
+    console.error('Failed to write startup error to DB:', logErr);
+  }
+  process.exit(1);
+});
