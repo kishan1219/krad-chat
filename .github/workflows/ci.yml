@@ -70,6 +70,8 @@ jobs:
       - name: Build frontend bundle
         env:
           CI: false
+          NODE_ENV: production
+          FAST_REFRESH: false
           NODE_OPTIONS: --max-old-space-size=4096
         run: npm run build
 

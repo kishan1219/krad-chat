@@ -1,7 +1,18 @@
 const path = require('path')
 
+// Ensure production flags during production builds
+if (process.argv.includes('build')) {
+    process.env.NODE_ENV = 'production'
+    process.env.FAST_REFRESH = 'false'
+}
+
 module.exports = {
     reactScriptsVersion: 'react-scripts',
+    babel: {
+        plugins: [
+            ['react-refresh/babel', { skipEnvCheck: true }]
+        ]
+    },
     style: {
         sass: {
             loaderOptions: {
