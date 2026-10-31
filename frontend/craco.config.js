@@ -4,10 +4,14 @@ const path = require('path')
 if (process.argv.includes('build')) {
     process.env.NODE_ENV = 'production'
     process.env.FAST_REFRESH = 'false'
+    process.env.DISABLE_ESLINT_PLUGIN = 'true'
 }
 
 module.exports = {
     reactScriptsVersion: 'react-scripts',
+    eslint: {
+        enable: false
+    },
     babel: {
         plugins: [
             ['react-refresh/babel', { skipEnvCheck: true }]
@@ -65,6 +69,9 @@ module.exports = {
             }
             webpackConfig.optimization.minimizer = webpackConfig.optimization.minimizer.filter(
                 plugin => plugin?.constructor?.name !== 'CssMinimizerPlugin'
+            )
+            webpackConfig.plugins = (webpackConfig.plugins || []).filter(
+                plugin => plugin?.constructor?.name !== 'ESLintWebpackPlugin'
             )
             // Deprecation/autoprefixer warnings were suppressed here via ignoreWarnings; the
             // underlying issues are fixed instead (bootstrap 5.3, Sass module migration, sass-loader 17).

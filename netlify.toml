@@ -6,6 +6,7 @@
 [build.environment]
   NODE_VERSION = "20"
   FAST_REFRESH = "false"
+  DISABLE_ESLINT_PLUGIN = "true"
   NPM_FLAGS = "--legacy-peer-deps --include=dev"
   GENERATE_SOURCEMAP = "false"
   CI = "false"

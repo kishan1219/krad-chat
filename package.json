@@ -13,5 +13,8 @@
     "test:backend": "npm --prefix backend test",
     "build:backend": "npm --prefix backend run build",
     "build:frontend": "npm --prefix frontend run build"
+  },
+  "devDependencies": {
+    "typescript": "4.9.5"
   }
 }
