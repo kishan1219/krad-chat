@@ -1,7 +1,9 @@
 const path = require('path')
 
 // Ensure production flags during production builds
-if (process.argv.includes('build')) {
+const isProduction = process.env.NODE_ENV === 'production' || process.argv.includes('build')
+
+if (isProduction) {
     process.env.NODE_ENV = 'production'
     process.env.FAST_REFRESH = 'false'
     process.env.DISABLE_ESLINT_PLUGIN = 'true'
@@ -13,9 +15,11 @@ module.exports = {
         enable: false
     },
     babel: {
-        plugins: [
-            ['react-refresh/babel', { skipEnvCheck: true }]
-        ]
+        plugins: isProduction
+            ? []
+            : [
+                ['react-refresh/babel', { skipEnvCheck: true }]
+            ]
     },
     style: {
         sass: {
