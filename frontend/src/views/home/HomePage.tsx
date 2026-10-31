@@ -1399,6 +1399,7 @@ const HomePage: React.FC = () => {
             <div className='krad-legal-links'>
               <Link to='/terms-conditions'>Terms & Conditions</Link>
               <Link to='/privacy-policy'>Privacy Policy</Link>
+              <Link to='/data-deletion'>User Data Deletion</Link>
               <Link to='/whatsapp-policy'>Meta WhatsApp Policy</Link>
             </div>
           </div>

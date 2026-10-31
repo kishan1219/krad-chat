@@ -50,7 +50,7 @@ export const TermsConditions: React.FC<Props> = ({ type: initialType = 'terms_an
             <img src={authLogo} alt='Messaging Platform' className='legal-logo' />
             <div className='legal-brand-badge'>
               <Shield size={12} className='text-emerald-400' />
-              <span>Meta Tech Provider Verified</span>
+              <span>Official WhatsApp Cloud API v22.0</span>
             </div>
           </div>
           <Link to='/authentication' className='legal-back-btn'>
@@ -110,7 +110,7 @@ export const TermsConditions: React.FC<Props> = ({ type: initialType = 'terms_an
               <div className='legal-highlight-box'>
                 <Lock size={20} className='text-emerald-400 flex-shrink-0' />
                 <div>
-                  <strong>Meta Tech Provider Security Guarantee:</strong> All customer data is processed exclusively through the official Meta WhatsApp Cloud API with envelope encryption (AES-256-GCM) at rest and TLS 1.3 in transit. We never sell, rent, or cross-monetize customer communications.
+                  <strong>WhatsApp Cloud API Security Standards:</strong> All customer data is processed exclusively through the official Meta WhatsApp Cloud API with envelope encryption (AES-256-GCM) at rest and TLS 1.3 in transit. We never sell, rent, or cross-monetize customer communications.
                 </div>
               </div>
 
@@ -120,7 +120,7 @@ export const TermsConditions: React.FC<Props> = ({ type: initialType = 'terms_an
                   This Privacy Policy governs the processing of personal data and business communication records across our multi-tenant messaging infrastructure, client management console, and official WhatsApp Business Platform integrations (collectively, the &quot;Platform&quot;).
                 </p>
                 <p>
-                  As an authorized Meta Tech Provider, we operate on a strictly isolated multi-tenant architecture where each business customer retains 100% data ownership of their WhatsApp Business Account (WABA), phone numbers, message templates, customer contacts, and conversational histories.
+                  Operating via the official Meta WhatsApp Cloud API, our platform provides a strictly isolated multi-tenant architecture where each business customer retains 100% data ownership of their WhatsApp Business Account (WABA), phone numbers, message templates, customer contacts, and conversational histories.
                 </p>
               </section>
 
@@ -185,7 +185,7 @@ export const TermsConditions: React.FC<Props> = ({ type: initialType = 'terms_an
               <section>
                 <h3>6. Contact Our Data Protection Officer</h3>
                 <p>
-                  For privacy inquiries, GDPR/CCPA data subject requests, or compliance auditing, contact our Data Protection Office at: <code>privacy@messaging-platform.com</code>.
+                  For privacy inquiries, GDPR/CCPA data subject requests, or compliance auditing, contact our Data Protection Office at: <code>[OWNER_CONFIRMATION_REQUIRED: official_privacy_email]</code> (Direct support: <code>sms@kradtech.com</code>).
                 </p>
               </section>
             </article>
@@ -271,7 +271,7 @@ export const TermsConditions: React.FC<Props> = ({ type: initialType = 'terms_an
               <div className='legal-highlight-box'>
                 <Trash2 size={20} className='text-emerald-400 flex-shrink-0' />
                 <div>
-                  <strong>Meta Data Deletion Callback:</strong> As a verified Meta Tech Provider, we provide automated user data deletion in compliance with Facebook/Meta Platform Rules. When you remove our app from your Meta Business Settings, Meta automatically notifies our server to purge all cached tokens.
+                  <strong>Meta Data Deletion Callback:</strong> In strict compliance with Meta Platform Policy 4.2, we provide automated user data deletion for all connected WhatsApp Business Accounts. When you remove our app from your Meta Business Settings, Meta automatically notifies our server to purge all cached tokens.
                 </div>
               </div>
 
@@ -307,7 +307,7 @@ export const TermsConditions: React.FC<Props> = ({ type: initialType = 'terms_an
                     <div>
                       <strong>Option C: Written Request to Privacy Team</strong>
                       <p>
-                        Send an email with your organization name and WABA ID to <code>data-deletion@messaging-platform.com</code>. Requests are fulfilled within 48 business hours with an official cryptographic confirmation receipt.
+                        Send an email with your organization name and WABA ID to <code>[OWNER_CONFIRMATION_REQUIRED: official_data_deletion_email]</code> (Direct: <code>sms@kradtech.com</code>). Requests are fulfilled within 48 business hours with an official cryptographic confirmation receipt.
                       </p>
                     </div>
                   </div>
@@ -366,7 +366,7 @@ export const TermsConditions: React.FC<Props> = ({ type: initialType = 'terms_an
       {/* Footer */}
       <footer className='legal-footer'>
         <div className='legal-footer-inner'>
-          <p>&copy; 2026 Messaging Platform Inc. All rights reserved. Meta and WhatsApp are registered trademarks of Meta Platforms, Inc.</p>
+          <p>&copy; 2026 KRAD Technology. All rights reserved. Meta and WhatsApp are registered trademarks of Meta Platforms, Inc.</p>
           <div className='legal-footer-links'>
             <button type='button' onClick={() => setActiveTab('privacy_policy')}>Privacy Policy</button>
             <button type='button' onClick={() => setActiveTab('terms_and_conditions')}>Terms of Service</button>

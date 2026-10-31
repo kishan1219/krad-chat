@@ -4,7 +4,7 @@ services:
     restart: always
     environment:
       POSTGRES_USER: ${DB_USER:-talkrad_admin}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-staging_secure_pass_2026}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Error: DB_PASSWORD must be provided for staging}
       POSTGRES_DB: ${DB_NAME:-talkrad_messaging}
     ports:
       - "127.0.0.1:5432:5432"
@@ -27,10 +27,10 @@ services:
     environment:
       NODE_ENV: staging
       PORT: 4000
-      DATABASE_URL: postgres://${DB_USER:-talkrad_admin}:${DB_PASSWORD:-staging_secure_pass_2026}@postgres:5432/${DB_NAME:-talkrad_messaging}
+      DATABASE_URL: postgres://${DB_USER:-talkrad_admin}:${DB_PASSWORD:?Error: DB_PASSWORD must be provided for staging}@postgres:5432/${DB_NAME:-talkrad_messaging}
       DATABASE_SSL: "false"
-      JWT_SECRET: ${JWT_SECRET:-staging_jwt_secret_must_be_at_least_48_chars_long_talkrad}
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-41c349ff02ae2ed52ef3ce7f52d1a77588216e785467f6ed32150efb24475216}
+      JWT_SECRET: ${JWT_SECRET:?Error: JWT_SECRET must be provided for staging}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?Error: ENCRYPTION_KEY must be provided for staging}
       PROVIDER_MODE: ${PROVIDER_MODE:-live}
       ALLOW_SIGNUP: ${ALLOW_SIGNUP:-true}
       WORKER_ENABLED: ${WORKER_ENABLED:-true}
@@ -39,7 +39,7 @@ services:
       META_APP_ID: ${META_APP_ID:-}
       META_APP_SECRET: ${META_APP_SECRET:-}
       META_CONFIG_ID: ${META_CONFIG_ID:-}
-      META_VERIFY_TOKEN: ${META_VERIFY_TOKEN:-talkrad_staging_verify_2026}
+      META_VERIFY_TOKEN: ${META_VERIFY_TOKEN:?Error: META_VERIFY_TOKEN must be provided for staging}
     ports:
       - "127.0.0.1:4000:4000"
     healthcheck:

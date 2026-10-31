@@ -2473,3 +2473,45 @@
     }
   }
 }
+
+/* ==========================================================================
+   Ultra-small mobile viewport optimization (<= 360px)
+   ========================================================================== */
+@media (max-width: 360px) {
+  .krad-hero-title {
+    font-size: 1.85rem !important;
+    line-height: 1.25 !important;
+  }
+
+  .krad-hero-actions {
+    flex-direction: column !important;
+    width: 100% !important;
+
+    .krad-btn-primary,
+    .krad-btn-secondary {
+      width: 100% !important;
+      justify-content: center !important;
+    }
+  }
+
+  .krad-calc-number-box {
+    padding: 0.5rem 0.75rem !important;
+  }
+
+  .krad-calc-total-amount {
+    font-size: 1.65rem !important;
+  }
+
+  .krad-feature-card,
+  .krad-pricing-card,
+  .krad-usecase-card {
+    padding: 1.25rem 1rem !important;
+  }
+
+  .krad-legal-links {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.5rem !important;
+  }
+}
+

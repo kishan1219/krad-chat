@@ -53,11 +53,13 @@ const Socket = createContext<SocketProviderValue>({
 
 document.addEventListener('DOMContentLoaded', () => {
     if (!('Notification' in window)) {
-        alert('Desktop notifications not available in your browser. Try Chromium.')
+        console.warn('Desktop notifications not available in this browser environment.')
         return
     }
 
-    if (Notification.permission !== 'granted') Notification.requestPermission()
+    if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+        Notification.requestPermission()
+    }
 })
 
 const MySwal = withReactContent(Swal)

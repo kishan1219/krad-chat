@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Allow: /login
+Allow: /terms-conditions
+Allow: /privacy-policy
+Allow: /data-deletion
+Disallow: /dashboard
+Disallow: /whatsapp-*
+Disallow: /admin/*
+Disallow: /campaigns/*
+Disallow: /chat/*
+
+Sitemap: https://kradchat.netlify.app/sitemap.xml

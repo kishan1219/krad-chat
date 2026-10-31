@@ -42,9 +42,14 @@ export default class HttpService {
         // ** Request Interceptor
         axios.interceptors.request.use(
             config => {
-                // ** Get token from localStorage
-                const accessToken = JSON.parse(this.getToken())
-                // log("accessToken", accessToken)
+                // ** Get token from localStorage with safe parsing fallback
+                let accessToken = null
+                try {
+                    const raw = this.getToken()
+                    accessToken = raw ? (raw.startsWith('"') ? JSON.parse(raw) : raw) : null
+                } catch {
+                    accessToken = this.getToken()
+                }
                 // ** If token is present add it to request's Authorization Header
                 if (accessToken) {
                     // ** eslint-disable-next-line no-param-reassign
@@ -72,7 +77,9 @@ export default class HttpService {
         if (data?.code === 401 || data?.code === 302) {
             Emitter.emit(Events.Unauthenticated, true)
             localStorage.removeItem("kradChatData")
-            // localStorage.removeItem("access_token")
+            localStorage.removeItem("access_token")
+            localStorage.removeItem(this.httpConfig.storageTokenKeyName)
+            localStorage.removeItem(this.httpConfig.storageRefreshTokenKeyName)
         } else if (data?.code === 422) {
             if (!localStorage.getItem("kradChatData")) {
                 Emitter.emit(Events.Unauthenticated, true)
