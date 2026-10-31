@@ -72,8 +72,8 @@ const Login: React.FC = () => {
 
   // One-click quick fill for local development, demo environments, and testing
   const handleQuickDemoFill = () => {
-    setValue('email', 'admin@local.test', { shouldValidate: true, shouldDirty: true })
-    setValue('password', 'mqtZSU9vy7Bq-EOAwBwJDqus', { shouldValidate: true, shouldDirty: true })
+    setValue('email', 'admin@example.com', { shouldValidate: true, shouldDirty: true })
+    setValue('password', '', { shouldValidate: false, shouldDirty: false })
     setErrorText('')
     setDemoLoaded(true)
     setTimeout(() => setDemoLoaded(false), 2500)
@@ -206,7 +206,7 @@ const Login: React.FC = () => {
                   type='email'
                   inputMode='email'
                   autoComplete='email'
-                  placeholder='admin@local.test'
+                  placeholder='admin@example.com'
                   className={`login-input ${errors.email ? 'has-error' : ''}`}
                   aria-invalid={errors.email ? 'true' : 'false'}
                   aria-describedby={errors.email ? 'email-error' : undefined}

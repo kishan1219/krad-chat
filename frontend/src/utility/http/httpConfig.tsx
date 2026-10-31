@@ -11,21 +11,17 @@ export default {
     storageTokenKeyName: 'access_token',
     storageRefreshTokenKeyName: 'access_token',
 
-    // base api urls
-    baseUrl: process.env.REACT_APP_API_URL || 'http://127.0.0.1:4000/api/',
-    baseUrl2: process.env.REACT_APP_ASSET_URL || 'http://127.0.0.1:4000/',
-    // baseUrl: `https://${domain}/api/`,
-    // baseUrl2: `https://${domain}/`,
+    // base api urls (driven strictly by environment configuration)
+    baseUrl: process.env.REACT_APP_API_URL || '/api/',
+    baseUrl2: process.env.REACT_APP_ASSET_URL || '/',
 
-    // baseUrl2: `http://${localDomain}/`,
     // Api Endpoints
-
     loginEndpoint: '/jwt/login',
     registerEndpoint: '/jwt/register',
     refreshEndpoint: '/jwt/refresh-token',
     logoutEndpoint: '/jwt/logout',
-    socketChatUrl: process.env.REACT_APP_WS_URL || 'ws://127.0.0.1:4000/ws',
-    socketNotificationUrl: '127.0.0.1',
-    socketNotificationPort: 4000,
-    enableSocket: true
+    socketChatUrl: process.env.REACT_APP_WS_URL || '',
+    socketNotificationUrl: '',
+    socketNotificationPort: '',
+    enableSocket: Boolean(process.env.REACT_APP_WS_URL)
 }
