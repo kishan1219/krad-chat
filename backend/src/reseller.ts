@@ -52,15 +52,19 @@ export class ResellerService {
       throw new ApiError(403, 'Only administrators and resellers can view client balances.');
     }
     const p = pagination(query);
-    const where = actor.role === 'admin'
-      ? 'u.parent_user_id IS NOT NULL'
-      : 'u.parent_user_id = $1';
-    const params = actor.role === 'admin' ? [] : [actor.id];
+    const isAdmin = actor.role === 'admin';
+    const baseParams: unknown[] = isAdmin ? [actor.tenant_id] : [actor.id, actor.tenant_id];
+    const where = isAdmin
+      ? 'u.parent_user_id IS NOT NULL AND u.tenant_id = $1'
+      : 'u.parent_user_id = $1 AND u.tenant_id = $2';
 
     const total = Number((await this.db.query(
-      `SELECT count(*) FROM users u WHERE ${where} AND u.tenant_id = ${actor.tenant_id}`,
-      params
+      `SELECT count(*) FROM users u WHERE ${where}`,
+      baseParams
     )).rows[0].count);
+
+    const limitParamIndex = baseParams.length + 1;
+    const offsetParamIndex = baseParams.length + 2;
 
     const rows = (await this.db.query(
       `SELECT u.id, u.email, u.name, u.role, u.active, u.created_at,
@@ -73,11 +77,11 @@ export class ResellerService {
        LEFT JOIN wallets w ON w.user_id = u.id AND w.tenant_id = u.tenant_id
        LEFT JOIN campaigns c ON c.user_id = u.id AND c.tenant_id = u.tenant_id
        LEFT JOIN messages m ON m.user_id = u.id AND m.tenant_id = u.tenant_id
-       WHERE ${where} AND u.tenant_id = ${actor.tenant_id}
+       WHERE ${where}
        GROUP BY u.id, w.balance, w.reserved
        ORDER BY u.id DESC
-       LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
-      [...params, p.perPage, p.offset]
+       LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}`,
+      [...baseParams, p.perPage, p.offset]
     )).rows;
 
     return pageResult(rows, total, p.page, p.perPage);
