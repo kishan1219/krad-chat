@@ -136,7 +136,7 @@ const Login: React.FC = () => {
       <div className='login-container'>
         {/* Minimalistic Card */}
         <section className='login-card' aria-labelledby='login-heading'>
-          {/* Header with Official KRAD SMS Logo */}
+          {/* Header with Official KRAD Chat Logo */}
           <header className='login-header'>
             <Link to='/' className='login-logo-link' title='KRAD Chat Home'>
               <KradLogo

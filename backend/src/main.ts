@@ -65,7 +65,7 @@ export async function createApplication(options: { config?: ReturnType<typeof lo
         styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
         fontSrc: ["'self'", 'https://fonts.gstatic.com'],
         imgSrc: ["'self'", 'data:', 'https:'],
-        connectSrc: ["'self'", ...cfg.CORS_ORIGINS.split(',').map(s=>s.trim()).filter(Boolean), 'https://graph.facebook.com', 'https://www.facebook.com'],
+        connectSrc: ["'self'", ...cfg.CORS_ORIGINS.split(',').map(s=>s.trim()).filter(Boolean), 'https://kradchat.netlify.app', 'https://graph.facebook.com', 'https://www.facebook.com'],
         frameSrc: ["'self'", 'https://www.facebook.com', 'https://web.facebook.com'],
         objectSrc: ["'none'"],
         baseUri: ["'self'"],
@@ -85,7 +85,8 @@ export async function createApplication(options: { config?: ReturnType<typeof lo
   });
   app.enableCors({
     origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-      const allowed = cfg.CORS_ORIGINS.split(',').map(s => s.trim()).filter(Boolean);
+      const configured = cfg.CORS_ORIGINS.split(',').map(s => s.trim()).filter(Boolean);
+      const allowed = Array.from(new Set([...configured, 'https://kradchat.netlify.app']));
       if (!origin) return callback(null, true);
       if (cfg.NODE_ENV === 'production') {
         if (allowed.includes(origin)) return callback(null, true);

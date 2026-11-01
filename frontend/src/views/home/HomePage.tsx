@@ -170,7 +170,7 @@ const HomePage: React.FC = () => {
     e.preventDefault()
     setDemoSubmitted(true)
     const text = encodeURIComponent(
-      `Hello KRAD SMS Team! I am interested in getting started.\nName: ${demoForm.name}\nCompany: ${demoForm.company}\nPhone: ${demoForm.phone}\nInterested Package: ${demoForm.package}\nCurrency: ${currency}`
+      `Hello KRAD Chat Team! I am interested in getting started.\nName: ${demoForm.name}\nCompany: ${demoForm.company}\nPhone: ${demoForm.phone}\nInterested Package: ${demoForm.package}\nCurrency: ${currency}`
     )
     window.open(`https://wa.me/919516871900?text=${text}`, '_blank')
     setTimeout(() => {
@@ -181,7 +181,7 @@ const HomePage: React.FC = () => {
 
   const handleCalculatorWhatsAppCTA = () => {
     const text = encodeURIComponent(
-      `Hi KRAD SMS Team! I used your Interactive Credit Calculator.\n\n` +
+      `Hi KRAD Chat Team! I used your Interactive Credit Calculator.\n\n` +
       `📊 My Estimated Monthly Volume:\n` +
       `• Marketing Messages: ${mktVol.toLocaleString()}\n` +
       `• Utility & OTP Messages: ${utilVol.toLocaleString()}\n` +
@@ -198,7 +198,7 @@ const HomePage: React.FC = () => {
     const query = customPrompt || chatInputText.trim()
     if (!query) return
     const text = encodeURIComponent(
-      `Hi KRAD SMS Specialist! I am browsing your website and need help with:\n"${query}"`
+      `Hi KRAD Chat Specialist! I am browsing your website and need help with:\n"${query}"`
     )
     window.open(`https://wa.me/919516871900?text=${text}`, '_blank')
     setChatInputText('')
@@ -379,7 +379,7 @@ const HomePage: React.FC = () => {
           </div>
 
           <h1 className='krad-hero-title'>
-            Grow Your Business on WhatsApp with <span className='krad-gradient-text'>KRAD SMS</span>.
+            Grow Your Business on WhatsApp with <span className='krad-gradient-text'>KRAD Chat</span>.
           </h1>
 
           <p className='krad-hero-subtitle'>
@@ -411,7 +411,7 @@ const HomePage: React.FC = () => {
           <div className='krad-hero-banner-card'>
             <img
               src={kradBanner}
-              alt='KRAD SMS - WhatsApp Business API | AI Chatbots | Automation | AI Voice by KRAD Technology'
+              alt='KRAD Chat - WhatsApp Business API | AI Chatbots | Automation | AI Voice by KRAD Technology'
             />
           </div>
 
@@ -444,7 +444,7 @@ const HomePage: React.FC = () => {
         <div className='krad-container'>
           <div className='krad-section-header'>
             <span className='krad-section-badge'>The Advantage</span>
-            <h2 className='krad-section-title'>Why Choose KRAD SMS?</h2>
+            <h2 className='krad-section-title'>Why Choose KRAD Chat?</h2>
             <p className='krad-section-desc'>
               Purpose-built for modern businesses looking for transparent billing, enterprise stability, and zero-headache onboarding.
             </p>
@@ -598,7 +598,7 @@ const HomePage: React.FC = () => {
         <div className='krad-container'>
           <div className='krad-section-header'>
             <span className='krad-section-badge'>Proven Solutions</span>
-            <h2 className='krad-section-title'>How Businesses Use KRAD SMS</h2>
+            <h2 className='krad-section-title'>How Businesses Use KRAD Chat</h2>
             <p className='krad-section-desc'>
               Tailored workflows delivering 4x higher open rates and 60% faster resolution across verticals.
             </p>
@@ -1144,7 +1144,7 @@ const HomePage: React.FC = () => {
             <span className='krad-section-badge'>Client Success</span>
             <h2 className='krad-section-title'>Trusted by Growing Enterprises</h2>
             <p className='krad-section-desc'>
-              See how modern brands rely on KRAD SMS for high-converting customer engagement.
+              See how modern brands rely on KRAD Chat for high-converting customer engagement.
             </p>
           </div>
 
@@ -1156,7 +1156,7 @@ const HomePage: React.FC = () => {
                 ))}
               </div>
               <p className='krad-testimonial-text'>
-                "Switching to KRAD SMS was effortless. Their team guided us through Meta verification within 3 days. Our broadcast open rates jumped to 94% with zero message delivery failures."
+                "Switching to KRAD Chat was effortless. Their team guided us through Meta verification within 3 days. Our broadcast open rates jumped to 94% with zero message delivery failures."
               </p>
               <div className='krad-testimonial-author'>
                 <div className='krad-author-avatar'>RK</div>
@@ -1192,7 +1192,7 @@ const HomePage: React.FC = () => {
                 ))}
               </div>
               <p className='krad-testimonial-text'>
-                "Their automated lead qualification bot pre-screens property buyers before routing them to our real estate agents. Our conversion speed has doubled. KRAD SMS is an essential tool in our stack."
+                "Their automated lead qualification bot pre-screens property buyers before routing them to our real estate agents. Our conversion speed has doubled. KRAD Chat is an essential tool in our stack."
               </p>
               <div className='krad-testimonial-author'>
                 <div className='krad-author-avatar'>AM</div>
@@ -1300,7 +1300,7 @@ const HomePage: React.FC = () => {
               </button>
               {openFaq === 4 && (
                 <div className='krad-faq-answer'>
-                  All outgoing broadcast messages (Marketing, Utility, Authentication) must follow Meta's template guidelines. You submit templates directly from your KRAD SMS console, and Meta's automated AI approves them typically within 1 to 5 minutes.
+                  All outgoing broadcast messages (Marketing, Utility, Authentication) must follow Meta's template guidelines. You submit templates directly from your KRAD Chat console, and Meta's automated AI approves them typically within 1 to 5 minutes.
                 </div>
               )}
             </div>
@@ -1455,12 +1455,12 @@ const HomePage: React.FC = () => {
             <header className='krad-chat-header'>
               <div className='krad-chat-header-info'>
                 <div className='krad-chat-avatar'>
-                  <img src={logoIconSvg} alt='KRAD SMS Support' />
+                  <img src={logoIconSvg} alt='KRAD Chat Support' />
                   <span className='krad-chat-online-dot' aria-hidden='true' />
                 </div>
                 <div>
                   <div id='krad-chat-title-heading' className='krad-chat-title'>
-                    KRAD SMS Specialist
+                    KRAD Chat Specialist
                   </div>
                   <div className='krad-chat-status'>
                     Online · Typically replies in seconds
@@ -1481,7 +1481,7 @@ const HomePage: React.FC = () => {
             <div className='krad-chat-body'>
               <div className='krad-chat-bubble-received'>
                 <div>
-                  👋 <strong>Hello! Welcome to KRAD SMS.</strong>
+                  👋 <strong>Hello! Welcome to KRAD Chat.</strong>
                   <br /><br />
                   Looking for official Meta WhatsApp Cloud API setup, bulk broadcasts, or custom AI chatbots?
                   Tap a quick option below to chat directly with our specialists:
@@ -1495,7 +1495,7 @@ const HomePage: React.FC = () => {
                 <button
                   type='button'
                   className='krad-chat-chip-btn'
-                  onClick={() => handleLiveChatAction('I want to schedule a live demo of KRAD SMS')}
+                  onClick={() => handleLiveChatAction('I want to schedule a live demo of KRAD Chat')}
                 >
                   <span>🚀 Request a Live Demo</span>
                   <ArrowRight size={13} />
@@ -1569,7 +1569,7 @@ const HomePage: React.FC = () => {
               <X size={18} />
             </button>
 
-            <h3 className='krad-modal-title'>Get Started with KRAD SMS</h3>
+            <h3 className='krad-modal-title'>Get Started with KRAD Chat</h3>
             <p className='krad-modal-desc'>
               Connect with our WhatsApp specialists for onboarding assistance and live platform demonstration.
             </p>
