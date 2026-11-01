@@ -42,15 +42,26 @@ export const authSlice = createSlice({
     reducers: {
         handleLogin: (state, action: PayloadAction<UserPayload>) => {
             state.userData = action.payload
-            state[config.storageTokenKeyName] = action.payload?.[config.storageTokenKeyName] ?? action.payload?.access_token ?? null
-            state[config.storageRefreshTokenKeyName] = action.payload?.[config.storageRefreshTokenKeyName] ?? action.payload?.refresh_token ?? null
+            const accessToken = action.payload?.access_token ?? action.payload?.[config.storageTokenKeyName] ?? null
+            const refreshToken = action.payload?.refresh_token ?? action.payload?.[config.storageRefreshTokenKeyName] ?? null
+
+            state.access_token = accessToken
+            state[config.storageTokenKeyName] = accessToken
+            state[config.storageRefreshTokenKeyName] = refreshToken
 
             localStorage.setItem('kradChatData', JSON.stringify(action.payload))
-            localStorage.setItem(config.storageTokenKeyName, JSON.stringify(action.payload?.access_token ?? null))
-            localStorage.setItem(config.storageRefreshTokenKeyName, JSON.stringify(action.payload?.refresh_token ?? null))
+            localStorage.setItem('access_token', JSON.stringify(accessToken))
+            localStorage.setItem('refresh_token', JSON.stringify(refreshToken))
+            if (config.storageTokenKeyName && config.storageTokenKeyName !== 'access_token') {
+                localStorage.setItem(config.storageTokenKeyName, JSON.stringify(accessToken))
+            }
+            if (config.storageRefreshTokenKeyName && config.storageRefreshTokenKeyName !== 'refresh_token') {
+                localStorage.setItem(config.storageRefreshTokenKeyName, JSON.stringify(refreshToken))
+            }
         },
         handleLogout: state => {
             state.userData = {}
+            state.access_token = null
             state[config.storageTokenKeyName] = null
             state[config.storageRefreshTokenKeyName] = null
 
@@ -58,8 +69,8 @@ export const authSlice = createSlice({
             localStorage.removeItem('kradChatData')
             localStorage.removeItem('access_token')
             localStorage.removeItem('refresh_token')
-            localStorage.removeItem(config.storageTokenKeyName)
-            localStorage.removeItem(config.storageRefreshTokenKeyName)
+            if (config.storageTokenKeyName) localStorage.removeItem(config.storageTokenKeyName)
+            if (config.storageRefreshTokenKeyName) localStorage.removeItem(config.storageRefreshTokenKeyName)
         },
         handleOtp: (state, action: PayloadAction<UserPayload>) => {
             state.otpData = action.payload

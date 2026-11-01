@@ -763,12 +763,6 @@ export const findName = (str) => {
     return re
 }
 
-// https://newrise.in/{{1}} find variables 
-// export const findVariablesIndex = (str) => {
-//     const re = str?.match(/{{(.*?)}}/g)
-//     const re1 = re?.map((e) => e?.replace("{{", "").replace("}}", ""))
-//     return re1
-// }
 
 export const replaceVariables = (str, data) => {
     let re = str

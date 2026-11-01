@@ -11,5 +11,5 @@ export default {
 
     // ** Value of this property will be used as key to store JWT token in storage
     storageTokenKeyName: 'access_token',
-    storageRefreshTokenKeyName: 'access_token'
+    storageRefreshTokenKeyName: 'refresh_token'
 }

@@ -41,3 +41,4 @@ ROADMAP.md
 create_capabilities_pdf.py
 docs/
 frontend/TS_MIGRATION_STATUS.md
+.agents/

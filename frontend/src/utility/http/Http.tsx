@@ -42,17 +42,8 @@ export default class HttpService {
         // ** Request Interceptor
         axios.interceptors.request.use(
             config => {
-                // ** Get token from localStorage with safe parsing fallback
-                let accessToken = null
-                try {
-                    const raw = this.getToken()
-                    accessToken = raw ? (raw.startsWith('"') ? JSON.parse(raw) : raw) : null
-                } catch {
-                    accessToken = this.getToken()
-                }
-                // ** If token is present add it to request's Authorization Header
+                const accessToken = this.getToken()
                 if (accessToken) {
-                    // ** eslint-disable-next-line no-param-reassign
                     config.headers.Authorization = `${this.httpConfig.tokenType} ${accessToken}`
                 }
                 return config
@@ -97,11 +88,13 @@ export default class HttpService {
                     try {
                         const refreshUrl = `${this.httpConfig.baseUrl}${this.httpConfig.refreshEndpoint}`
                         const res = await axios.post(refreshUrl, { refresh_token: refreshToken })
-                        if (res.data?.access_token) {
-                            const newAccessToken = res.data.access_token
-                            const newRefreshToken = res.data.refresh_token || refreshToken
+                        const newAccessToken = res.data?.data?.access_token || res.data?.access_token
+                        const newRefreshToken = res.data?.data?.refresh_token || res.data?.refresh_token || refreshToken
+                        if (newAccessToken) {
                             localStorage.setItem(this.httpConfig.storageTokenKeyName, JSON.stringify(newAccessToken))
                             localStorage.setItem(this.httpConfig.storageRefreshTokenKeyName, JSON.stringify(newRefreshToken))
+                            localStorage.setItem('access_token', JSON.stringify(newAccessToken))
+                            localStorage.setItem('refresh_token', JSON.stringify(newRefreshToken))
 
                             this.onAccessTokenFetched(newAccessToken)
                             this.isAlreadyFetchingAccessToken = false
@@ -133,15 +126,22 @@ export default class HttpService {
         this.subscribers.push(callback)
     }
     getToken() {
-        return localStorage.getItem(this.httpConfig.storageTokenKeyName)
+        let raw = localStorage.getItem(this.httpConfig.storageTokenKeyName) || localStorage.getItem('access_token')
+        if (!raw) return null
+        try {
+            return (raw.startsWith('"') || raw.startsWith('{')) ? JSON.parse(raw) : raw
+        } catch {
+            return raw
+        }
     }
 
     getRefreshToken() {
+        let raw = localStorage.getItem(this.httpConfig.storageRefreshTokenKeyName) || localStorage.getItem('refresh_token')
+        if (!raw) return null
         try {
-            const raw = localStorage.getItem(this.httpConfig.storageRefreshTokenKeyName)
-            return raw ? ((raw.startsWith('"') || raw.startsWith('{')) ? JSON.parse(raw) : raw) : null
+            return (raw.startsWith('"') || raw.startsWith('{')) ? JSON.parse(raw) : raw
         } catch {
-            return localStorage.getItem(this.httpConfig.storageRefreshTokenKeyName)
+            return raw
         }
     }
 
