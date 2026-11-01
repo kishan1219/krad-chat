@@ -42,12 +42,12 @@ export const authSlice = createSlice({
     reducers: {
         handleLogin: (state, action: PayloadAction<UserPayload>) => {
             state.userData = action.payload
-            state[config.storageTokenKeyName] = action.payload?.[config.storageTokenKeyName] ?? null
-            state[config.storageRefreshTokenKeyName] = action.payload?.[config.storageRefreshTokenKeyName] ?? null
+            state[config.storageTokenKeyName] = action.payload?.[config.storageTokenKeyName] ?? action.payload?.access_token ?? null
+            state[config.storageRefreshTokenKeyName] = action.payload?.[config.storageRefreshTokenKeyName] ?? action.payload?.refresh_token ?? null
 
             localStorage.setItem('kradChatData', JSON.stringify(action.payload))
             localStorage.setItem(config.storageTokenKeyName, JSON.stringify(action.payload?.access_token ?? null))
-            localStorage.setItem(config.storageRefreshTokenKeyName, JSON.stringify(action.payload?.access_token ?? null))
+            localStorage.setItem(config.storageRefreshTokenKeyName, JSON.stringify(action.payload?.refresh_token ?? null))
         },
         handleLogout: state => {
             state.userData = {}
@@ -56,6 +56,8 @@ export const authSlice = createSlice({
 
             // Remove user, accessToken & refreshToken from localStorage.
             localStorage.removeItem('kradChatData')
+            localStorage.removeItem('access_token')
+            localStorage.removeItem('refresh_token')
             localStorage.removeItem(config.storageTokenKeyName)
             localStorage.removeItem(config.storageRefreshTokenKeyName)
         },

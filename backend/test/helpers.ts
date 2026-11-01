@@ -30,6 +30,8 @@ export async function database() {
   await pg.exec(await readFile('migrations/017_organization_lifecycle.sql', 'utf8'));
   await pg.exec(await readFile('migrations/018_plans_whitelabel_and_hierarchical_billing.sql', 'utf8'));
   await pg.exec(await readFile('migrations/019_security_hardening_rls_and_indexes.sql', 'utf8'));
+  await pg.exec(await readFile('migrations/020_enforce_database_rls_role.sql', 'utf8'));
+  await pg.exec(await readFile('migrations/021_chat_media_support.sql', 'utf8'));
   const query = async (text: string, values: unknown[] = []) => {
     if (text.includes('pg_advisory_xact_lock')) return { rows: [], rowCount: 1 };
     const result = await pg.query(text, values);

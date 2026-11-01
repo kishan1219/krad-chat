@@ -9,7 +9,7 @@ export default {
 
     // ** Value of this property will be used as key to store JWT token in storage
     storageTokenKeyName: 'access_token',
-    storageRefreshTokenKeyName: 'access_token',
+    storageRefreshTokenKeyName: 'refresh_token',
 
     // base api urls (driven strictly by environment configuration)
     baseUrl: process.env.REACT_APP_API_URL || '/api/',
@@ -18,7 +18,7 @@ export default {
     // Api Endpoints
     loginEndpoint: '/jwt/login',
     registerEndpoint: '/jwt/register',
-    refreshEndpoint: '/jwt/refresh-token',
+    refreshEndpoint: 'auth/refresh',
     logoutEndpoint: '/jwt/logout',
     socketChatUrl: process.env.REACT_APP_WS_URL || '',
     socketNotificationUrl: '',

@@ -60,10 +60,73 @@ export default class HttpService {
             error => Promise.reject(error)
         )
 
+        // ** Response Interceptor
+        axios.interceptors.response.use(
+            response => response,
+            async error => {
+                const { config, response } = error
+                const originalRequest = config
+
+                if (response && response.status === 401 && !originalRequest?._retry) {
+                    if (originalRequest.url?.includes('auth/refresh') || originalRequest.url?.includes('login')) {
+                        this.isUnauthenticated({ code: 401 })
+                        return Promise.reject(error)
+                    }
+
+                    if (this.isAlreadyFetchingAccessToken) {
+                        return new Promise(resolve => {
+                            this.addSubscriber(accessToken => {
+                                if (accessToken) {
+                                    originalRequest.headers.Authorization = `${this.httpConfig.tokenType} ${accessToken}`
+                                }
+                                resolve(axios(originalRequest))
+                            })
+                        })
+                    }
+
+                    originalRequest._retry = true
+                    this.isAlreadyFetchingAccessToken = true
+
+                    const refreshToken = this.getRefreshToken()
+                    if (!refreshToken) {
+                        this.isAlreadyFetchingAccessToken = false
+                        this.isUnauthenticated({ code: 401 })
+                        return Promise.reject(error)
+                    }
+
+                    try {
+                        const refreshUrl = `${this.httpConfig.baseUrl}${this.httpConfig.refreshEndpoint}`
+                        const res = await axios.post(refreshUrl, { refresh_token: refreshToken })
+                        if (res.data?.access_token) {
+                            const newAccessToken = res.data.access_token
+                            const newRefreshToken = res.data.refresh_token || refreshToken
+                            localStorage.setItem(this.httpConfig.storageTokenKeyName, JSON.stringify(newAccessToken))
+                            localStorage.setItem(this.httpConfig.storageRefreshTokenKeyName, JSON.stringify(newRefreshToken))
+
+                            this.onAccessTokenFetched(newAccessToken)
+                            this.isAlreadyFetchingAccessToken = false
+
+                            originalRequest.headers.Authorization = `${this.httpConfig.tokenType} ${newAccessToken}`
+                            return axios(originalRequest)
+                        } else {
+                            throw new Error('Refresh rejected')
+                        }
+                    } catch (refreshErr) {
+                        this.isAlreadyFetchingAccessToken = false
+                        this.subscribers = []
+                        this.isUnauthenticated({ code: 401 })
+                        return Promise.reject(refreshErr)
+                    }
+                }
+                return Promise.reject(error)
+            }
+        )
+
     }
 
     onAccessTokenFetched(accessToken) {
-        this.subscribers = this.subscribers.filter(callback => callback(accessToken))
+        this.subscribers.forEach(callback => callback(accessToken))
+        this.subscribers = []
     }
 
     addSubscriber(callback) {
@@ -73,11 +136,21 @@ export default class HttpService {
         return localStorage.getItem(this.httpConfig.storageTokenKeyName)
     }
 
+    getRefreshToken() {
+        try {
+            const raw = localStorage.getItem(this.httpConfig.storageRefreshTokenKeyName)
+            return raw ? ((raw.startsWith('"') || raw.startsWith('{')) ? JSON.parse(raw) : raw) : null
+        } catch {
+            return localStorage.getItem(this.httpConfig.storageRefreshTokenKeyName)
+        }
+    }
+
     isUnauthenticated = (data) => {
         if (data?.code === 401 || data?.code === 302) {
             Emitter.emit(Events.Unauthenticated, true)
             localStorage.removeItem("kradChatData")
             localStorage.removeItem("access_token")
+            localStorage.removeItem("refresh_token")
             localStorage.removeItem(this.httpConfig.storageTokenKeyName)
             localStorage.removeItem(this.httpConfig.storageRefreshTokenKeyName)
         } else if (data?.code === 422) {
@@ -158,7 +231,7 @@ export default class HttpService {
             http.then((res) => {
                 this.returnSuccessResponse(res, showSuccessToast, showErrorToast, success, error, loading)
             }).catch((e) => {
-                if (e?.request?.responseURL?.includes('unauthorized')) {
+                if (e?.response?.status === 401 || e?.response?.data?.code === 401 || e?.request?.responseURL?.includes('unauthorized')) {
                     this.isUnauthenticated({ code: 401 })
                 }
                 this.returnErrorResponse(e, showErrorToast, error, loading)

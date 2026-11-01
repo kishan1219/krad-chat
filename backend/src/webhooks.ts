@@ -34,7 +34,7 @@ export class Webhooks {
           const tenant = await this.chat.tenantForMeta(String(value.metadata?.phone_number_id));
           for (const message of value.messages) {
             const text = customerMessageText(message);
-            await this.chat.incoming(tenant, message.from, text, message.id,String(value.metadata.phone_number_id));
+            await this.chat.incoming(tenant, message.from, text, message.id, String(value.metadata.phone_number_id), message.timestamp);
           }
         }
         for (const item of value.statuses || []) {

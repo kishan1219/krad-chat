@@ -185,7 +185,7 @@ export const TermsConditions: React.FC<Props> = ({ type: initialType = 'terms_an
               <section>
                 <h3>6. Contact Our Data Protection Officer</h3>
                 <p>
-                  For privacy inquiries, GDPR/CCPA data subject requests, or compliance auditing, contact our Data Protection Office at: <code>[OWNER_CONFIRMATION_REQUIRED: official_privacy_email]</code> (Direct support: <code>sms@kradtech.com</code>).
+                  For privacy inquiries, GDPR/CCPA data subject requests, or compliance auditing, contact our Data Protection Office at: <code>help@kradchat.com</code> (Legal corporate entity disclosures pending owner designation).
                 </p>
               </section>
             </article>
@@ -307,7 +307,7 @@ export const TermsConditions: React.FC<Props> = ({ type: initialType = 'terms_an
                     <div>
                       <strong>Option C: Written Request to Privacy Team</strong>
                       <p>
-                        Send an email with your organization name and WABA ID to <code>[OWNER_CONFIRMATION_REQUIRED: official_data_deletion_email]</code> (Direct: <code>sms@kradtech.com</code>). Requests are fulfilled within 48 business hours with an official cryptographic confirmation receipt.
+                        Send an email with your organization name and WABA ID to <code>help@kradchat.com</code>. Requests are fulfilled within 48 business hours with an official cryptographic confirmation receipt.
                       </p>
                     </div>
                   </div>

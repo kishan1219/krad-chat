@@ -104,3 +104,26 @@ export function trimSensitive<T extends Record<string, any>>(obj: T, disallowedK
   return copy as Partial<T>;
 }
 
+export function normalizeProviderTimestamp(raw: unknown): { timestamp: Date; isSkewed: boolean } {
+  const now = Date.now();
+  if (raw === undefined || raw === null || raw === '') {
+    return { timestamp: new Date(now), isSkewed: true };
+  }
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return { timestamp: new Date(now), isSkewed: true };
+  }
+  // Meta sends epoch seconds (10 digits). If > 1e11 (13 digits), it is milliseconds.
+  const ms = parsed > 1e11 ? parsed : parsed * 1000;
+  // If > 5 minutes in future: bound to now and mark skewed
+  if (ms > now + 5 * 60 * 1000) {
+    return { timestamp: new Date(now), isSkewed: true };
+  }
+  // If older than 90 days: bound to now and mark skewed
+  if (ms < now - 90 * 24 * 60 * 60 * 1000) {
+    return { timestamp: new Date(now), isSkewed: true };
+  }
+  return { timestamp: new Date(ms), isSkewed: false };
+}
+
+

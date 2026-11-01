@@ -2,6 +2,8 @@ import React from 'react'
 import { useSelector } from 'react-redux'
 
 // Pure Vector SVG Logos for infinite scalability & crispness
+import kradChatDarkSvg from '@src/assets/images/logo/krad-chat-dark.svg'
+import kradChatLightSvg from '@src/assets/images/logo/krad-chat-light.svg'
 import kradTechDarkSvg from '@src/assets/images/logo/krad-technology-dark.svg'
 import kradTechLightSvg from '@src/assets/images/logo/krad-technology-light.svg'
 import kradTechCleanDarkSvg from '@src/assets/images/logo/krad-technology-clean-dark.svg'
@@ -65,7 +67,7 @@ export const KradLogo: React.FC<KradLogoProps> = ({
   showSubtitle = false,
   className = '',
   style = {},
-  alt = 'KRAD Technology - Enterprise WhatsApp Business Solutions'
+  alt = 'KRAD Chat - Enterprise WhatsApp Business Solutions'
 }) => {
   const layoutSkin = useSelector((state: any) => state?.layout?.skin)
 
@@ -97,7 +99,7 @@ export const KradLogo: React.FC<KradLogoProps> = ({
   if (showSubtitle) {
     activeSrc = isDark ? kradTechDarkSvg : kradTechLightSvg
   } else {
-    activeSrc = isDark ? kradTechCleanDarkSvg : kradTechCleanLightSvg
+    activeSrc = isDark ? kradChatDarkSvg : kradChatLightSvg
   }
 
   return (

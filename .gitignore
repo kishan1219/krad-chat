@@ -16,6 +16,8 @@
 **/.env.*
 !**/.env.example
 LOCAL-SECRETS.md
+SUPER_ADMIN_CREDENTIALS.md
+
 
 # Local persistent data & storage
 **/.local-data/

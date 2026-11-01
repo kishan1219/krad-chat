@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 96" width="100%" height="100%">
+  <defs>
+    <!-- Deep Slate Gradient for Light Mode KRAD -->
+    <linearGradient id="chromeGradChatLight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A" />
+      <stop offset="35%" stop-color="#1E293B" />
+      <stop offset="60%" stop-color="#334155" />
+      <stop offset="100%" stop-color="#0F172A" />
+    </linearGradient>
+
+    <!-- Bevel Stroke Gradient -->
+    <linearGradient id="chromeStrokeChatLight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#334155" stop-opacity="0.8" />
+      <stop offset="50%" stop-color="#0284C7" stop-opacity="0.7" />
+      <stop offset="100%" stop-color="#059669" stop-opacity="0.9" />
+    </linearGradient>
+
+    <!-- Chat Badge Fill Gradient -->
+    <linearGradient id="chatBadgeLight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="rgba(14, 165, 233, 0.12)" />
+      <stop offset="100%" stop-color="rgba(16, 185, 129, 0.18)" />
+    </linearGradient>
+  </defs>
+
+  <g id="krad-chat-light">
+    <!-- "K" -->
+    <path d="M 12 12 L 34 12 L 34 44 L 62 12 L 88 12 L 52 48 L 92 86 L 64 86 L 34 54 L 34 86 L 12 86 Z"
+          fill="url(#chromeGradChatLight)" stroke="url(#chromeStrokeChatLight)" stroke-width="1.2" stroke-linejoin="round" />
+    <line x1="18" y1="22" x2="28" y2="22" stroke="#0284C7" stroke-width="1.5" />
+    <line x1="18" y1="30" x2="28" y2="30" stroke="#0284C7" stroke-width="1.5" />
+    <line x1="18" y1="38" x2="25" y2="38" stroke="#0284C7" stroke-width="1.5" />
+
+    <!-- "R" -->
+    <path d="M 100 12 L 148 12 C 168 12 178 22 178 37 C 178 48 170 56 156 59 L 182 86 L 154 86 L 132 61 L 122 61 L 122 86 L 100 86 Z M 122 28 L 122 46 L 145 46 C 153 46 157 43 157 37 C 157 31 153 28 145 28 Z"
+          fill="url(#chromeGradChatLight)" stroke="url(#chromeStrokeChatLight)" stroke-width="1.2" stroke-linejoin="round" />
+
+    <!-- "A" with Illuminated Cyan Triangle Center -->
+    <path d="M 208 12 L 232 12 L 266 86 L 243 86 L 235 68 L 205 68 L 197 86 L 174 86 Z M 211 52 L 229 52 L 220 28 Z"
+          fill="url(#chromeGradChatLight)" stroke="url(#chromeStrokeChatLight)" stroke-width="1.2" stroke-linejoin="round" />
+    <polygon points="220,32 233,65 207,65" fill="#0284C7" />
+    <polygon points="205,68 235,68 220,86" fill="#0284C7" />
+
+    <!-- "D" -->
+    <path d="M 276 12 L 318 12 C 344 12 362 26 362 49 C 362 72 344 86 318 86 L 276 86 Z M 298 28 L 298 70 L 317 70 C 331 70 340 62 340 49 C 340 36 331 28 317 28 Z"
+          fill="url(#chromeGradChatLight)" stroke="url(#chromeStrokeChatLight)" stroke-width="1.2" stroke-linejoin="round" />
+
+    <!-- "CHAT" Badge Section -->
+    <rect x="376" y="20" width="132" height="58" rx="10"
+          fill="url(#chatBadgeLight)" stroke="#059669" stroke-width="1.6" />
+    <polygon points="410,78 402,87 420,78" fill="#059669" />
+
+    <text x="442" y="58"
+          font-family="system-ui, -apple-system, 'Gilroy-Bold', 'Montserrat', 'Segoe UI', Roboto, sans-serif"
+          font-size="28"
+          font-weight="900"
+          letter-spacing="3"
+          text-anchor="middle"
+          fill="#0F172A">
+      CHAT
+    </text>
+  </g>
+</svg>

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { Actor, authorize } from './auth';
-import { ApiError, idSchema, normalizePhone, pagination, pageResult } from './common';
+import { ApiError, idSchema, normalizePhone, normalizeProviderTimestamp, pagination, pageResult } from './common';
 import { Config, requiredEnv } from './config';
 import { Db } from './db';
 import { Providers } from './providers';
@@ -81,13 +81,17 @@ export class Chat {
       throw e;
     }
   }
-  async incoming(tenant: number, phone: string, text: string, providerId: string,phoneNumberId='') {
+  async incoming(tenant: number, phone: string, text: string, providerId: string, phoneNumberId = '', rawTimestamp?: unknown) {
     phone = normalizePhone(phone);
+    const { timestamp, isSkewed } = normalizeProviderTimestamp(rawTimestamp);
     const row = await this.db.transaction(async c => {
       await c.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[`contact:${tenant}:${phone}`]);
-      const conversation = (await c.query('INSERT INTO conversations(tenant_id,phone,phone_number_id) VALUES($1,$2,$3) ON CONFLICT(tenant_id,phone,phone_number_id) DO UPDATE SET updated_at=now() RETURNING *', [tenant, phone,phoneNumberId])).rows[0];
-      const incoming=(await c.query("INSERT INTO chat_messages(tenant_id,conversation_id,direction,message,provider_id) VALUES($1,$2,'in',$3,$4) ON CONFLICT(provider_id) DO NOTHING RETURNING *", [tenant, conversation.id, text.slice(0, 10000), providerId])).rows[0];
-      if(incoming&&this.automation)await this.automation.enqueue(c,tenant,conversation,incoming);
+      const conversation = (await c.query('INSERT INTO conversations(tenant_id,phone,phone_number_id) VALUES($1,$2,$3) ON CONFLICT(tenant_id,phone,phone_number_id) DO UPDATE SET updated_at=now() RETURNING *', [tenant, phone, phoneNumberId])).rows[0];
+      const incoming = (await c.query("INSERT INTO chat_messages(tenant_id,conversation_id,direction,message,provider_id,created_at) VALUES($1,$2,'in',$3,$4,$5) ON CONFLICT(provider_id) DO NOTHING RETURNING *", [tenant, conversation.id, text.slice(0, 10000), providerId, timestamp])).rows[0];
+      if (incoming && isSkewed && rawTimestamp !== undefined && rawTimestamp !== null) {
+        await c.query("INSERT INTO audit_logs(tenant_id,user_id,action,target) VALUES($1,NULL,'chat.timestamp_skew',$2)", [tenant, JSON.stringify({ message_id: incoming.id, raw_timestamp: String(rawTimestamp) })]);
+      }
+      if (incoming && this.automation) await this.automation.enqueue(c, tenant, conversation, incoming);
       return incoming;
     });
     if (row) this.notify(tenant, { command: 'message', data: row });

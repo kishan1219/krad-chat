@@ -375,7 +375,7 @@ const HomePage: React.FC = () => {
           {/* Status Badge */}
           <div className='krad-hero-badge'>
             <span className='krad-pulse-dot' aria-hidden='true' />
-            <span>Official Meta Tech Provider Setup · WhatsApp Cloud API v21.0</span>
+            <span>WhatsApp Cloud API Direct Integration · Meta Cloud API v22.0</span>
           </div>
 
           <h1 className='krad-hero-title'>
@@ -423,7 +423,7 @@ const HomePage: React.FC = () => {
             </div>
             <div className='krad-trust-item'>
               <Check size={16} />
-              <span>Official Meta Tech Provider Setup</span>
+              <span>Direct Meta WhatsApp Cloud API Integration</span>
             </div>
             <div className='krad-trust-item'>
               <Zap size={16} />
@@ -1382,7 +1382,7 @@ const HomePage: React.FC = () => {
                 </li>
                 <li>
                   <Mail size={14} />
-                  <span>sms@kradtech.com</span>
+                  <span>help@kradchat.com</span>
                 </li>
                 <li>
                   <MapPin size={14} />

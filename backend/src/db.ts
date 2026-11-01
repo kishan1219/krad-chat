@@ -66,4 +66,14 @@ export class Db {
       client.release();
     }
   }
+
+  async tenantTransaction<T>(tenantId: number, fn: (client: PoolClient) => Promise<T>): Promise<T> {
+    if (!tenantId || !Number.isInteger(tenantId) || tenantId <= 0) {
+      throw new Error('Valid positive integer tenant_id required for tenantTransaction');
+    }
+    return this.transaction(async client => {
+      await client.query("SELECT set_config('app.current_tenant_id', $1, true)", [String(tenantId)]);
+      return fn(client);
+    });
+  }
 }

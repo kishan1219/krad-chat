@@ -110,14 +110,14 @@ const RegisterPage: React.FC = () => {
               </div>
               <div className='auth-v3-brand-text'>
                 <span>Messaging</span>
-                <span className='auth-v3-brand-badge'>Tech Provider</span>
+                <span className='auth-v3-brand-badge'>Cloud API</span>
               </div>
             </div>
 
             <div className='auth-v3-hero-content'>
               <div className='auth-v3-partner-pill'>
                 <Shield size={13} color='#10b981' />
-                <span>Meta Tech Provider Onboarding</span>
+                <span>WhatsApp Cloud API Onboarding</span>
               </div>
               <h1 className='auth-v3-title'>
                 Create Your <span className='auth-v3-gradient-text'>WhatsApp Workspace</span>
@@ -506,7 +506,7 @@ const RegisterPage: React.FC = () => {
 
                   <h6>4. Direct Meta Billing Notice</h6>
                   <p>
-                    Under the Meta Tech Provider model, Meta conversation charges are billed directly by
+                    Under the direct WhatsApp Cloud API model, Meta conversation charges are billed directly by
                     Meta to your linked payment method in Meta Business Manager. Platform fees apply
                     strictly to platform software subscriptions and routing services.
                   </p>

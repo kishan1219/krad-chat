@@ -24,7 +24,7 @@ const WhatsappPolicy = () => {
                             Use of unauthorized "Web-based scrapers," "Android-emulators," or "SIM-farming" constitutes a material breach of contract.
                         </li>
                         <li>
-                            <strong>Meta Partner Verification:</strong> The Vendor must maintain status as an authorized Meta Business Solution Provider (BSP) or a verified sub-processor.
+                            <strong>Official Meta API Compliance:</strong> The Platform operates strictly via direct official Meta WhatsApp Cloud API endpoints with zero unauthorized scrapers or unofficial gateways.
                         </li>
                         <li>
                             <strong>Template Governance:</strong> The Vendor shall facilitate the submission of message templates to Meta and ensure they are categorized correctly (Marketing vs. Utility) to prevent account "Quality Rating" drops.
@@ -86,7 +86,7 @@ const WhatsappPolicy = () => {
                     <div className="bullet-point">
                         <span className="icon">➢</span>
                         <div>
-                            <strong>Official Meta Business Solution Provider (BSP) Status:</strong> The bidder must be an authorized Meta BSP or a verified tech partner. (Please provide link to their listing in the Meta Partner Directory).
+                            <strong>Official Meta Cloud API Architecture:</strong> The platform must integrate directly with the official Meta WhatsApp Cloud API (v22.0) with verified webhook cryptographic signature validation.
                         </div>
                     </div>
                     <div className="bullet-point">

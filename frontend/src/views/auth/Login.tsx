@@ -134,21 +134,15 @@ const Login: React.FC = () => {
       </div>
 
       <div className='login-container'>
-        {/* Status indicator pill */}
-        <div className='login-status-badge' role='status'>
-          <span className='login-pulse-dot' aria-hidden='true' />
-          <span>Meta WhatsApp Cloud API v21.0 · Active</span>
-        </div>
-
         {/* Minimalistic Card */}
         <section className='login-card' aria-labelledby='login-heading'>
           {/* Header with Official KRAD SMS Logo */}
           <header className='login-header'>
-            <Link to='/' className='login-logo-link' title='KRAD SMS Home'>
+            <Link to='/' className='login-logo-link' title='KRAD Chat Home'>
               <KradLogo
                 variant={isLight ? 'light' : 'dark'}
                 size='md'
-                alt='KRAD SMS by KRAD Technology'
+                alt='KRAD Chat'
               />
             </Link>
             <h1 id='login-heading' className='login-title' style={{ marginTop: '0.85rem' }}>
@@ -159,28 +153,30 @@ const Login: React.FC = () => {
             </p>
           </header>
 
-          {/* Local Developer / Onboarding Demo Helper */}
-          <div className='login-demo-bar'>
-            <div className='login-demo-info'>
-              <Zap size={14} />
-              <span>Developer Demo Mode</span>
+          {/* Local Developer / Onboarding Demo Helper (Hidden on live production) */}
+          {process.env.NODE_ENV !== 'production' && process.env.REACT_APP_ENABLE_FAKE_DB === 'true' && (
+            <div className='login-demo-bar'>
+              <div className='login-demo-info'>
+                <Zap size={14} />
+                <span>Developer Demo Mode</span>
+              </div>
+              <button
+                type='button'
+                className='login-demo-btn'
+                onClick={handleQuickDemoFill}
+                aria-label='Quick fill demo credentials'
+              >
+                {demoLoaded ? (
+                  <>
+                    <Check size={12} style={{ marginRight: '4px' }} />
+                    Loaded!
+                  </>
+                ) : (
+                  'Quick Fill Demo'
+                )}
+              </button>
             </div>
-            <button
-              type='button'
-              className='login-demo-btn'
-              onClick={handleQuickDemoFill}
-              aria-label='Quick fill demo credentials'
-            >
-              {demoLoaded ? (
-                <>
-                  <Check size={12} style={{ marginRight: '4px' }} />
-                  Loaded!
-                </>
-              ) : (
-                'Quick Fill Demo'
-              )}
-            </button>
-          </div>
+          )}
 
           {/* Error Alert Banner */}
           {errorText && (
@@ -313,7 +309,7 @@ const Login: React.FC = () => {
         <aside className='login-trust-footer'>
           <div className='login-trust-pill'>
             <Shield size={13} aria-hidden='true' />
-            <span>256-bit SSL · Meta WhatsApp Business Tech Provider</span>
+            <span>256-bit SSL · Direct WhatsApp Cloud API Integration</span>
           </div>
           <div className='login-legal-links'>
             <Link to='/terms-conditions'>Terms of Service</Link>
