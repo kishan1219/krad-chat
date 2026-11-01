@@ -38,31 +38,30 @@ export async function createApplication(options: { config?: ReturnType<typeof lo
   if (!options.db && (cfg.DATABASE_URL === 'local-embedded' || cfg.NODE_ENV === 'production' || process.env.AUTO_MIGRATE === 'true')) {
     await migrate(db);
     try {
-      const adminEmail = (process.env.ADMIN_EMAIL || 'admin@platform.test').trim().toLowerCase();
-      const adminPassword = (process.env.ADMIN_PASSWORD || 'Password123!').trim();
-      const existing = await db.query('SELECT id FROM users WHERE email=$1', [adminEmail]);
+      const rawEmail = process.env.ADMIN_EMAIL || 'admin@platform.test';
+      const adminEmail = rawEmail.split(',')[0].trim().toLowerCase();
+      const rawPassword = process.env.ADMIN_PASSWORD || 'Password123!';
+      const adminPassword = rawPassword.split(/[\r\n,]+/)[0].trim();
       const { hash } = await import('bcryptjs');
       const hashedPassword = await hash(adminPassword, 12);
-      if (!existing.rowCount) {
-        await db.transaction(async c => {
-          let tenant = (await c.query("SELECT id FROM tenants WHERE name='Talkrad Global Platform' LIMIT 1")).rows[0];
-          if (!tenant) {
-            tenant = (await c.query("INSERT INTO tenants(name, status) VALUES('Talkrad Global Platform', 'active') RETURNING id")).rows[0];
-          }
-          const user = (await c.query(
-            `INSERT INTO users(tenant_id, email, name, password_hash, role, permissions, active)
-             VALUES($1, $2, 'Global Super Administrator', $3, 'admin', $4, true) RETURNING id`,
-            [tenant.id, adminEmail, hashedPassword, permissions]
-          )).rows[0];
+      await db.transaction(async c => {
+        let tenant = (await c.query("SELECT id FROM tenants WHERE name='Talkrad Global Platform' LIMIT 1")).rows[0];
+        if (!tenant) {
+          tenant = (await c.query("INSERT INTO tenants(name, status) VALUES('Talkrad Global Platform', 'active') RETURNING id")).rows[0];
+        }
+        await c.query(
+          `INSERT INTO users(tenant_id, email, name, password_hash, role, permissions, active)
+           VALUES($1, $2, 'Global Super Administrator', $3, 'admin', $4, true)
+           ON CONFLICT (email) DO UPDATE SET password_hash=EXCLUDED.password_hash, active=true`,
+          [tenant.id, adminEmail, hashedPassword, permissions]
+        );
+        const user = (await c.query('SELECT id FROM users WHERE email=$1', [adminEmail])).rows[0];
+        if (user) {
           await c.query('INSERT INTO wallets(tenant_id, user_id, balance) VALUES($1, $2, 10000000) ON CONFLICT (user_id) DO NOTHING', [tenant.id, user.id]);
           await c.query("INSERT INTO ledger(tenant_id, user_id, type, amount, reference, created_by) VALUES($1, $2, 'credit', 10000000, 'bootstrap:opening_balance', $2) ON CONFLICT (user_id, type, reference) DO NOTHING", [tenant.id, user.id]);
-        });
-        logger.info(`Auto-bootstrapped administrator user: ${adminEmail}`, {}, 'App');
-      } else if (process.env.ADMIN_PASSWORD) {
-        // If an explicit ADMIN_PASSWORD is provided in environment variables, keep user password in sync
-        await db.query('UPDATE users SET password_hash=$1 WHERE email=$2', [hashedPassword, adminEmail]);
-        logger.info(`Synchronized administrator credentials for: ${adminEmail}`, {}, 'App');
-      }
+        }
+      });
+      logger.info(`Auto-bootstrapped administrator user: ${adminEmail}`, {}, 'App');
     } catch (err: any) {
       logger.warn(`Auto-bootstrap check skipped: ${err.message}`, {}, 'App');
     }
