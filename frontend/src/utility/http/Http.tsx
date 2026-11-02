@@ -214,10 +214,14 @@ export default class HttpService {
             ],
             transformResponse: [
                 (data) => {
-                    data = JSON.parse(data)
-                    // Do whatever you want to transform the data
-                    // log("transformResponse", data)
-                    this.isUnauthenticated(data)
+                    if (typeof data === 'string') {
+                        try {
+                            const parsed = JSON.parse(data)
+                            return parsed
+                        } catch {
+                            return data
+                        }
+                    }
                     return data
                 }
             ],
@@ -226,12 +230,20 @@ export default class HttpService {
         if (async) {
             return axios(settings)
         } else {
-            // log("settings", settings)
             const http = axios(settings)
             http.then((res) => {
                 this.returnSuccessResponse(res, showSuccessToast, showErrorToast, success, error, loading)
             }).catch((e) => {
-                if (e?.response?.status === 401 || e?.response?.data?.code === 401 || e?.request?.responseURL?.includes('unauthorized')) {
+                const status = e?.response?.status || e?.response?.data?.code
+                const pathUrl = settings.url || path
+                const errMsg = e?.response?.data?.message || e?.message || 'Network request failed'
+                console.warn(`[KRAD API Error ${status || 'ERR'}] ${settings.method?.toUpperCase()} ${pathUrl}: ${errMsg}`, {
+                    status,
+                    error: e,
+                    response: e?.response?.data,
+                    correlationId: e?.response?.headers?.['x-correlation-id']
+                })
+                if (status === 401 && !pathUrl.includes('login') && !pathUrl.includes('auth/refresh')) {
                     this.isUnauthenticated({ code: 401 })
                 }
                 this.returnErrorResponse(e, showErrorToast, error, loading)

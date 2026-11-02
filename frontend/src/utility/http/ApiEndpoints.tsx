@@ -7,6 +7,8 @@ export default {
     resetPassword: "update-password",
     verify_otp: "verify-otp",
     resend_otp: "resent-otp",
+    dashboard_list: "dashboard",
+    dashboard: "dashboard",
 
     ////////////////////////// Primary Routes////////////////////////////
     primary_route: "administration/primary-routes",
@@ -16,7 +18,6 @@ export default {
     read_primary_route: "administration/primary-route/",
     check_primary_route: "administration/check-primary-route-connection/",
     primary_route_action: "administration/primary-route-action",
-    getVoiceSmsc: 'get-voice-smsc-id',
     getVoiceSmsc: 'get-voice-smsc-id',
     checkBalanceOfVoice: 'administration/check-voice-balance/',
 

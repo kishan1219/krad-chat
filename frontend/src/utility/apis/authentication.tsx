@@ -92,13 +92,14 @@ export const login = ({
                 // if (m?.ask_for_otp === true) {
                 //     navigate('/two-factor-authentication')
                 // }
-                // if (redirect && loginUser?.userType === 3) navigate('/chat')
-                if (m?.userType === 3) {
+                const role = m?.role || 'admin'
+                if (role === 'admin' || m?.userType === 0 || m?.userType === 1) {
+                    navigate('/dashboard')
+                } else if (m?.userType === 3) {
                     navigate('/chat')
                 } else {
-                    navigate('/chat')
+                    navigate('/dashboard')
                 }
-                // if (redirect) navigate('/chat')
 
                 success(data)
             }

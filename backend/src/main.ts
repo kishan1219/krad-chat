@@ -29,6 +29,7 @@ import { Automation } from './automation';
 import { Workflows } from './workflows';
 import { Features } from './features';
 import { correlationMiddleware, logger } from './logger';
+import { handleDocsJson, handleDocsUi } from './swagger';
 
 @Module({})
 class ApplicationModule {}
@@ -165,6 +166,8 @@ export async function createApplication(options: { config?: ReturnType<typeof lo
     }
     next();
   });
+  app.use('/api/docs.json', handleDocsJson);
+  app.use('/api/docs', handleDocsUi);
   app.use('/api', (req: Request, res: Response, next: NextFunction) => { void api.handle(req, res).catch(next); });
   app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
     const status = err instanceof ApiError ? err.status : err instanceof ZodError ? 422 : err?.code === '23505' ? 409 : err?.code === '22P02' ? 422 : err?.code === 'LIMIT_FILE_SIZE' ? 413 : err?.type === 'entity.parse.failed' ? 400 : 500;
@@ -198,15 +201,22 @@ export async function createApplication(options: { config?: ReturnType<typeof lo
   await app.init();
   realtime.attach(app.getHttpServer(), chat);
   let timer: NodeJS.Timeout | undefined;
-  if (cfg.WORKER_ENABLED) timer = setInterval(() => { void webhooks.inbox.tick().catch(() => console.error('Webhook worker failed.')); void campaigns.tick().catch(e => console.error('Campaign worker failed:', e.message)); void reports.tick().catch(e => console.error('Export worker failed:', e.message));void workflows.tick().catch(()=>console.error('Workflow worker failed.'));void automation.tick().catch(e=>console.error('Automation worker failed:',e.message));void commerce.expire().catch(e=>console.error('Order expiry failed:',e.message)); }, 2000);
+  if (cfg.WORKER_ENABLED) timer = setInterval(() => {
+    void webhooks.inbox.tick().catch(e => logger.error('Webhook worker failed:', e, 'Worker'));
+    void campaigns.tick().catch(e => logger.error('Campaign worker failed:', e, 'Worker'));
+    void reports.tick().catch(e => logger.error('Export worker failed:', e, 'Worker'));
+    void workflows.tick().catch(e => logger.error('Workflow worker failed:', e, 'Worker'));
+    void automation.tick().catch(e => logger.error('Automation worker failed:', e, 'Worker'));
+    void commerce.expire().catch(e => logger.error('Order expiry failed:', e, 'Worker'));
+  }, 2000);
   const shutdown = async () => { if (timer) clearInterval(timer); realtime.close(); await app.close(); await db.pool.end(); };
   return { app, db, shutdown, cfg };
 }
 process.on('unhandledRejection', reason => {
-  console.error('Unhandled Promise Rejection:', reason);
+  logger.error('Unhandled Promise Rejection:', reason instanceof Error ? reason : { reason }, 'Process');
 });
 process.on('uncaughtException', err => {
-  console.error('Uncaught Exception:', err);
+  logger.error('Uncaught Exception:', err, 'Process');
   process.exit(1);
 });
 if (require.main === module) createApplication().then(async ({ app, shutdown, cfg }) => {

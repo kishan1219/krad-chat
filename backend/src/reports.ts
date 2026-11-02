@@ -12,8 +12,87 @@ export class Reports {
     const counts = (await this.db.query(`${scopeCte} SELECT channel,status,count(*)::int AS total FROM messages WHERE user_id IN (SELECT id FROM scoped_users) GROUP BY channel,status`, scopeArgs(actor))).rows;
     const campaigns = Number((await this.db.query(`${scopeCte} SELECT count(*) FROM campaigns WHERE user_id IN (SELECT id FROM scoped_users)`, scopeArgs(actor))).rows[0].count);
     const contacts = Number((await this.db.query("SELECT count(*) FROM resources WHERE tenant_id=$1 AND kind='contact'", [actor.tenant_id])).rows[0].count);
-    const wallet = (await this.db.query('SELECT balance,reserved FROM wallets WHERE user_id=$1', [actor.id])).rows[0];
-    return { campaigns, contacts, messages: counts, wallet, currency: 'INR', unit: 'paise' };
+    const totalUsers = Number((await this.db.query('SELECT count(*) FROM users WHERE tenant_id=$1 AND active=true', [actor.tenant_id])).rows[0]?.count || 1);
+    const wallet = (await this.db.query('SELECT balance,reserved FROM wallets WHERE user_id=$1', [actor.id])).rows[0] || { balance: 0, reserved: 0 };
+
+    let totalWa = 0, deliveredWa = 0, failedWa = 0, readWa = 0;
+    let totalSms = 0, deliveredSms = 0, failedSms = 0;
+    for (const row of counts) {
+      const cnt = Number(row.total || 0);
+      if (row.channel === 'whatsapp') {
+        totalWa += cnt;
+        if (row.status === 'delivered') deliveredWa += cnt;
+        if (row.status === 'read') readWa += cnt;
+        if (row.status === 'failed') failedWa += cnt;
+      } else if (row.channel === 'sms') {
+        totalSms += cnt;
+        if (row.status === 'delivered') deliveredSms += cnt;
+        if (row.status === 'failed') failedSms += cnt;
+      }
+    }
+
+    const creditRupees = (Number(wallet.balance || 0) / 100).toFixed(2);
+
+    return {
+      campaigns,
+      contacts,
+      messages: counts,
+      wallet,
+      currency: 'INR',
+      unit: 'paise',
+      // Normalized structures expected by ModernDashboard.tsx:
+      credit_info: {
+        total_users: totalUsers,
+        transaction: creditRupees,
+        promotional: '0',
+        two_waysms: '0',
+        voice_sms: '0',
+        whatsapp: creditRupees
+      },
+      till_yesterday_sms: {
+        total_credit_used: '0',
+        total_sent: String(totalSms),
+        total_delivered: String(deliveredSms),
+        total_failed: String(failedSms),
+        total_block_number: '0',
+        total_invalid_number: '0',
+        total_process: '0'
+      },
+      till_yesterday_voice: {
+        total_credit_used: null,
+        total_sent: null,
+        total_delivered: null,
+        total_failed: null,
+        total_block_number: null,
+        total_invalid_number: null,
+        total_process: null
+      },
+      till_yesterday_whatsapp: {
+        total_credit_used: '0',
+        total_sent: String(totalWa),
+        total_delivered: String(deliveredWa),
+        total_read: String(readWa),
+        total_failed: String(failedWa),
+        total_other: '0',
+        total_process: '0'
+      },
+      today_sms: {
+        total_submission: String(totalSms),
+        total_credit_used: '0',
+        status_wise: [
+          { stat: 'DELIVRD', total_counts: deliveredSms },
+          { stat: 'FAILED', total_counts: failedSms }
+        ]
+      },
+      today_voice: {
+        total_submission: null,
+        total_credit_used: null
+      },
+      today_whatsapp: {
+        total_submission: String(totalWa),
+        total_credit_used: '0'
+      }
+    };
   }
   async messages(actor: Actor, query: any, body: any = {}) {
     const p = pagination(query);
