@@ -96,7 +96,7 @@ export const getUserData = () => JSON.parse(localStorage.getItem('kradChatData')
  */
 export const getHomeRouteForLoggedInUser = user => {
     if (isValid(user)) {
-        return '/chat'
+        return '/dashboard'
     } else {
         return '/authentication'
     }

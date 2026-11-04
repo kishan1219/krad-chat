@@ -92,14 +92,8 @@ export const login = ({
                 // if (m?.ask_for_otp === true) {
                 //     navigate('/two-factor-authentication')
                 // }
-                const role = m?.role || 'admin'
-                if (role === 'admin' || m?.userType === 0 || m?.userType === 1) {
-                    navigate('/dashboard')
-                } else if (m?.userType === 3) {
-                    navigate('/chat')
-                } else {
-                    navigate('/dashboard')
-                }
+                // Direct all authenticated users to dashboard
+                navigate('/dashboard')
 
                 success(data)
             }
@@ -288,9 +282,9 @@ export const verifyOtp = ({
             if (data?.data?.permissions) ability.update(m?.ability)
             // if (redirect && loginUser?.userType === 3) navigate('/chat')
             if (m?.userType === 3) {
-                navigate('/chat')
+                navigate('/dashboard')
             } else {
-                navigate('/chat')
+                navigate('/dashboard')
             }
             // if (redirect) navigate('/chat')
 

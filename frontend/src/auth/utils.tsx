@@ -20,8 +20,6 @@ export const getUserData = () => JSON.parse(localStorage.getItem('kradChatData')
  * NOTE: If you have different pages to navigate based on user ability then this function can be useful. However, you need to update it.
  * @param {String} userRole Role of user
  */
-export const getHomeRouteForLoggedInUser = (userRole: string) => {
-    if (userRole === 'admin') return '/'
-    if (userRole === 'client') return { name: 'access-control' }
-    return "/dashboard"
+export const getHomeRouteForLoggedInUser = (_userRole?: string) => {
+    return '/dashboard'
 }
