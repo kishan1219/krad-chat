@@ -40,9 +40,10 @@ const TwoFactorAuthentication = () => {
                 loading: setLoading,
                 dispatch,
                 ability,
-                redirect: true,
+                navigate,
                 success: (e) => {
                     localStorage.removeItem("disable")
+                    navigate('/dashboard')
                 },
                 errors: (e) => {
                     const d = e?.data?.data
@@ -54,10 +55,7 @@ const TwoFactorAuthentication = () => {
                             }
                         }
                     }
-
                 }
-
-                // navigate
             })
             // log(data)
 
