@@ -24,10 +24,21 @@ const userData = JSON.parse(localStorage.getItem('kradChatData') || 'null')
 
 
 export default [
-    { id: 'team-invitations', title: 'Team Invitations', icon: <UserPlus size={12} />, navLink: '/team-invitations', ...Permissions.userList },
-    // {
-    //     header: "dashboard-menu"
-    // },
+    {
+        header: "Live Operations"
+    },
+    {
+        id: 'chat',
+        title: 'KRAD Live Chat',
+        icon: <WhatsApp size={20} />,
+        navLink: '/chat',
+        badge: 'light-success',
+        badgeText: 'Live',
+        ...Permissions.userDdlList
+    },
+    {
+        header: "CRM & Management"
+    },
     {
         id: 'home',
         title: 'Dashboard',
@@ -42,6 +53,7 @@ export default [
         navLink: '/users-list',
         ...Permissions.userList
     },
+    { id: 'team-invitations', title: 'Team Invitations', icon: <UserPlus size={12} />, navLink: '/team-invitations', ...Permissions.userList },
 
     //voice message
 
@@ -574,15 +586,5 @@ export default [
         navLink: '/login-user-log',
         ...Permissions.viewLoginLog
 
-    },
-    {
-        id: 'chat',
-        title: 'Whatsapp Chats',
-        icon: <Message size={20} />,
-        navLink: '/chat',
-        ...Permissions.userDdlList
-
     }
-
-
 ]

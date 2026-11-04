@@ -43,6 +43,7 @@ import ImagePhoto from '../../assets/images/logo/Imagephoto.png'
 import DocumentPng from '../../assets/images/logo/document.png'
 import PictureAsPdf from '@mui/icons-material/PictureAsPdf'
 import ImageIcon from '@mui/icons-material/Image'
+import WhatsAppIcon from '@mui/icons-material/WhatsApp'
 import { AudioFile, Dangerous, Description, FolderZip, Slideshow, TableChart, VideoFile } from '@mui/icons-material'
 import OrderDetailsModal from './OrderDetailsModal'
 import InteractiveMessageModal from './InteractiveMessageModal'
@@ -1467,8 +1468,8 @@ const ChatLog = props => {
 
                     <div className='chat-body'>
                         <div className='chat-content'>
-                            <p>
-                                <small className='fw-bold' style={{ color: 'darkgreen' }}>{item?.profile_name}</small>
+                            <p className='mb-1'>
+                                <span className='message-sender-name'>{item?.profile_name || 'User'}</span>
                             </p>
                             {item.media_id !== null && item?.media_url === null ? (
                                 renderMediaMessage(item, downloadTheFiles)
@@ -1541,9 +1542,9 @@ const ChatLog = props => {
                                     dangerouslySetInnerHTML={{ __html: formatWhatsAppMessage(item?.message) }}
                                 />
                             )}
-                            <p>
+                            <div className='message-timestamp'>
                                 <small>{item?.received_date}</small>
-                            </p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1688,26 +1689,48 @@ const ChatLog = props => {
     return (
         <div className='chat-app-window'>
             <div className={classnames('start-chat-area', { 'd-none': userClicked?.phone_number_id })}>
-                <div className='start-chat-icon mb-1'>
-                    <MessageSquare />
+                <div className='start-chat-icon'>
+                    <WhatsAppIcon sx={{ fontSize: 38 }} />
                 </div>
-                <h4 className='sidebar-toggle start-chat-text' onClick={handleStartConversation}>
-                    Start Conversation
-                </h4>
+                <h3 className='start-chat-title'>KRAD Live Chat</h3>
+                <p className='start-chat-subtitle'>
+                    Select a conversation from the left to interact with customers in real-time, trigger approved WhatsApp templates, or manage bot takeover.
+                </p>
+                <div className='start-chat-badge'>
+                    <span className='status-dot'></span>
+                    <span>End-to-End WhatsApp Business Cloud Connected</span>
+                </div>
+                <div className='mt-2 d-lg-none'>
+                    <Button color='primary' size='sm' onClick={handleStartConversation}>
+                        Open Conversations List
+                    </Button>
+                </div>
             </div>
 
             <div className={classnames('active-chat', { 'd-none': selectedUser === null })}>
                 <div className='chat-navbar'>
                     <header className='chat-header'>
-
-                        <div className='d-flex align-items-center'>
+                        <div className='chat-contact-info'>
                             <div className='sidebar-toggle d-block d-lg-none me-1' onClick={handleSidebar}>
                                 <Menu size={21} />
                             </div>
-
-                            <h6 className='mb-0'>{userClicked?.profile_name}, <span className='fw-bolder'>{userClicked?.phone_number_id}</span> </h6>
+                            <Avatar
+                                content={userClicked?.profile_name || userClicked?.phone_number_id || 'User'}
+                                initials
+                                color='light-success'
+                                style={{ width: 40, height: 40 }}
+                            />
+                            <div className='chat-contact-details ms-1'>
+                                <h6 className='mb-0'>
+                                    {userClicked?.profile_name || 'WhatsApp Customer'}
+                                </h6>
+                                <div className='chat-contact-subtext'>
+                                    <span className='status-dot'></span>
+                                    <span>+{userClicked?.phone_number_id} · WhatsApp Business</span>
+                                </div>
+                            </div>
                         </div>
-                        <div className='d-flex align-items-center'>
+                        <div className='chat-actions-group'>
                             <ConversationTools conversationId={userClicked?.id} />
                         </div>
                     </header>

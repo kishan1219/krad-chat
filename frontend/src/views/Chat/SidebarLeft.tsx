@@ -6,14 +6,14 @@ import { formatDate, formatDateToMonthShort, isObjEmpty } from '../../utility/Ut
 // ** Third Party Components
 import classnames from 'classnames'
 import { useEffect, useState } from 'react'
-import { Search, X } from 'react-feather'
+import { Check, ChevronDown, ChevronUp, Filter, Search, X } from 'react-feather'
 import PerfectScrollbar from 'react-perfect-scrollbar'
 import { useDispatch } from 'react-redux'
 import { ReadyState } from 'react-use-websocket'
 // ** Reactstrap Imports
 import { Badge, CardText, Input, InputGroup, InputGroupText } from 'reactstrap'
 import { CMD } from '../../utility/Const'
-import { isValid, log } from '../../utility/helpers/common'
+import { isValid, isValidArray, log } from '../../utility/helpers/common'
 import Hide from '../../utility/Hide'
 import useWebSockets from '../../utility/hooks/useSocket'
 import useUser from '../../utility/hooks/useUser'
@@ -39,6 +39,7 @@ const SidebarLeft = props => {
     // ** State
     const [query, setQuery] = useState('')
     const [inboxState, setInboxState] = useState(''), [assignment, setAssignment] = useState('all'), [unread, setUnread] = useState(false), [label, setLabel] = useState('')
+    const [showFilters, setShowFilters] = useState(false)
     const [active, setActive] = useState(null)
     const [filteredContacts, setFilteredContacts] = useState([])
     const [loadUser, setLoadUser] = useState(null)
@@ -158,61 +159,52 @@ const SidebarLeft = props => {
     // }
 
     const renderAllContacts = () => {
-        const contactsToRender = loadUser?.data
-        return contactsToRender?.map((item, index) => {
-            // const isActive = active && active.id === item.id
-            const isActive = active === item.id
+        const contactsToRender = query.length ? filteredContacts : loadUser?.data
+        if (isValidArray(contactsToRender) && contactsToRender.length === 0) {
             return (
-                // <li
-                //     key={index}
-                //     onClick={() => handleAvatarClick(item, item)}
-
-                //     style={active === item.id ? { backgroundColor: 'orange', textColor: 'white' } : {}}
-                // >
-                //     <Avatar
-                //         // imgHeight='42'
-                //         // imgWidth='42'
-                //         content={item.profile_name} initials
-                //         color='light-primary'
-                //         // className='text-center'
-                //         style={{ width: 35, height: 35 }}
-                //     />
-                //     <div className='chat-info flex-grow-1'>
-                //         <h5 className='mb-0'>{item.profile_name}</h5>
-                //         <CardText className='text-truncate'>
-                //             {item?.message}
-                //         </CardText>
-                //     </div>
-                // </li>
+                <li className='no-results p-2 text-center text-muted'>
+                    <small>No conversations found</small>
+                </li>
+            )
+        }
+        return contactsToRender?.map((item: any, index: number) => {
+            const isActive = active === item.id
+            const profileName = item.profile_name || item.phone_number_id || 'WhatsApp User'
+            return (
                 <li
-                    key={index}
+                    key={item.id || index}
                     onClick={() => handleAvatarClick(item, item)}
-                    style={active === item.id ? { backgroundColor: '#ff9b36' } : {}}
+                    className={classnames({ 'active-contact': isActive, 'active-chat-item': isActive })}
                 >
                     <Avatar
-                        content={item.profile_name ? item.profile_name : item.phone_number_id}
+                        content={profileName}
                         initials
-                        color={active === item.id ? 'text-white' : 'light-primary'}
-
-
+                        color={isActive ? 'light-success' : 'light-primary'}
                         style={{
-                            width: 35,
-                            height: 35
-
-                            // color: active === item.id ? 'white' : 'light-primary',
-                            // backgroundColor: active === item.id ? 'orange' : undefined
-
+                            width: 38,
+                            height: 38,
+                            minWidth: 38
                         }}
                     />
-                    <div className='chat-info flex-grow-1'>
-                        <h5 className='mb-0' style={{ color: active === item.id ? 'white' : undefined }}>
-                            {item.profile_name ? item.profile_name : item.phone_number_id}
-                            {item.unread_count > 0 && <Badge color='primary' className='ms-1'>{item.unread_count}</Badge>}
+                    <div className='chat-info flex-grow-1 ms-1'>
+                        <h5 className='mb-0 d-flex justify-content-between align-items-center'>
+                            <span className='text-truncate' style={{ maxWidth: '170px' }}>{profileName}</span>
+                            {item.unread_count > 0 && (
+                                <Badge color='success' pill className='unread-pill'>
+                                    {item.unread_count}
+                                </Badge>
+                            )}
                         </h5>
-                        <CardText className='text-truncate' style={{ color: active === item.id ? 'white' : undefined }}>
-                            {item?.message}
-                            {item.business_phone_number_id && <small>Business number ID: {item.business_phone_number_id}</small>}
-                        </CardText>
+                        <div className='chat-message-preview d-flex justify-content-between align-items-center'>
+                            <span className='preview-text text-truncate text-muted'>
+                                {item?.message || 'Media / Template message'}
+                            </span>
+                            {item.business_phone_number_id && (
+                                <span className='badge bg-light text-secondary ms-1' style={{ fontSize: '0.65rem' }}>
+                                    WA
+                                </span>
+                            )}
+                        </div>
                     </div>
                 </li>
             )
@@ -282,15 +274,88 @@ const SidebarLeft = props => {
                                         placeholder='Search or start a new chat'
                                         onChange={handleFilter}
                                     />
+                                    {query ? (
+                                        <InputGroupText className='round cursor-pointer' onClick={() => { setQuery(''); setFilteredContacts([]) }}>
+                                            <X className='text-muted' size={14} />
+                                        </InputGroupText>
+                                    ) : null}
                                 </InputGroup>
                             </div>
                         </div>
                         <PerfectScrollbar className='chat-user-list-wrapper list-group' options={{ wheelPropagation: false }}>
-                            <div className='p-1'>
-                                <Input aria-label='Conversation status' type='select' value={inboxState} onChange={e => setInboxState(e.target.value)}><option value=''>All statuses</option><option value='open'>Open</option><option value='closed'>Closed</option></Input>
-                                <Input aria-label='Conversation assignment' type='select' className='mt-1' value={assignment} onChange={e => setAssignment(e.target.value)}><option value='all'>All assignments</option><option value='mine'>Assigned to me</option><option value='unassigned'>Unassigned</option></Input>
-                                <Input aria-label='Filter by label' placeholder='Filter by label' className='mt-1' value={label} onChange={e => setLabel(e.target.value)} />
-                                <label className='mt-1'><input type='checkbox' checked={unread} onChange={e => setUnread(e.target.checked)} /> Unread only</label>
+                            <div className='chat-filter-toolbar'>
+                                <div className='filter-pills-row'>
+                                    <button
+                                        type='button'
+                                        className={classnames('filter-pill-btn', {
+                                            active: assignment === 'all' && !unread && !inboxState && !label
+                                        })}
+                                        onClick={() => {
+                                            setAssignment('all')
+                                            setUnread(false)
+                                            setInboxState('')
+                                            setLabel('')
+                                        }}
+                                    >
+                                        All
+                                    </button>
+                                    <button
+                                        type='button'
+                                        className={classnames('filter-pill-btn', { active: unread })}
+                                        onClick={() => setUnread(!unread)}
+                                    >
+                                        Unread
+                                    </button>
+                                    <button
+                                        type='button'
+                                        className={classnames('filter-pill-btn', { active: assignment === 'mine' })}
+                                        onClick={() => setAssignment(assignment === 'mine' ? 'all' : 'mine')}
+                                    >
+                                        Assigned
+                                    </button>
+                                    <button
+                                        type='button'
+                                        className={classnames('filter-pill-btn', { active: inboxState === 'open' })}
+                                        onClick={() => setInboxState(inboxState === 'open' ? '' : 'open')}
+                                    >
+                                        Open
+                                    </button>
+                                    <button
+                                        type='button'
+                                        className={classnames('filter-pill-btn', { active: inboxState === 'closed' })}
+                                        onClick={() => setInboxState(inboxState === 'closed' ? '' : 'closed')}
+                                    >
+                                        Closed
+                                    </button>
+                                </div>
+                                <div
+                                    className='filter-advanced-toggle'
+                                    onClick={() => setShowFilters(!showFilters)}
+                                >
+                                    <Filter size={12} />
+                                    <span>{showFilters ? 'Hide filters' : 'More filters'}</span>
+                                    {showFilters ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                                </div>
+                                {showFilters && (
+                                    <div className='filter-advanced-drawer'>
+                                        <Input
+                                            aria-label='Filter by label'
+                                            placeholder='Filter by label...'
+                                            value={label}
+                                            onChange={e => setLabel(e.target.value)}
+                                        />
+                                        <Input
+                                            aria-label='Conversation assignment'
+                                            type='select'
+                                            value={assignment}
+                                            onChange={e => setAssignment(e.target.value)}
+                                        >
+                                            <option value='all'>All assignments</option>
+                                            <option value='mine'>Assigned to me</option>
+                                            <option value='unassigned'>Unassigned</option>
+                                        </Input>
+                                    </div>
+                                )}
                             </div>
                             <h4 className='chat-list-title'>Chats</h4>
                             <ul className='chat-users-list contact-list media-list' key={`contact-${query}`}>

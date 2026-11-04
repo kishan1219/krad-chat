@@ -1477,19 +1477,7 @@ code.hljs {
   width: 200px !important;
 }
 
-.chat-users-list .contact-list .media-list li.active-contact {
-  background-color: orange !important;
-  color: white !important;
-
-  .chat-info {
-    h5 {
-      color: white !important;
-    }
-    .text-truncate {
-      color: white !important;
-    }
-  }
-}
+@import "./chat-revamp";
 
 .whatsapp-summary-table {
   .rdt_TableCol:first-child {
