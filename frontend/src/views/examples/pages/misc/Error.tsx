@@ -24,7 +24,7 @@ const Error = () => {
         <img
           style={{ height: 80, width: 225 }}
           className='img-fluid'
-          src={require('../../../../assets/images/logo/platform.svg').default}
+          src={require('../../../../assets/images/logo/krad-chat-dark.svg').default}
         />{' '}
         {/* <h2 className='text-dark ms-1 mt-25'>{themeConfig.app.appName}</h2> */}
       </h2>

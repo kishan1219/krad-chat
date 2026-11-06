@@ -24,7 +24,8 @@ import {
   Moon,
   Sliders
 } from 'react-feather'
-import kradBanner from '../../assets/images/logo/krad-sms-banner.png'
+import kradChatDarkLogo from '../../assets/images/logo/krad-chat-dark.svg'
+import kradChatLightLogo from '../../assets/images/logo/krad-chat-light.svg'
 import kradTechCleanDarkSvg from '../../assets/images/logo/krad-technology-clean-dark.svg'
 import kradTechCleanLightSvg from '../../assets/images/logo/krad-technology-clean-light.svg'
 import kradTechDarkSvg from '../../assets/images/logo/krad-technology-dark.svg'
@@ -372,12 +373,6 @@ const HomePage: React.FC = () => {
           ==================================================================== */}
       <section className='krad-hero'>
         <div className='krad-container'>
-          {/* Status Badge */}
-          <div className='krad-hero-badge'>
-            <span className='krad-pulse-dot' aria-hidden='true' />
-            <span>WhatsApp Cloud API Direct Integration · Meta Cloud API v22.0</span>
-          </div>
-
           <h1 className='krad-hero-title'>
             Grow Your Business on WhatsApp with <span className='krad-gradient-text'>KRAD Chat</span>.
           </h1>
@@ -407,12 +402,137 @@ const HomePage: React.FC = () => {
             </Link>
           </div>
 
-          {/* Official Brand Hero Visual */}
-          <div className='krad-hero-banner-card'>
-            <img
-              src={kradBanner}
-              alt='KRAD Chat - WhatsApp Business API | AI Chatbots | Automation | AI Voice by KRAD Technology'
-            />
+          {/* Official KRAD CHAT Workspace Showcase Card */}
+          <div className='krad-hero-showcase-window'>
+            <div className='krad-showcase-mac-bar'>
+              <div className='krad-showcase-dots' aria-hidden='true'>
+                <span className='dot red' />
+                <span className='dot yellow' />
+                <span className='dot green' />
+              </div>
+              <div className='krad-showcase-address-pill'>
+                <Lock size={12} color='#10b981' aria-hidden='true' />
+                <span>kradchat.com/console/live-inbox</span>
+              </div>
+              <div className='krad-showcase-actions'>
+                <span className='krad-showcase-status-chip'>
+                  <span className='pulse-live' aria-hidden='true' /> Workspace Active
+                </span>
+              </div>
+            </div>
+
+            <div className='krad-showcase-body'>
+              {/* Showcase Brand Hero Banner */}
+              <div className='krad-showcase-brand-hero'>
+                <img
+                  src={isDarkTheme ? kradChatDarkLogo : kradChatLightLogo}
+                  alt='KRAD CHAT'
+                  className='krad-showcase-main-logo'
+                />
+                <p className='krad-showcase-tagline'>
+                  Unified WhatsApp Business Platform · AI Chatbots · Multi-Agent Shared Inbox
+                </p>
+              </div>
+
+              {/* Live Interactive Preview Panels */}
+              <div className='krad-showcase-grid'>
+                {/* Left Mini Chat List */}
+                <div className='krad-showcase-col-sidebar'>
+                  <div className='krad-showcase-sidebar-header'>
+                    <span>Team Inbox</span>
+                    <span className='krad-badge-count'>4 New</span>
+                  </div>
+                  <div className='krad-showcase-conv active'>
+                    <div className='krad-conv-avatar whatsapp'>
+                      <span>💬</span>
+                    </div>
+                    <div className='krad-conv-info'>
+                      <div className='krad-conv-top'>
+                        <span className='krad-conv-name'>Aarav Sharma</span>
+                        <span className='krad-conv-time'>12:04 PM</span>
+                      </div>
+                      <span className='krad-conv-preview'>Can we automate marketing campaigns?</span>
+                    </div>
+                  </div>
+                  <div className='krad-showcase-conv'>
+                    <div className='krad-conv-avatar enterprise'>
+                      <span>🏢</span>
+                    </div>
+                    <div className='krad-conv-info'>
+                      <div className='krad-conv-top'>
+                        <span className='krad-conv-name'>TechCorp India</span>
+                        <span className='krad-conv-time'>11:50 AM</span>
+                      </div>
+                      <span className='krad-conv-preview'>Verified WhatsApp Green Tick activated ✅</span>
+                    </div>
+                  </div>
+                  <div className='krad-showcase-conv'>
+                    <div className='krad-conv-avatar retail'>
+                      <span>🛍️</span>
+                    </div>
+                    <div className='krad-conv-info'>
+                      <div className='krad-conv-top'>
+                        <span className='krad-conv-name'>Order #94821</span>
+                        <span className='krad-conv-time'>11:15 AM</span>
+                      </div>
+                      <span className='krad-conv-preview'>Payment confirmed & tracking sent 📦</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Active Chat Preview */}
+                <div className='krad-showcase-col-chat'>
+                  <div className='krad-showcase-chat-header'>
+                    <div className='krad-chat-client-meta'>
+                      <div className='krad-client-avatar'>AS</div>
+                      <div>
+                        <div className='krad-client-name'>Aarav Sharma <span className='verified-tick'>✓</span></div>
+                        <div className='krad-client-phone'>+91 98765 43210 · Enterprise Tier</div>
+                      </div>
+                    </div>
+                    <div className='krad-chat-agent-badge'>
+                      🤖 AI Co-Pilot Active
+                    </div>
+                  </div>
+
+                  <div className='krad-showcase-messages'>
+                    <div className='krad-msg user'>
+                      <div className='krad-msg-bubble'>
+                        Hi! Can I automate bulk broadcast announcements and sync our team inbox?
+                      </div>
+                      <span className='krad-msg-time'>12:04 PM</span>
+                    </div>
+
+                    <div className='krad-msg agent'>
+                      <div className='krad-msg-bubble'>
+                        Yes! With <strong>KRAD CHAT</strong>, you get official Meta WhatsApp Business API setup, sub-50ms cloud sync, multi-agent shared inboxes, and smart AI chatbots with zero template restrictions.
+                      </div>
+                      <span className='krad-msg-time'>12:04 PM · Delivered <Check size={12} color='#10b981' /></span>
+                    </div>
+                  </div>
+
+                  {/* Showcase Live Stats Bar */}
+                  <div className='krad-showcase-stats-row'>
+                    <div className='krad-stat-pill'>
+                      <span className='label'>Sync Latency</span>
+                      <span className='val cyan'>18ms</span>
+                    </div>
+                    <div className='krad-stat-pill'>
+                      <span className='label'>Delivery SLA</span>
+                      <span className='val emerald'>99.98%</span>
+                    </div>
+                    <div className='krad-stat-pill'>
+                      <span className='label'>Platform Fee</span>
+                      <span className='val cyan'>₹0.05</span>
+                    </div>
+                    <div className='krad-stat-pill'>
+                      <span className='label'>Encryption</span>
+                      <span className='val emerald'>256-Bit</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Trust Signals */}
@@ -1436,14 +1556,13 @@ const HomePage: React.FC = () => {
           ) : (
             <svg
               className='krad-whatsapp-fab-icon'
-              width='30'
-              height='30'
               viewBox='0 0 24 24'
+              width='32'
+              height='32'
               fill='currentColor'
               aria-hidden='true'
             >
-              <path d='M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.969.587 1.956.884 3.057.884l.004-.001c3.181 0 5.767-2.586 5.768-5.766 0-3.18-2.586-5.769-5.768-5.769zm3.364 8.167c-.14.394-.789.754-1.096.799-.281.04-.647.06-2.124-.551-1.89-.783-3.109-2.709-3.204-2.834-.093-.125-.761-1.012-.761-1.93 0-.918.481-1.37.652-1.558.172-.187.376-.234.502-.234.125 0 .251.002.361.007.116.006.271-.044.423.323.156.376.533 1.3.579 1.395.047.094.078.204.016.329-.062.125-.094.204-.188.313-.094.109-.197.243-.282.327-.094.094-.192.196-.083.383.109.188.486.802 1.042 1.297.717.639 1.321.837 1.509.931.188.094.298.078.408-.047.109-.125.47-.547.595-.734.125-.188.251-.157.423-.094.172.063 1.097.517 1.285.611.188.094.313.141.36.219.047.078.047.453-.093.847z' />
-              <path d='M12 2C6.477 2 2 6.477 2 12c0 1.891.526 3.66 1.438 5.174L2 22l4.981-1.306A9.957 9.957 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18.167c-1.616 0-3.136-.452-4.437-1.237l-.318-.19-3.284.861.877-3.202-.208-.332A8.136 8.136 0 013.833 12C3.833 7.498 7.498 3.833 12 3.833S20.167 7.498 20.167 12 16.502 20.167 12 20.167z' />
+              <path d='M17.472 14.382c-.301-.15-1.78-.878-2.056-.979-.276-.1-.476-.15-.677.15-.2.3-.777.979-.952 1.18-.176.2-.351.226-.652.075-.301-.15-1.272-.469-2.423-1.496-.895-.798-1.5-1.785-1.675-2.086-.176-.301-.019-.464.132-.614.135-.135.301-.351.451-.527.151-.175.201-.301.301-.501.101-.2.051-.376-.025-.526-.075-.151-.677-1.632-.928-2.233-.244-.585-.492-.505-.677-.514l-.577-.01c-.201 0-.527.075-.803.376-.276.3-1.053 1.029-1.053 2.509 0 1.48 1.079 2.91 1.229 3.11.151.201 2.122 3.24 5.141 4.544.718.31 1.279.495 1.716.634.722.229 1.379.197 1.899.12.579-.086 1.78-.727 2.031-1.43.251-.703.251-1.305.176-1.43-.075-.126-.276-.201-.577-.352zM12.04 2C6.51 2 2.015 6.495 2.015 12.025c0 1.767.46 3.492 1.334 5.01L2 22l5.127-1.344a10.007 10.007 0 004.913 1.369h.005c5.53 0 10.025-4.495 10.025-10.025C22.07 6.495 17.57 2 12.04 2zm0 18.337h-.004a8.31 8.31 0 01-4.238-1.154l-.304-.18-3.149.826.84-3.07-.198-.315a8.293 8.293 0 01-1.273-4.42c0-4.587 3.733-8.32 8.324-8.32 2.222 0 4.312.866 5.883 2.438a8.27 8.27 0 012.433 5.884c0 4.588-3.732 8.321-8.322 8.321z' />
             </svg>
           )}
         </button>

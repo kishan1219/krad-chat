@@ -3,6 +3,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { Actor, Auth } from './auth';
 import { Chat } from './chat';
 import { Config } from './config';
+import { isOriginAllowed } from './common';
 
 export class Realtime {
   private clients = new Map<WebSocket, Actor>();
@@ -11,7 +12,11 @@ export class Realtime {
   attach(server: Server, chat: Chat) {
     this.wss = new WebSocketServer({ server, path: '/ws', maxPayload: 16384 });
     this.wss.on('connection', (socket, request) => {
-      if (!this.cfg.CORS_ORIGINS.split(',').map(s => s.trim()).includes(request.headers.origin || '')) { socket.close(1008, 'Origin denied'); return; }
+      const configuredOrigins = this.cfg.CORS_ORIGINS.split(',').map(s => s.trim()).filter(Boolean);
+      if (!isOriginAllowed(request.headers.origin, configuredOrigins, this.cfg.NODE_ENV === 'production')) {
+        socket.close(1008, 'Origin denied');
+        return;
+      }
       const timeout = setTimeout(() => socket.close(1008, 'Authenticate first'), 10000);
       let pending = false; let count = 0; let window = Date.now();
       socket.on('message', async bytes => {

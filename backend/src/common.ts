@@ -4,6 +4,25 @@ import { z } from 'zod';
 export class ApiError extends Error {
   constructor(public status: number, message: string, public details?: unknown) { super(message); }
 }
+
+export function isOriginAllowed(
+  origin: string | undefined,
+  configuredOrigins: string[],
+  isProduction: boolean
+): boolean {
+  if (!origin) return true;
+  const normalizedOrigin = origin.trim().toLowerCase();
+  const allowed = configuredOrigins.map(o => o.trim().toLowerCase()).filter(Boolean);
+  if (allowed.includes(normalizedOrigin)) return true;
+  // Automatically support Cloudflare Workers (*.workers.dev) and Cloudflare Pages (*.pages.dev)
+  if (/^https:\/\/[a-z0-9-_.]+\.(workers\.dev|pages\.dev)$/i.test(normalizedOrigin)) return true;
+  if (!isProduction) {
+    if (normalizedOrigin.startsWith('http://localhost:') || normalizedOrigin.startsWith('http://127.0.0.1:')) {
+      return true;
+    }
+  }
+  return false;
+}
 export const idSchema = z.coerce.number().int().positive().max(Number.MAX_SAFE_INTEGER);
 export const passwordSchema = z.string().min(12).max(128);
 export const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');

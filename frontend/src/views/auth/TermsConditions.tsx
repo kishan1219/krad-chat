@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Shield, FileText, Trash2, CheckCircle, Lock, Globe, Server, Check } from 'react-feather'
-import authLogo from '../../assets/images/logo/platform.svg'
+import authLogo from '../../assets/images/logo/krad-chat-dark.svg'
 import './TermsAndConditions.scss'
 
 interface Props {

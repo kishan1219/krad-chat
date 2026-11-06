@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React from 'react'
-import authLogo from '../../assets/images/logo/platform.svg'
+import authLogo from '../../assets/images/logo/krad-chat-dark.svg'
 import './TermsAndConditions.scss'
 
 const WhatsappPolicy = () => {

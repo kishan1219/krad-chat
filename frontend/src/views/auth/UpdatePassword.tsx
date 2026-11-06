@@ -17,7 +17,7 @@ import { CardText, CardTitle, Col, Form, Row } from 'reactstrap'
 import '@styles/react/pages/page-authentication.scss'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import authLogo from '../../assets/images/logo/platform.svg'
+import authLogo from '../../assets/images/logo/krad-chat-dark.svg'
 
 import { checkPassword, isObjEmpty } from '../../utility/Utils'
 import { resetPassword } from '../../utility/apis/authentication'

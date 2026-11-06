@@ -8,7 +8,7 @@ import multer from 'multer';
 import { resolve } from 'node:path';
 import { existsSync } from 'node:fs';
 import { ZodError } from 'zod';
-import { ApiError } from './common';
+import { ApiError, isOriginAllowed } from './common';
 import { loadConfig } from './config';
 import { Db } from './db';
 import { migrate } from './migrate';
@@ -168,7 +168,7 @@ export async function createApplication(options: { config?: ReturnType<typeof lo
         styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
         fontSrc: ["'self'", 'https://fonts.gstatic.com'],
         imgSrc: ["'self'", 'data:', 'https:'],
-        connectSrc: ["'self'", ...configuredCorsOrigins, 'https://graph.facebook.com', 'https://www.facebook.com'],
+        connectSrc: ["'self'", ...configuredCorsOrigins, 'https://*.workers.dev', 'https://*.pages.dev', 'https://graph.facebook.com', 'https://www.facebook.com'],
         frameSrc: ["'self'", 'https://www.facebook.com', 'https://web.facebook.com'],
         objectSrc: ["'none'"],
         baseUri: ["'self'"],
@@ -191,20 +191,15 @@ export async function createApplication(options: { config?: ReturnType<typeof lo
   // Cross-Origin Resource Sharing (CORS)
   app.enableCors({
     origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-      const allowed = Array.from(new Set(configuredCorsOrigins));
-      if (!origin) return callback(null, true);
-      if (cfg.NODE_ENV === 'production') {
-        if (allowed.includes(origin)) return callback(null, true);
-        return callback(new Error('Not allowed by CORS'));
-      }
-      if (allowed.includes(origin) || origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+      const allowed = isOriginAllowed(origin, configuredCorsOrigins, cfg.NODE_ENV === 'production');
+      if (allowed) {
         return callback(null, true);
       }
-      callback(new Error('Not allowed by CORS'));
+      return callback(null, false);
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Idempotency-Key', 'x-correlation-id', 'x-request-id', 'Accept', 'x-mfa-stepup-token'],
-    credentials: false
+    credentials: true
   });
 
   // Global & Route-Specific Rate Limiting

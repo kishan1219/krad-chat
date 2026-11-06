@@ -18,7 +18,7 @@ import { ChevronLeft } from 'react-feather'
 import '@styles/react/pages/page-authentication.scss'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import authLogo from '../../assets/images/logo/platform.svg'
+import authLogo from '../../assets/images/logo/krad-chat-dark.svg'
 
 import { isObjEmpty } from '../../utility/Utils'
 import { forgotPassword } from '../../utility/apis/authentication'

@@ -305,12 +305,8 @@ const Login: React.FC = () => {
           </footer>
         </section>
 
-        {/* Security Trust & Regulatory Compliance Footer */}
+        {/* Regulatory Compliance Footer */}
         <aside className='login-trust-footer'>
-          <div className='login-trust-pill'>
-            <Shield size={13} aria-hidden='true' />
-            <span>256-bit SSL · Direct WhatsApp Cloud API Integration</span>
-          </div>
           <div className='login-legal-links'>
             <Link to='/terms-conditions'>Terms of Service</Link>
             <span aria-hidden='true'>•</span>
