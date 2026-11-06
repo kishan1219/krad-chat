@@ -15,6 +15,7 @@
     "test": "tsx --test --test-concurrency=1 test/*.test.ts",
     "seed": "tsx scripts/seed.ts",
     "verify:local": "tsx scripts/verify-local.ts",
+    "verify:migrations": "tsx scripts/verify-migrations.ts",
     "inventory": "tsx scripts/inventory.ts"
   },
   "dependencies": {

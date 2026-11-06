@@ -36,6 +36,9 @@ jobs:
       - name: Validate TypeScript build
         run: npm run build
 
+      - name: Verify SQL migrations integrity
+        run: npm run verify:migrations
+
       - name: Run unit & integration tests (PGlite)
         env:
           NODE_ENV: test
@@ -57,15 +60,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js (v20)
-        uses: actions/setup-node@v4
+      - name: Setup Bun Runtime
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: 20
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+          bun-version: 1.2.15
 
-      - name: Install dependencies
-        run: npm install --legacy-peer-deps
+      - name: Install dependencies via Bun
+        run: bun install --frozen-lockfile
 
       - name: Build frontend bundle
         env:
@@ -73,8 +74,9 @@ jobs:
           NODE_ENV: production
           FAST_REFRESH: false
           DISABLE_ESLINT_PLUGIN: true
+          GENERATE_SOURCEMAP: false
           NODE_OPTIONS: --max-old-space-size=4096
-        run: npm run build
+        run: bun run build
 
   security-scan:
     name: Secret & Credential Scan

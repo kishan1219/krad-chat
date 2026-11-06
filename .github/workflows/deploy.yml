@@ -1,0 +1,155 @@
+name: Cloudflare & GitHub CI/CD Deployment
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      deploy_frontend:
+        description: 'Deploy Frontend to Cloudflare'
+        required: true
+        type: boolean
+        default: true
+      run_db_migrations:
+        description: 'Run production database migrations'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: cloudflare-deployment-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-verify:
+    name: Backend Test & Migration Verification
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (v22)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm ci
+
+      - name: Validate TypeScript build
+        run: npm run build
+
+      - name: Run unit & integration test suite (105 tests)
+        env:
+          NODE_ENV: test
+          PROVIDER_MODE: mock
+          DATABASE_URL: local-embedded
+          JWT_SECRET: test_jwt_secret_must_be_over_thirty_two_characters_long_for_security
+          ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+        run: npm test
+
+  security-audit:
+    name: Security & Secret Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify no unignored secrets or private .env files
+        run: |
+          echo "Scanning for accidental secret file leakage..."
+          FORBIDDEN_FILES=$(find . -maxdepth 3 -name ".env*" -not -name ".env.example" -o -name "LOCAL-SECRETS.md")
+          if [ -n "$FORBIDDEN_FILES" ]; then
+            echo "SECURITY VIOLATION: Forbidden secret files found in repository tree:"
+            echo "$FORBIDDEN_FILES"
+            exit 1
+          fi
+          echo "Security scan passed: Clean repository tree."
+
+  deploy-frontend-cloudflare:
+    name: Build & Deploy Frontend to Cloudflare
+    needs: [test-and-verify, security-audit]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun Runtime
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.15
+
+      - name: Install frontend dependencies via Bun
+        run: bun install --frozen-lockfile
+
+      - name: Build frontend production bundle
+        env:
+          CI: false
+          NODE_ENV: production
+          FAST_REFRESH: false
+          DISABLE_ESLINT_PLUGIN: true
+          GENERATE_SOURCEMAP: false
+          NODE_OPTIONS: --max-old-space-size=4096
+          REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL || 'https://api.yourdomain.com/api/' }}
+          REACT_APP_ASSET_URL: ${{ secrets.REACT_APP_ASSET_URL || 'https://api.yourdomain.com/' }}
+          REACT_APP_WS_URL: ${{ secrets.REACT_APP_WS_URL || 'wss://api.yourdomain.com/ws' }}
+          REACT_APP_META_APP_ID: ${{ secrets.REACT_APP_META_APP_ID || '' }}
+          REACT_APP_META_CONFIG_ID: ${{ secrets.REACT_APP_META_CONFIG_ID || '' }}
+          REACT_APP_META_GRAPH_VERSION: ${{ secrets.REACT_APP_META_GRAPH_VERSION || 'v22.0' }}
+          REACT_APP_ENABLE_FAKE_DB: false
+        run: bun run build
+
+      - name: Deploy to Cloudflare Workers with Static Assets
+        if: ${{ env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != '' }}
+        uses: cloudflare/wrangler-action@v3
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: 'frontend'
+          command: deploy
+
+  production-database-migrations:
+    name: Apply Production Database Migrations
+    needs: [test-and-verify]
+    if: ${{ github.event_name == 'push' || github.event.inputs.run_db_migrations == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (v22)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm ci
+
+      - name: Apply schema migrations to remote PostgreSQL
+        if: ${{ env.DATABASE_URL != '' }}
+        env:
+          NODE_ENV: production
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_SSL: ${{ secrets.DATABASE_SSL || 'true' }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET || 'migration_dummy_secret_for_schema_validation_only_12345678' }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY || '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef' }}
+        run: npm run migrate

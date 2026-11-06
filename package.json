@@ -9,7 +9,9 @@
     "start:frontend": "npm --prefix frontend start",
     "test:backend": "npm --prefix backend test",
     "build:backend": "npm --prefix backend run build",
-    "build:frontend": "npm --prefix frontend run build"
+    "build:frontend": "npm --prefix frontend run build",
+    "deploy:frontend": "npm --prefix frontend run deploy",
+    "verify:migrations": "npm --prefix backend run verify:migrations"
   },
   "devDependencies": {
     "typescript": "4.9.5"
