@@ -144,56 +144,69 @@ const AppInfo = ({ activeTab }) => {
         <>
             <Card className='p-2'>
                 <Row>
-                    <CardHeader className='border-bottom'>
-                        <h4 className='h2 text-dark fw-bolder' >
+                    <CardHeader className='border-bottom d-flex justify-content-between align-items-center mb-2'>
+                        <h4 className='h4 text-dark fw-bolder mb-0'>
                             Api Keys
                         </h4>
 
                         <div className='d-flex justify-content-end'>
-
-                            {/* <UncontrolledTooltip target="reload">Change API Key & Secret</UncontrolledTooltip>
-
-                            <Button.Ripple size="sm" color="primary" id="reload" onClick={handleSave} >
-                                <Key size="14" /> Change API Key & Secret
-                            </Button.Ripple> */}
                             <ConfirmStop
-                                // item={row}
                                 eventId={`stop-campaign`}
-                                title={`Change API Key & Secret !!!`}
+                                title={`Change API Key & Secret?`}
                                 color='text-warning'
                                 onClickYes={() => handleSave()}
-                                // onSuccessEvent={(item) => { log("item", item); navigate('/') }}
-                                // onFailedEvent={((item) => { log("item", item) })}
-                                // className="dropdown-item"
-                            // id={`grid-delete-${row?.id}`}
                             >
-                                {/* <Key size="14" /><span className='ms-1 align-middle'>Change API Key & Secret</span> */}
                                 <Button.Ripple size="sm" color="primary">
                                     <Key size="14" /> Change API Key & Secret
                                 </Button.Ripple>
                             </ConfirmStop>
-
                         </div>
-
                     </CardHeader>
 
-                    <div className='d-flex justify-content-between border'>
-                        <div className='mt-1 mb-1 h5 text-dark fw-bolder' >
-                            Api key
-                        </div>
-                        <div className="mt-1 mb-1 h5 text-dark fw-bolder">
-
-                            {api?.app_key}  <CopyToClipboard onCopy={onCopyKey} text={api?.app_key}><ContentCopyIcon className='text-success' text={api?.app_key} style={{ cursor: 'pointer' }} /></CopyToClipboard>
-                        </div>
-                    </div>
-                    <div className='d-flex justify-content-between border-top border bottom'>
-                        <div className='mt-1 mb-1 h5 text-dark fw-bolder '>
-                            Api Secret
-                        </div>
-                        <div className="mt-1 mb-1 h5 text-dark fw-bolder">
-                            {api?.app_secret} <CopyToClipboard onCopy={onCopySecret} text={api?.app_secret}><ContentCopyIcon className='text-success' style={{ cursor: 'pointer' }} /></CopyToClipboard>
-                        </div>
-                    </div>
+                    {(() => {
+                        const apiKey = api?.app_key || api?.api_key || ''
+                        const apiSecret = api?.app_secret || api?.key_id || ''
+                        return (
+                            <>
+                                <div className='d-flex justify-content-between align-items-center border p-1 rounded-top'>
+                                    <div className='h5 mb-0 text-dark fw-bolder'>
+                                        Api key
+                                    </div>
+                                    <div className="h5 mb-0 text-dark fw-bolder d-flex align-items-center">
+                                        {apiKey ? (
+                                            <>
+                                                <code className='user-select-all text-primary me-1' style={{ fontSize: '0.9rem' }}>{apiKey}</code>
+                                                <CopyToClipboard onCopy={onCopyKey} text={apiKey}>
+                                                    <ContentCopyIcon className='text-success' style={{ cursor: 'pointer' }} />
+                                                </CopyToClipboard>
+                                            </>
+                                        ) : (
+                                            <span className='text-muted fw-normal fst-italic' style={{ fontSize: '0.85rem' }}>
+                                                Click &quot;Change API Key &amp; Secret&quot; to generate keys
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className='d-flex justify-content-between align-items-center border-start border-end border-bottom p-1 rounded-bottom'>
+                                    <div className='h5 mb-0 text-dark fw-bolder'>
+                                        Api Secret
+                                    </div>
+                                    <div className="h5 mb-0 text-dark fw-bolder d-flex align-items-center">
+                                        {apiSecret ? (
+                                            <>
+                                                <code className='user-select-all text-secondary me-1' style={{ fontSize: '0.9rem' }}>{apiSecret}</code>
+                                                <CopyToClipboard onCopy={onCopySecret} text={apiSecret}>
+                                                    <ContentCopyIcon className='text-success' style={{ cursor: 'pointer' }} />
+                                                </CopyToClipboard>
+                                            </>
+                                        ) : (
+                                            <span className='text-muted fw-normal fst-italic' style={{ fontSize: '0.85rem' }}>—</span>
+                                        )}
+                                    </div>
+                                </div>
+                            </>
+                        )
+                    })()}
 
                 </Row>
             </Card>

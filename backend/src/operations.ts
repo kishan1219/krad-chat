@@ -14,7 +14,7 @@ export const operationPaths = ['administration/app-setting-update','user-action'
   'credit-request-reply','user-notification-read-all','user-notification-delete','unread-notification-count','notification-read/',
   'user-documents','user-document/','document-code-lang','get-dlr-explanation/','administration/get-user-route-info',
   'administration/assign-route-to-user','administration/change-user-priority-for-send-sms','administration/informing-user-about-server',
-  'administration/wa-rate-card','server-info','wa-generate-payload/'];
+  'administration/wa-rate-card','server-info','wa-generate-payload/','wa-chatbots-self-webhook','wa-rate-card'];
 
 export class Operations {
   constructor(private db: Db, private cfg: Config, private resources: Resources) {}
@@ -73,13 +73,21 @@ export class Operations {
         await c.query('UPDATE api_keys SET revoked_at=now() WHERE user_id=$1 AND revoked_at IS NULL', [userId]);
         await c.query('INSERT INTO api_keys(id,tenant_id,user_id,key_hash,scopes) VALUES($1,$2,$3,$4,$5)', [id, actor.tenant_id, userId, sha256(key), scopes]);
       });
-      return result({ api_key: key, key_id: id, scopes, notice: 'Shown once; store securely.' });
+      return result({
+        api_key: key,
+        app_key: key,
+        key_id: id,
+        app_secret: id,
+        scopes,
+        notice: 'Shown once; store securely.'
+      });
     }
     if (path === 'enable-additional-security') {
       post(); const userId = body.user_id === undefined ? actor.id : idSchema.parse(body.user_id);
       if (userId !== actor.id) authorize(actor, 'users:write');
       await assertUserScope(this.db, actor, userId);
-      const ips = z.array(z.string().refine(ip => isIP(ip) !== 0, 'Use an exact IPv4/IPv6 address.')).max(50).parse(body.allowed_ips);
+      const rawIps = Array.isArray(body.allowed_ips) ? body.allowed_ips : (typeof body.allowed_ips === 'string' && body.allowed_ips ? [body.allowed_ips] : []);
+      const ips = z.array(z.string().refine(ip => isIP(ip) !== 0, 'Use an exact IPv4/IPv6 address.')).max(50).parse(rawIps);
       await this.db.query('UPDATE api_keys SET allowed_ips=$1 WHERE tenant_id=$2 AND user_id=$3 AND revoked_at IS NULL', [ips, actor.tenant_id, userId]);
       return result({ user_id: userId, allowed_ips: ips });
     }
@@ -159,8 +167,285 @@ export class Operations {
       post(); authorize(actor, 'admin:write');
       return result(await this.resources.create(actor, 'notification', z.object({ title: z.string().min(1).max(200), message: z.string().min(1).max(4000) }).parse(body)));
     }
-    if (path === 'administration/wa-rate-card') {
-      authorize(actor, 'admin:write'); return result({ currency: 'INR', unit: 'paise', whatsapp_unit_price: this.cfg.WHATSAPP_UNIT_PRICE_PAISE, notice: 'Configured application submission price; not a Meta rate-card quote.' });
+    if (path === 'wa-chatbots-self-webhook') {
+      const { page, perPage, offset } = pagination(query, body);
+      const countRes = await this.db.query('SELECT COUNT(*) FROM automation_runs WHERE tenant_id=$1', [actor.tenant_id]);
+      const total = parseInt(countRes.rows[0]?.count || '0', 10);
+      const rows = (await this.db.query(
+        `SELECT r.id, COALESCE(f.name, 'Automation Flow') as name,
+                COALESCE(c.customer_phone, 'WhatsApp User') as display_phone_number,
+                r.reply, r.status, r.created_at,
+                json_build_object(
+                  'reply', r.reply,
+                  'status', r.status,
+                  'flow_id', r.flow_id,
+                  'wa_user_profile_name', COALESCE(c.customer_name, 'Customer'),
+                  'patient_name', COALESCE(c.customer_name, 'Patient')
+                ) as request_payload
+         FROM automation_runs r
+         LEFT JOIN automation_flows f ON f.id = r.flow_id
+         LEFT JOIN conversations c ON c.id = r.conversation_id
+         WHERE r.tenant_id = $1
+         ORDER BY r.created_at DESC
+         LIMIT $2 OFFSET $3`,
+        [actor.tenant_id, perPage, offset]
+      )).rows;
+      return result(pageResult(rows, total, page, perPage));
+    }
+    if (path === 'administration/wa-rate-card' || path === 'wa-rate-card') {
+      const { page, perPage, offset } = pagination(query, body);
+      const search = String(body.search ?? query.search ?? '').trim().toLowerCase();
+
+      // Meta Cloud API Official Standard Rates + Configured Platform Markup (+₹0.05 INR for India, proportional markup for other markets)
+      const allRateCards = [
+        {
+          id: 1,
+          country_name: 'India',
+          country_code: '+91',
+          currency: 'INR',
+          meta_marketing_charge: '0.7846',
+          meta_utility_charge: '0.1150',
+          meta_authentication_charge: '0.1150',
+          meta_service_charge: '0.2900',
+          platform_markup: '0.0500',
+          marketing_charge: '0.8346',
+          utility_charge: '0.1650',
+          authentication_charge: '0.1650',
+          authentication_international_charge: '2.3500',
+          service_charge: '0.3400'
+        },
+        {
+          id: 2,
+          country_name: 'United States',
+          country_code: '+1',
+          currency: 'USD',
+          meta_marketing_charge: '0.0250',
+          meta_utility_charge: '0.0150',
+          meta_authentication_charge: '0.0135',
+          meta_service_charge: '0.0088',
+          platform_markup: '0.0010',
+          marketing_charge: '0.0260',
+          utility_charge: '0.0160',
+          authentication_charge: '0.0145',
+          authentication_international_charge: '0.0400',
+          service_charge: '0.0098'
+        },
+        {
+          id: 3,
+          country_name: 'United Arab Emirates',
+          country_code: '+971',
+          currency: 'AED',
+          meta_marketing_charge: '0.1250',
+          meta_utility_charge: '0.0750',
+          meta_authentication_charge: '0.0700',
+          meta_service_charge: '0.0550',
+          platform_markup: '0.0050',
+          marketing_charge: '0.1300',
+          utility_charge: '0.0800',
+          authentication_charge: '0.0750',
+          authentication_international_charge: '0.2500',
+          service_charge: '0.0600'
+        },
+        {
+          id: 4,
+          country_name: 'Saudi Arabia',
+          country_code: '+966',
+          currency: 'SAR',
+          meta_marketing_charge: '0.1350',
+          meta_utility_charge: '0.0800',
+          meta_authentication_charge: '0.0750',
+          meta_service_charge: '0.0600',
+          platform_markup: '0.0050',
+          marketing_charge: '0.1400',
+          utility_charge: '0.0850',
+          authentication_charge: '0.0800',
+          authentication_international_charge: '0.2800',
+          service_charge: '0.0650'
+        },
+        {
+          id: 5,
+          country_name: 'United Kingdom',
+          country_code: '+44',
+          currency: 'GBP',
+          meta_marketing_charge: '0.0380',
+          meta_utility_charge: '0.0190',
+          meta_authentication_charge: '0.0180',
+          meta_service_charge: '0.0140',
+          platform_markup: '0.0015',
+          marketing_charge: '0.0395',
+          utility_charge: '0.0205',
+          authentication_charge: '0.0195',
+          authentication_international_charge: '0.0550',
+          service_charge: '0.0155'
+        },
+        {
+          id: 6,
+          country_name: 'Germany',
+          country_code: '+49',
+          currency: 'EUR',
+          meta_marketing_charge: '0.0580',
+          meta_utility_charge: '0.0290',
+          meta_authentication_charge: '0.0280',
+          meta_service_charge: '0.0210',
+          platform_markup: '0.0020',
+          marketing_charge: '0.0600',
+          utility_charge: '0.0310',
+          authentication_charge: '0.0300',
+          authentication_international_charge: '0.0750',
+          service_charge: '0.0230'
+        },
+        {
+          id: 7,
+          country_name: 'France',
+          country_code: '+33',
+          currency: 'EUR',
+          meta_marketing_charge: '0.0600',
+          meta_utility_charge: '0.0300',
+          meta_authentication_charge: '0.0290',
+          meta_service_charge: '0.0220',
+          platform_markup: '0.0020',
+          marketing_charge: '0.0620',
+          utility_charge: '0.0320',
+          authentication_charge: '0.0310',
+          authentication_international_charge: '0.0780',
+          service_charge: '0.0240'
+        },
+        {
+          id: 8,
+          country_name: 'Singapore',
+          country_code: '+65',
+          currency: 'SGD',
+          meta_marketing_charge: '0.0450',
+          meta_utility_charge: '0.0220',
+          meta_authentication_charge: '0.0210',
+          meta_service_charge: '0.0160',
+          platform_markup: '0.0020',
+          marketing_charge: '0.0470',
+          utility_charge: '0.0240',
+          authentication_charge: '0.0230',
+          authentication_international_charge: '0.0650',
+          service_charge: '0.0180'
+        },
+        {
+          id: 9,
+          country_name: 'Australia',
+          country_code: '+61',
+          currency: 'AUD',
+          meta_marketing_charge: '0.0520',
+          meta_utility_charge: '0.0260',
+          meta_authentication_charge: '0.0240',
+          meta_service_charge: '0.0190',
+          platform_markup: '0.0020',
+          marketing_charge: '0.0540',
+          utility_charge: '0.0280',
+          authentication_charge: '0.0260',
+          authentication_international_charge: '0.0720',
+          service_charge: '0.0210'
+        },
+        {
+          id: 10,
+          country_name: 'Canada',
+          country_code: '+1',
+          currency: 'CAD',
+          meta_marketing_charge: '0.0350',
+          meta_utility_charge: '0.0180',
+          meta_authentication_charge: '0.0170',
+          meta_service_charge: '0.0130',
+          platform_markup: '0.0020',
+          marketing_charge: '0.0370',
+          utility_charge: '0.0200',
+          authentication_charge: '0.0190',
+          authentication_international_charge: '0.0520',
+          service_charge: '0.0150'
+        },
+        {
+          id: 11,
+          country_name: 'Brazil',
+          country_code: '+55',
+          currency: 'BRL',
+          meta_marketing_charge: '0.3250',
+          meta_utility_charge: '0.1800',
+          meta_authentication_charge: '0.1700',
+          meta_service_charge: '0.1200',
+          platform_markup: '0.0100',
+          marketing_charge: '0.3350',
+          utility_charge: '0.1900',
+          authentication_charge: '0.1800',
+          authentication_international_charge: '0.4500',
+          service_charge: '0.1300'
+        },
+        {
+          id: 12,
+          country_name: 'Indonesia',
+          country_code: '+62',
+          currency: 'IDR',
+          meta_marketing_charge: '480',
+          meta_utility_charge: '260',
+          meta_authentication_charge: '250',
+          meta_service_charge: '190',
+          platform_markup: '15',
+          marketing_charge: '495',
+          utility_charge: '275',
+          authentication_charge: '265',
+          authentication_international_charge: '650',
+          service_charge: '205'
+        },
+        {
+          id: 13,
+          country_name: 'Mexico',
+          country_code: '+52',
+          currency: 'MXN',
+          meta_marketing_charge: '0.4500',
+          meta_utility_charge: '0.2400',
+          meta_authentication_charge: '0.2200',
+          meta_service_charge: '0.1800',
+          platform_markup: '0.0150',
+          marketing_charge: '0.4650',
+          utility_charge: '0.2550',
+          authentication_charge: '0.2350',
+          authentication_international_charge: '0.5800',
+          service_charge: '0.1950'
+        },
+        {
+          id: 14,
+          country_name: 'South Africa',
+          country_code: '+27',
+          currency: 'ZAR',
+          meta_marketing_charge: '0.4200',
+          meta_utility_charge: '0.2200',
+          meta_authentication_charge: '0.2000',
+          meta_service_charge: '0.1600',
+          platform_markup: '0.0150',
+          marketing_charge: '0.4350',
+          utility_charge: '0.2350',
+          authentication_charge: '0.2150',
+          authentication_international_charge: '0.5500',
+          service_charge: '0.1750'
+        },
+        {
+          id: 15,
+          country_name: 'Rest of World (Global)',
+          country_code: '+0',
+          currency: 'USD',
+          meta_marketing_charge: '0.0450',
+          meta_utility_charge: '0.0250',
+          meta_authentication_charge: '0.0220',
+          meta_service_charge: '0.0180',
+          platform_markup: '0.0010',
+          marketing_charge: '0.0460',
+          utility_charge: '0.0260',
+          authentication_charge: '0.0230',
+          authentication_international_charge: '0.0600',
+          service_charge: '0.0190'
+        }
+      ];
+
+      const filtered = search
+        ? allRateCards.filter(r => r.country_name.toLowerCase().includes(search) || r.country_code.includes(search) || r.currency.toLowerCase().includes(search))
+        : allRateCards;
+      const total = filtered.length;
+      const paged = filtered.slice(offset, offset + perPage);
+      return result(pageResult(paged, total, page, perPage));
     }
     if (path === 'server-info') {
       authorize(actor, 'admin:write'); return result({ process_uptime_seconds: process.uptime(), memory: process.memoryUsage(), node: process.version, provider_mode: this.cfg.PROVIDER_MODE });

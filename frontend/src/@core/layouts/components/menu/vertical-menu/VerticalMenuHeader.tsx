@@ -5,7 +5,7 @@ import { NavLink } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 
 // ** Icons Imports
-import { Disc, X, Circle } from 'react-feather'
+import { X } from 'react-feather'
 
 // ** Config
 import themeConfig from '@configs/themeConfig'
@@ -26,28 +26,6 @@ const VerticalMenuHeader = props => {
     if (!menuHover && menuCollapsed) setGroupOpen([])
   }, [menuHover, menuCollapsed])
 
-  // ** Menu toggler component
-  const Toggler = () => {
-    if (!menuCollapsed) {
-      return (
-        <Disc
-          size={20}
-          data-tour='toggle-icon'
-          className='text-primary toggle-icon d-none d-xl-block'
-          onClick={() => setMenuCollapsed(true)}
-        />
-      )
-    } else {
-      return (
-        <Circle
-          size={20}
-          data-tour='toggle-icon'
-          className='text-primary toggle-icon d-none d-xl-block'
-          onClick={() => setMenuCollapsed(false)}
-        />
-      )
-    }
-  }
 
   // Choose logo based on expanded vs collapsed and dark vs light
   const isCollapsedIconOnly = menuCollapsed && !menuHover
@@ -87,7 +65,6 @@ const VerticalMenuHeader = props => {
         </li>
         <li className='nav-item nav-toggle'>
           <div className='nav-link modern-nav-toggle cursor-pointer'>
-            <Toggler />
             <X onClick={() => setMenuVisibility(false)} className='toggle-icon icon-x d-block d-xl-none' size={20} />
           </div>
         </li>

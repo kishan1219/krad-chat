@@ -47,9 +47,12 @@ const UserDropdown = () => {
     }, [])
 
     //** Vars
-    const userAvatar = (userData && userData.avatar) || defaultAvatar
-
     const user = useSelector(state => state.auth.userData)
+    const userDisplayName = userData?.name || user?.name || userData?.username || userData?.email || 'Admin'
+    const rawLogo = user?.companyLogo || userData?.companyLogo
+    const customAvatarUrl = (typeof rawLogo === 'string' && rawLogo.trim() !== '' && !rawLogo.includes('undefined'))
+        ? (rawLogo.startsWith('http') ? rawLogo : `${httpConfig?.baseUrl2 || ''}${rawLogo}`)
+        : (user?.avatar_url || (userData?.avatar && !userData.avatar.includes('undefined') ? userData.avatar : null))
 
     const getUserType = (user) => {
 
@@ -91,12 +94,17 @@ const UserDropdown = () => {
                     {/* <span className='user-status'>{(userData && userData.role) || 'Admin'}</span> */}
                     <span className='user-status'>{userTypeLabel}</span>
                 </div>
-                <Show IF={user?.userType === 0 || user?.userType === 3}>
-                    <Avatar img={httpConfig?.baseUrl2 + user?.companyLogo ?? userAvatar} imgHeight='40' imgWidth='40' status='online' />
-                </Show>
-                <Hide IF={user?.userType === 0 || user?.userType === 3}>
-                    <Avatar img={httpConfig?.baseUrl2 + user?.companyLogo ?? userAvatar} imgHeight='40' imgWidth='40' status='online' />
-                </Hide>
+                {customAvatarUrl ? (
+                    <Avatar img={customAvatarUrl} imgHeight='40' imgWidth='40' status='online' />
+                ) : (
+                    <Avatar
+                        initials
+                        content={userDisplayName}
+                        color='light-success'
+                        status='online'
+                        style={{ width: 40, height: 40, fontSize: '0.92rem' }}
+                    />
+                )}
             </DropdownToggle>
             <DropdownMenu end>
                 <Show IF={Permissions?.editProfile} >

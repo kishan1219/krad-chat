@@ -144,8 +144,21 @@
     color: #64748b !important;
   }
 
+  .login-pw-toggle {
+    color: #64748b !important;
+    &:hover {
+      color: #0f172a !important;
+      background-color: rgba(0, 0, 0, 0.05) !important;
+    }
+  }
+
+  .login-input-box {
+    background: transparent !important;
+  }
+
   .login-input {
     background: #ffffff !important;
+    background-color: #ffffff !important;
     color: #0f172a !important;
     border-color: #cbd5e1 !important;
 
@@ -153,9 +166,27 @@
       color: #94a3b8 !important;
     }
 
+    &:hover:not(:disabled) {
+      border-color: #94a3b8 !important;
+    }
+
     &:focus {
-      border-color: #0284c7;
-      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+      background: #ffffff !important;
+      background-color: #ffffff !important;
+      border-color: #10b981 !important;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15) !important;
+      color: #0f172a !important;
+    }
+
+    &:-webkit-autofill,
+    &:-webkit-autofill:hover,
+    &:-webkit-autofill:focus,
+    &:-webkit-autofill:active {
+      -webkit-text-fill-color: #0f172a !important;
+      -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+      box-shadow: 0 0 0 1000px #ffffff inset !important;
+      caret-color: #0f172a !important;
+      transition: background-color 5000s ease-in-out 0s;
     }
   }
 

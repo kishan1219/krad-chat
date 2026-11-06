@@ -46,9 +46,12 @@ export function decrypt(value: string, key: string): string {
   cipher.setAuthTag(bytes.subarray(12, 28));
   return Buffer.concat([cipher.update(bytes.subarray(28)), cipher.final()]).toString('utf8');
 }
-export function pagination(query: Record<string, unknown>) {
-  const page = z.coerce.number().int().min(1).default(1).parse(query.page);
-  const perPage = z.coerce.number().int().min(1).max(100).default(25).parse(query.per_page_record ?? query.per_page);
+export function pagination(query: Record<string, unknown> = {}, body: Record<string, unknown> = {}) {
+  const rawPage = query.page ?? body.page ?? 1;
+  const page = Math.max(1, parseInt(String(rawPage), 10) || 1);
+  const rawPerPage = query.per_page_record ?? query.per_page ?? body.per_page_record ?? body.per_page ?? 25;
+  const parsedPerPage = parseInt(String(rawPerPage), 10) || 25;
+  const perPage = Math.min(Math.max(1, parsedPerPage), 1000);
   return { page, perPage, offset: (page - 1) * perPage };
 }
 export function pageResult(rows: unknown[], total: number, page: number, perPage: number) {

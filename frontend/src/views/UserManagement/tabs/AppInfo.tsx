@@ -134,21 +134,22 @@ const AppInfo = () => {
                 </CardHeader>
                 {/* {(watch("is_enabled_api_ip_security") === 1 */}
                 {/* {(watch("change_api") === 1 ? {userApi} : "")} */}
-                <div className='d-flex justify-content-between border'>
-                    <div className='mt-1 mb-1 h5 text-dark fw-bolder' >
+                <div className='d-flex justify-content-between border p-1 rounded-top'>
+                    <div className='h5 mb-0 text-dark fw-bolder' >
                         App key
                     </div>
-                    <div className="mt-1 mb-1 h5 text-dark fw-bolder">
-                        {/* <p  ref={textAreaRef}>{api?.app_key}</p> <ContentCopyIcon className='text-success'  onClick={copyToClipboard} /> */}
-                        {api?.app_key} <ContentCopyIcon className='text-success' />
+                    <div className="h5 mb-0 text-dark fw-bolder d-flex align-items-center">
+                        <code className='user-select-all text-primary me-1' style={{ fontSize: '0.9rem' }}>{api?.app_key || api?.api_key || '—'}</code>
+                        <ContentCopyIcon className='text-success cursor-pointer' onClick={() => { if (api?.app_key || api?.api_key) { navigator.clipboard.writeText(api?.app_key || api?.api_key); toast.success('App key copied!'); } }} />
                     </div>
                 </div>
-                <div className='d-flex justify-content-between border-top border bottom'>
-                    <div className='mt-1 mb-1 h5 text-dark fw-bolder '>
+                <div className='d-flex justify-content-between border-start border-end border-bottom p-1 rounded-bottom'>
+                    <div className='h5 mb-0 text-dark fw-bolder '>
                         App Secret
                     </div>
-                    <div className="mt-1 mb-1 h5 text-dark fw-bolder">
-                        {api?.app_secret} <ContentCopyIcon className='text-success' />
+                    <div className="h5 mb-0 text-dark fw-bolder d-flex align-items-center">
+                        <code className='user-select-all text-secondary me-1' style={{ fontSize: '0.9rem' }}>{api?.app_secret || api?.key_id || '—'}</code>
+                        <ContentCopyIcon className='text-success cursor-pointer' onClick={() => { if (api?.app_secret || api?.key_id) { navigator.clipboard.writeText(api?.app_secret || api?.key_id); toast.success('App secret copied!'); } }} />
                     </div>
                 </div>
 
