@@ -464,9 +464,10 @@ const UserList = () => {
     const submitHandler = (e) => {
         e.preventDefault()
         if (rowsSelected.length > 0) {
-            // if (isObjEmpty(errors)) {
             userAction({
                 jsonData: {
+                    ids: rowsSelected,
+                    action: 'enable',
                     status: 1,
                     user_ids: rowsSelected
                 },
@@ -476,15 +477,15 @@ const UserList = () => {
                     setRowsSelected([])
                 }
             })
-            // }
         }
     }
     const submitHandler2 = (e) => {
         e.preventDefault()
         if (rowsSelected.length > 0) {
-            // if (isObjEmpty(errors)) {
             userAction({
                 jsonData: {
+                    ids: rowsSelected,
+                    action: 'disable',
                     status: 0,
                     user_ids: rowsSelected
                 },
@@ -494,7 +495,6 @@ const UserList = () => {
                     setRowsSelected([])
                 }
             })
-            // }
         }
     }
 

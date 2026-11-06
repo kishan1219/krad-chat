@@ -24,20 +24,20 @@ const UserAction = ({ edit, handleReportChange, rowsSelected, preload }) => {
 
     const submitHandler = (data) => {
         if (handleReportChange) {
-            // if (isObjEmpty(errors)) {
+            const action = data?.status === 1 || data?.status === '1' ? 'enable' : 'disable'
             userAction({
                 id: edit?.id,
                 jsonData: {
                     ...data,
+                    ids: rowsSelected?.length ? rowsSelected : (edit?.id ? [edit.id] : []),
+                    action,
                     user_ids: rowsSelected
-
                 },
                 loading: setLoading,
                 success: () => {
                     preload()
                 }
             })
-            // }
         }
     }
 

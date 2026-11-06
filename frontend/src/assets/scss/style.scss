@@ -1483,8 +1483,284 @@ code.hljs {
   .rdt_TableCol:first-child {
     .rdt_Expander {
       svg {
-        color: #ff9b36;
+        color: #10b981;
       }
     }
   }
 }
+
+/* ================================================================================================
+   KRAD CHAT GLOBAL THEME HARMONIZATION & ENTERPRISE OVERHAUL
+   Palette: Emerald (#10b981), Forest (#059669), Dark Slate (#0b132b / #0f172a), Cyan (#06b6d4)
+   ================================================================================================ */
+
+// 1. Sidebar Active State & Navigation Overhaul
+.main-menu.menu-light,
+.main-menu.menu-dark {
+  .navigation {
+    li.active > a {
+      background: linear-gradient(118deg, #10b981, rgba(16, 185, 129, 0.8)) !important;
+      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.35) !important;
+      color: #ffffff !important;
+      font-weight: 600;
+      border-radius: 8px !important;
+
+      i, svg {
+        color: #ffffff !important;
+      }
+    }
+
+    li.has-sub.open > a {
+      color: #10b981 !important;
+      i, svg {
+        color: #10b981 !important;
+      }
+    }
+
+    .menu-content {
+      li.active a {
+        background: rgba(16, 185, 129, 0.1) !important;
+        color: #10b981 !important;
+        font-weight: 600;
+        border-radius: 6px !important;
+
+        i, svg {
+          color: #10b981 !important;
+        }
+      }
+    }
+
+    .navigation-header {
+      font-size: 0.75rem !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.08em !important;
+      text-transform: uppercase !important;
+      color: #94a3b8 !important;
+      padding: 1.25rem 1.5rem 0.5rem !important;
+    }
+  }
+}
+
+// 2. Buttons & Form Controls Theme Harmonization
+.btn-primary {
+  background-color: #10b981 !important;
+  border-color: #10b981 !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  transition: all 0.2s ease-in-out;
+
+  &:hover, &:focus, &:active, &.active {
+    background-color: #059669 !important;
+    border-color: #059669 !important;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35) !important;
+  }
+}
+
+.btn-outline-primary {
+  border-color: #10b981 !important;
+  color: #10b981 !important;
+  background-color: transparent !important;
+  font-weight: 600;
+
+  &:hover, &:focus, &:active, &.active {
+    background-color: #10b981 !important;
+    border-color: #10b981 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3) !important;
+  }
+}
+
+.btn-check:checked + .btn-outline-primary {
+  background-color: #10b981 !important;
+  border-color: #10b981 !important;
+  color: #ffffff !important;
+}
+
+// 3. ReactPaginate Active Pagination
+.pagination {
+  .page-item.active .page-link {
+    background-color: #10b981 !important;
+    border-color: #10b981 !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35) !important;
+    border-radius: 6px;
+  }
+  .page-link {
+    color: #475569;
+    &:hover {
+      color: #10b981;
+    }
+  }
+}
+
+// 4. Fast-Food Doodle Removal & Modern WhatsApp Screen Styling
+.chat-application {
+  .chat-app-window {
+    .start-chat-area,
+    .user-chats {
+      background-image: none !important;
+      background-color: #0b132b !important;
+      background: radial-gradient(circle at 50% 40%, #0d1a33 0%, #060d1f 100%) !important;
+    }
+
+    .start-chat-area {
+      .start-chat-icon {
+        width: 88px;
+        height: 88px;
+        border-radius: 50%;
+        background: rgba(16, 185, 129, 0.12) !important;
+        border: 2px solid rgba(16, 185, 129, 0.35) !important;
+        box-shadow: 0 0 35px rgba(16, 185, 129, 0.25) !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #10b981 !important;
+        margin-bottom: 1.5rem;
+
+        svg {
+          width: 44px;
+          height: 44px;
+          fill: currentColor;
+        }
+      }
+
+      .start-chat-title {
+        color: #f8fafc !important;
+        font-size: 1.6rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin-bottom: 0.6rem;
+      }
+
+      .start-chat-subtitle {
+        color: #94a3b8 !important;
+        font-size: 0.95rem;
+        max-width: 440px;
+        line-height: 1.6;
+        margin-bottom: 1.5rem;
+      }
+
+      .start-chat-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 16px;
+        background: rgba(16, 185, 129, 0.1) !important;
+        border: 1px solid rgba(16, 185, 129, 0.3) !important;
+        border-radius: 9999px;
+        color: #34d399 !important;
+        font-size: 0.84rem;
+        font-weight: 600;
+
+        .status-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: #10b981;
+          box-shadow: 0 0 8px #10b981;
+        }
+      }
+    }
+  }
+}
+
+// Light Mode Alternate for Chat Window
+body:not(.dark-layout) .chat-application .chat-app-window {
+  .start-chat-area,
+  .user-chats {
+    background-image: none !important;
+    background-color: #f8fafc !important;
+    background: radial-gradient(#e2e8f0 1.2px, #f8fafc 1.2px) !important;
+    background-size: 24px 24px !important;
+  }
+
+  .start-chat-area {
+    .start-chat-title {
+      color: #0f172a !important;
+    }
+    .start-chat-subtitle {
+      color: #64748b !important;
+    }
+    .start-chat-badge {
+      background: #ffffff !important;
+      border: 1px solid rgba(16, 185, 129, 0.25) !important;
+      color: #059669 !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+  }
+}
+
+// 5. Navbar Wallet / Credit Pill Styling
+.krad-wallet-pill {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 9999px;
+  padding: 5px 14px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(16, 185, 129, 0.14);
+    border-color: rgba(16, 185, 129, 0.5);
+    box-shadow: 0 2px 10px rgba(16, 185, 129, 0.2);
+  }
+
+  .wallet-icon-wrapper {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #10b981;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.4);
+  }
+
+  .wallet-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    line-height: 1;
+  }
+
+  .wallet-amount {
+    font-size: 0.92rem;
+    font-weight: 800;
+    color: #10b981;
+    line-height: 1.2;
+  }
+}
+
+.dark-layout .krad-wallet-pill {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.35);
+
+  .wallet-label {
+    color: #94a3b8;
+  }
+  .wallet-amount {
+    color: #34d399;
+  }
+}
+
+// 6. Datatables & Card Polish
+.card {
+  border-radius: 14px !important;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+}
+
+.dark-layout .card {
+  background: #1e293b;
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.rdt_TableHeader {
+  font-weight: 700;
+  color: #0f172a;
+}
+

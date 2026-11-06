@@ -2,6 +2,7 @@
 // ** React Imports
 import { Fragment } from 'react'
 import { useSelector } from 'react-redux'
+import { CreditCard } from 'react-feather'
 
 // ** Custom Components
 import NavbarUser from './NavbarUser'
@@ -31,8 +32,16 @@ const ThemeNavbar = props => {
     <Fragment>
       <div className='bookmark-wrapper d-flex align-items-center'>
         <BackToHome />
-        <div className='ms-1 d-flex align-items-center'>
-          <span className='fw-bolder text-primary'>Credit: {formatCredit(overallCreditInr)}</span>
+        <div className='ms-2 d-flex align-items-center'>
+          <div className='krad-wallet-pill' title='Current Account Balance'>
+            <div className='wallet-icon-wrapper me-1'>
+              <CreditCard size={14} />
+            </div>
+            <div className='d-flex flex-column text-start'>
+              <span className='wallet-label'>Wallet</span>
+              <span className='wallet-amount'>₹{formatCredit(overallCreditInr)}</span>
+            </div>
+          </div>
         </div>
         <NavbarBookmarks setMenuVisibility={setMenuVisibility} />
       </div>

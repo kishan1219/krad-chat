@@ -31,7 +31,13 @@ export class Operations {
     }
     if (path === 'user-action') {
       post(); authorize(actor, 'users:write');
-      const input = z.object({ ids: z.array(idSchema).min(1).max(100), action: z.enum(['enable','disable']) }).parse(body);
+      const rawIds = body.ids ?? body.user_ids ?? (body.id ? [body.id] : undefined);
+      let rawAction = body.action;
+      if (!rawAction) {
+        if (body.status === 1 || body.status === '1' || body.status === true) rawAction = 'enable';
+        else if (body.status === 0 || body.status === '0' || body.status === false) rawAction = 'disable';
+      }
+      const input = z.object({ ids: z.array(idSchema).min(1).max(100), action: z.enum(['enable','disable']) }).parse({ ids: rawIds, action: rawAction });
       if (input.ids.includes(actor.id)) throw new ApiError(422, 'Cannot change your own status in bulk.');
       for (const id of input.ids) await assertUserScope(this.db, actor, id);
       if (actor.role !== 'admin' && (await this.db.query("SELECT 1 FROM users WHERE id=ANY($1::bigint[]) AND role='admin'", [input.ids])).rowCount) throw new ApiError(403, 'Only administrators can manage administrator accounts.');
