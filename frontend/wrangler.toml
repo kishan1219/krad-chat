@@ -9,3 +9,9 @@ not_found_handling = "single-page-application"
 
 [observability]
 enabled = true
+
+[vars]
+REACT_APP_API_URL = "https://krad-chat.onrender.com/api/"
+REACT_APP_ASSET_URL = "https://krad-chat.onrender.com/"
+REACT_APP_WS_URL = "wss://krad-chat.onrender.com/ws"
+

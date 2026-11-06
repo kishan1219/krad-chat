@@ -8,6 +8,10 @@ if (isProduction) {
     process.env.FAST_REFRESH = 'false'
     process.env.DISABLE_ESLINT_PLUGIN = 'true'
     process.env.GENERATE_SOURCEMAP = 'false'
+    // Sensible production defaults for SPA build if not overridden by CI/CD build variables
+    process.env.REACT_APP_API_URL = process.env.REACT_APP_API_URL || 'https://krad-chat.onrender.com/api/'
+    process.env.REACT_APP_ASSET_URL = process.env.REACT_APP_ASSET_URL || 'https://krad-chat.onrender.com/'
+    process.env.REACT_APP_WS_URL = process.env.REACT_APP_WS_URL || 'wss://krad-chat.onrender.com/ws'
 }
 
 module.exports = {
