@@ -2,7 +2,7 @@
     "name": "krad-chat",
     "version": "8.0.0",
     "private": true,
-    "packageManager": "bun@1.2.15",
+    "packageManager": "bun@1.4.4",
     "dependencies": {
         "@casl/ability": "^6.8.0",
         "@casl/react": "^5.0.1",

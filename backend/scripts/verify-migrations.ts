@@ -36,3 +36,4 @@ main().catch(err => {
   console.error('Migration verification failed:', err);
   process.exit(1);
 });
+

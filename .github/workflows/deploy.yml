@@ -88,7 +88,7 @@ jobs:
       - name: Setup Bun Runtime
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.2.15
+          bun-version: 1.4.4
 
       - name: Install frontend dependencies via Bun
         run: bun install --frozen-lockfile
@@ -153,3 +153,4 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET || 'migration_dummy_secret_for_schema_validation_only_12345678' }}
           ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY || '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef' }}
         run: npm run migrate
+

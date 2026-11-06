@@ -168,3 +168,4 @@ docker compose -f docker-compose.staging.yml exec api npm run migrate
      - **Callback URL**: `https://api.yourdomain.com/api/webhooks/meta`
      - **Verify Token**: Same as `META_VERIFY_TOKEN` configured in your backend environment.
      - **Webhook Fields**: Subscribe to `messages` and `message_template_status_update`.
+

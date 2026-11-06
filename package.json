@@ -2,7 +2,7 @@
   "name": "krad-chat",
   "version": "1.0.0",
   "private": true,
-  "packageManager": "bun@1.2.15",
+  "packageManager": "bun@1.4.4",
   "description": "Krad Chat - Enterprise WhatsApp Cloud API & Messaging Automation Platform",
   "scripts": {
     "start:backend": "npm --prefix backend run dev",
