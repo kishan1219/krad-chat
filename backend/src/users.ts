@@ -24,8 +24,34 @@ export class Users {
   }
   async create(actor: Actor, body: any) {
     authorize(actor, 'users:write');
-    const input = z.object({ email: z.email(), name: z.string().min(1).max(100), password: passwordSchema,
-      role: z.enum(['admin', 'reseller', 'operator', 'viewer']).default('viewer'), permissions: z.array(z.enum(permissions as [string, ...string[]])).default([]) }).parse(body);
+    let mappedRole: 'admin' | 'reseller' | 'operator' | 'viewer' = 'viewer';
+    if (body.role === 'admin' || body.userType === 0 || body.userType === '0') mappedRole = 'admin';
+    else if (body.role === 'reseller' || body.userType === 1 || body.userType === '1') mappedRole = 'reseller';
+    else if (body.role === 'operator' || body.role === 'client' || body.userType === 2 || body.userType === '2') mappedRole = 'operator';
+    else if (body.role === 'viewer' || body.role === 'employee' || body.userType === 3 || body.userType === '3') mappedRole = 'viewer';
+    else if (['admin', 'reseller', 'operator', 'viewer'].includes(body.role)) mappedRole = body.role;
+
+    let permissionsList: string[] = Array.isArray(body.permissions) ? body.permissions : [];
+    if (!permissionsList.length) {
+      if (mappedRole === 'admin') permissionsList = ['campaign:create', 'campaign:cancel', 'chat:reply', 'contacts:read', 'contacts:write', 'templates:read', 'templates:write', 'users:read', 'users:write'];
+      else if (mappedRole === 'reseller') permissionsList = ['campaign:create', 'campaign:cancel', 'chat:reply', 'contacts:read', 'contacts:write', 'templates:read', 'users:read', 'users:write'];
+      else if (mappedRole === 'operator') permissionsList = ['campaign:create', 'chat:reply', 'contacts:read', 'contacts:write', 'templates:read'];
+      else permissionsList = ['contacts:read', 'templates:read'];
+    }
+
+    const input = z.object({
+      email: z.string().email(),
+      name: z.string().min(1).max(100),
+      password: passwordSchema,
+      role: z.enum(['admin', 'reseller', 'operator', 'viewer']).default('viewer'),
+      permissions: z.array(z.enum(permissions as [string, ...string[]])).default([])
+    }).parse({
+      email: body.email,
+      name: body.name || body.username || 'User',
+      password: body.password,
+      role: mappedRole,
+      permissions: permissionsList.filter(p => (permissions as readonly string[]).includes(p))
+    });
     if (actor.role !== 'admin' && (input.role === 'admin' || input.permissions.some(p => !actor.permissions.includes(p)))) throw new ApiError(403, 'Cannot grant elevated privileges.');
     if (!['admin','reseller'].includes(actor.role)) throw new ApiError(403, 'Only administrators and resellers can create child accounts.');
     const row = await this.db.transaction(async c => {

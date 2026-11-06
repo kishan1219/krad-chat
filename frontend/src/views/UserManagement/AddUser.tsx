@@ -3,11 +3,10 @@ import React, { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useDispatch, useSelector } from 'react-redux'
 import { CardBody, Col, Row } from 'reactstrap'
-import { AuthorityType, accountType, createUserType, forResellerUserType } from '../../utility/Const'
+import { Users, Briefcase, CheckSquare, UploadCloud } from 'react-feather'
+import { createUserType, forResellerUserType } from '../../utility/Const'
 import Hide from '../../utility/Hide'
 import Show from '../../utility/Show'
-import { checkPassword, createConstSelectOptions, createSelectOptions } from '../../utility/Utils'
-import { loadRole } from '../../utility/apis/roleList'
 import { addUser, editUser } from '../../utility/apis/userManagement'
 import { isValid, isValidArray } from '../../utility/helpers/common'
 import httpConfig from '../../utility/http/httpConfig'
@@ -15,111 +14,133 @@ import DropZone from '../components/fileUploader'
 import FormGroupCustom from '../components/formGroupCustom'
 import CenteredModal from '../components/modal/CenteredModal'
 
-export default function AddUser({ edit = null, noView = false, modal = false, setModal = () => { }, showModal = false, setShowModal = () => { }, Component = "span", children = null, ...rest }) {
-
+export default function AddUser({
+    edit = null,
+    noView = false,
+    modal = false,
+    setModal = () => { },
+    showModal = false,
+    setShowModal = () => { },
+    Component = "span",
+    children = null,
+    ...rest
+}) {
     const [open, setOpen] = useState(false)
-    const [editData, setEditData] = useState(null)
     const [loading, setLoading] = useState(false)
-    const [loadRoles, setLoadRoles] = useState(false)
-    const [user, setUser] = useState([])
     const dispatch = useDispatch()
-    const [role, setRole] = useState(null)
-    const form = useForm()
-    const { formState: { errors }, handleSubmit, control, reset, setValue, watch, setError, getValues } = form
+    const form = useForm({
+        defaultValues: {
+            userType: 2,
+            allow_chat_reply: true,
+            allow_broadcast: true,
+            allow_to_add_webhook: true,
+            allow_detail_report: true,
+            locktimeout: 30
+        }
+    })
+    const { formState: { errors }, handleSubmit, control, reset, setValue, watch, setError } = form
 
     const loginUser = useSelector(state => state.auth.userData)
 
-    const listAllRoles = () => {
-        loadRole({
-            perPage: 1000,
-            loading: setLoadRoles,
-            dispatch,
-            success: (e) => {
-                setRole(createSelectOptions(e?.data?.data, "actual_name", "id"))
-            }
-
-        })
-    }
-
-    useEffect(() => {
-        if (open) {
-            listAllRoles()
-        }
-    }, [open])
     const handleShow = () => {
-        reset()
+        reset({
+            userType: edit?.userType ?? 2,
+            name: edit?.name || '',
+            email: edit?.email || '',
+            username: edit?.username || '',
+            mobile: edit?.mobile || '',
+            companyName: edit?.companyName || '',
+            designation: edit?.designation || '',
+            city: edit?.city || '',
+            locktimeout: edit?.locktimeout || 30,
+            allow_chat_reply: true,
+            allow_broadcast: true,
+            allow_to_add_webhook: edit?.allow_to_add_webhook === 1,
+            allow_detail_report: edit?.allow_detail_report === 1,
+            companyLogo: edit?.companyLogo || ''
+        })
         setOpen(!open)
         setModal(!open)
-        if (edit === null) setEditData(null)
-
     }
-    const handleClose = (from = null) => {
-        handleShow()
+
+    const handleClose = () => {
+        setOpen(false)
+        setModal(false)
         setShowModal(false)
     }
+
     useEffect(() => {
         if (showModal) handleShow()
     }, [showModal])
 
     const handleSave = (data) => {
+        const mappedRole = Number(data?.userType) === 1
+            ? 'reseller'
+            : (Number(data?.userType) === 0 ? 'admin' : (Number(data?.userType) === 3 ? 'viewer' : 'operator'))
+
+        const payload = {
+            ...data,
+            name: data?.name || data?.username || 'Team Member',
+            username: data?.username || data?.email,
+            email: data?.email,
+            password: data?.password,
+            userType: Number(data?.userType || 2),
+            role: mappedRole,
+            mobile: data?.mobile || '',
+            companyName: data?.companyName || '',
+            designation: data?.designation || '',
+            city: data?.city || '',
+            locktimeout: data?.locktimeout ? String(data?.locktimeout) : "30",
+            allow_to_add_webhook: data?.allow_to_add_webhook ? 1 : 2,
+            allow_detail_report: data?.allow_detail_report ? 1 : 2,
+            allow_chat_reply: data?.allow_chat_reply ? 1 : 2
+        }
+
         if (edit?.id) {
             editUser({
                 id: edit?.id,
-                jsonData: {
-                    ...data,
-                    is_visible_dlt_template_group: data?.is_visible_dlt_template_group === 1 ? 1 : 2,
-                    allow_to_add_webhook: data?.allow_to_add_webhook === 1 ? 1 : 2,
-                    allow_detail_report: data?.allow_detail_report === 1 ? 1 : 2
-                },
+                jsonData: payload,
                 dispatch,
                 loading: setLoading,
-                success: (d) => {
-                    handleClose()
-
-                },
+                success: () => handleClose(),
                 errors: (e) => {
                     const d = e?.data?.data
                     for (const key in d) {
                         if (Object.hasOwnProperty.call(d, key)) {
                             if (isValidArray(d[key])) {
-                                const message = d[key]?.map(a => `${a} \n`)
+                                const message = d[key]?.map(a => `${a} \n`).join('')
                                 setError(key, { message, type: "validate" })
                             }
                         }
                     }
-
                 }
             })
         } else {
             addUser({
-                jsonData: {
-                    ...data,
-                    locktimeout: data?.locktimeout ? data?.locktimeout : "10",
-                    is_visible_dlt_template_group: data?.is_visible_dlt_template_group === 1 ? 1 : 2,
-                    allow_to_add_webhook: data?.allow_to_add_webhook === 1 ? 1 : 2,
-                    allow_detail_report: data?.allow_detail_report === 1 ? 1 : 2
-
-                },
+                jsonData: payload,
                 loading: setLoading,
                 dispatch,
-                success: (e) => {
-                    handleClose()
-                },
+                success: () => handleClose(),
                 errors: (e) => {
                     const d = e?.data?.data
                     for (const key in d) {
                         if (Object.hasOwnProperty.call(d, key)) {
                             if (isValidArray(d[key])) {
-                                const message = d[key]?.map(a => `${a} \n`)
+                                const message = d[key]?.map(a => `${a} \n`).join('')
                                 setError(key, { message, type: "validate" })
                             }
                         }
                     }
-
                 }
             })
         }
     }
+
+    const roleOptions = [
+        { label: "Client (WhatsApp Business Account)", value: 2 },
+        { label: "Team Agent / Operator (Live Chat & Campaigns)", value: 3 },
+        { label: "Reseller Partner (Multi-Client Manager)", value: 1 }
+    ]
 
     return (
         <>
@@ -127,355 +148,254 @@ export default function AddUser({ edit = null, noView = false, modal = false, se
             <CenteredModal
                 loading={loading}
                 open={open}
-                scrollControl={false}
+                scrollControl={true}
                 handleModal={handleClose}
-                modalClass="modal-xl"
+                modalClass="modal-lg"
                 disableSave={loading}
                 handleSave={handleSubmit(handleSave)}
-                title={isValid(edit) ? edit?.name : "Add User"}>
-                <form>
-                    <CardBody>
-                        <Row>
-                            <Hide IF={loginUser?.userType === 1}>
-                                <Col md="3" xs="12" >
+                title={isValid(edit) ? `Edit User: ${edit?.name}` : "Add Team Member / Client"}
+            >
+                <form onSubmit={handleSubmit(handleSave)}>
+                    <CardBody className='p-3'>
+                        {/* Subheader info card */}
+                        <div className='p-2 mb-3 rounded' style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+                            <h6 className='fw-bolder mb-25' style={{ color: '#059669' }}>
+                                WhatsApp Cloud Platform User Setup
+                            </h6>
+                            <p className='small text-muted mb-0'>
+                                Assign credentials and operational permissions for agents handling customer conversations, broadcasts, and automations.
+                            </p>
+                        </div>
 
-                                    <FormGroupCustom
-                                        type={"select"}
-                                        control={control}
-                                        name="userType"
-                                        value={edit?.userType}
-                                        isClearable
-                                        isDisabled={isValid(edit)}
-                                        label="User Type"
-                                        errors={errors}
-                                        // label={FM("vacation-trip")}
+                        {/* Section 1: Account Credentials */}
+                        <div className='d-flex align-items-center mb-2 pb-1 border-bottom'>
+                            <div className='avatar bg-light-primary rounded me-1 p-50'>
+                                <Users size={18} className='text-primary' />
+                            </div>
+                            <div>
+                                <h5 className='mb-0 fw-bolder text-dark'>Account Credentials &amp; Role</h5>
+                                <small className='text-muted'>Define user role, login identity, and authentication details</small>
+                            </div>
+                        </div>
 
-                                        options={createConstSelectOptions(createUserType)}
-                                        rules={{ required: true }}
-
-                                    />
-                                </Col>
-                            </Hide>
-
-                            <Show IF={loginUser?.userType === 1}>
-                                <Col md="3" xs="12" >
-
-                                    <FormGroupCustom
-                                        type={"select"}
-                                        control={control}
-                                        name="userType"
-                                        value={edit?.userType}
-                                        isClearable
-                                        label="User Type"
-                                        isDisabled={isValid(edit)}
-
-                                        errors={errors}
-                                        // label={FM("vacation-trip")}
-                                        options={createConstSelectOptions(forResellerUserType)}
-                                        rules={{ required: true }}
-
-                                    />
-                                </Col>
-                            </Show>
-                            {watch("userType") === 3 ? <Col md="3">
-
+                        <Row className='gy-1 mb-3'>
+                            <Col md="6" xs="12">
                                 <FormGroupCustom
-
-                                    defaultOptions
-                                    value={edit?.roles[0]?.id}
-                                    control={control}
                                     type={"select"}
-                                    errors={errors}
-                                    name={"role_id"}
-                                    isClearable
-                                    className='mb-1'
+                                    control={control}
+                                    name="userType"
+                                    value={watch("userType") ?? 2}
                                     isDisabled={isValid(edit)}
-
-                                    loadOptions={listAllRoles}
-
-                                    options={role}
-
-                                    label="Role Type"
+                                    label="Account Role *"
+                                    errors={errors}
+                                    options={roleOptions}
                                     rules={{ required: true }}
-
                                 />
-                            </Col> : ""}
-                            <Col md="3" xs="12" >
+                            </Col>
+                            <Col md="6" xs="12">
                                 <FormGroupCustom
                                     type={"text"}
                                     control={control}
                                     name="name"
                                     value={edit?.name}
-                                    className='mb-1'
-                                    label="Name"
+                                    label="Full Name *"
+                                    placeholder="e.g. Rahul Sharma"
                                     rules={{ required: true }}
                                     errors={errors}
                                 />
                             </Col>
-                            <Col md="3" xs="12" >
+                            <Col md="6" xs="12">
                                 <FormGroupCustom
                                     type={"email"}
                                     control={control}
                                     name="email"
                                     value={edit?.email}
-                                    className='mb-1'
-                                    label="Email"
+                                    label="Work Email *"
+                                    placeholder="agent@company.com"
                                     errors={errors}
                                     rules={{ required: true }}
-
                                 />
                             </Col>
-                            <Col md="3" xs="12" >
-                                <FormGroupCustom
-                                    type={"text"}
-                                    control={control}
-                                    name="username"
-                                    value={edit?.username}
-                                    className='mb-1'
-                                    label="User Name"
-                                    errors={errors}
-                                    rules={{ required: true }}
-
-                                />
-                            </Col>
-                            <Hide IF={edit} >
-                                <Col md="3" xs="12" >
+                            <Hide IF={edit}>
+                                <Col md="6" xs="12">
                                     <FormGroupCustom
                                         type={"password"}
                                         control={control}
                                         name="password"
-                                        value={edit?.password}
-                                        message={"Password Must Be of 8 Character including atleast a Uppercase Letter, a Lowercase, a Number & a Special Character"}
-                                        className='mb-1'
-                                        minLength="6"
-                                        label="Password"
+                                        label="Login Password *"
+                                        placeholder="Min. 6 characters"
                                         errors={errors}
-                                        rules={{ required: true, validate: checkPassword }}
-
+                                        rules={{ required: !edit, minLength: 6 }}
                                     />
                                 </Col>
                             </Hide>
-                            <Col md="3" xs="12" >
+                        </Row>
+
+                        {/* Section 2: Contact & Business Profile */}
+                        <div className='d-flex align-items-center mb-2 pb-1 border-bottom'>
+                            <div className='avatar bg-light-success rounded me-1 p-50'>
+                                <Briefcase size={18} className='text-success' />
+                            </div>
+                            <div>
+                                <h5 className='mb-0 fw-bolder text-dark'>Business &amp; Contact Information</h5>
+                                <small className='text-muted'>Organization identity and communication parameters</small>
+                            </div>
+                        </div>
+
+                        <Row className='gy-1 mb-3'>
+                            <Col md="6" xs="12">
                                 <FormGroupCustom
                                     type={"text"}
                                     control={control}
                                     name="mobile"
                                     value={edit?.mobile}
-                                    className='mb-1'
-                                    label="Mobile"
-                                    message={"Mobile Number Must Be between 10 to 12 Character"}
-
-                                    rules={{ required: true, minLength: "10", maxLength: "12" }}
-                                    errors={errors}
-                                />
-                            </Col>
-                            <Col md="6" xs="12" >
-                                <FormGroupCustom
-                                    type={"text"}
-                                    control={control}
-                                    name="address"
-                                    value={edit?.address}
-                                    className='mb-1'
-                                    label="Address"
-                                    errors={errors}
+                                    label="Mobile / WhatsApp Number *"
+                                    placeholder="+91 9876543210"
                                     rules={{ required: true }}
-
-                                />
-                            </Col>
-                            <Col md="3" xs="12" >
-                                <FormGroupCustom
-                                    type={"text"}
-                                    control={control}
-                                    name="city"
-                                    value={edit?.city}
-                                    className='mb-1'
-                                    label="City"
                                     errors={errors}
-                                    rules={{ required: false }}
-
                                 />
                             </Col>
-                            <Col md="3" xs="12" >
-                                <FormGroupCustom
-                                    type={"number"}
-                                    control={control}
-                                    name="zipCode"
-                                    value={edit?.zipCode}
-                                    className='mb-1'
-                                    label="ZipCode"
-                                    errors={errors}
-                                    rules={{ required: false, minLength: "6", maxLength: "6" }}
-
-                                />
-                            </Col>
-                            <Col md="3" xs="12" >
+                            <Col md="6" xs="12">
                                 <FormGroupCustom
                                     type={"text"}
                                     control={control}
                                     name="companyName"
                                     value={edit?.companyName}
-                                    className='mb-1'
-                                    label="Company Name"
+                                    label="Company / Brand Name"
+                                    placeholder="e.g. KRAD Technologies"
                                     errors={errors}
-                                    rules={{ required: false }}
-
                                 />
                             </Col>
-
-                            <Col md="3" xs="12" >
-                                <FormGroupCustom
-                                    type={"text"}
-                                    control={control}
-                                    name="websiteUrl"
-                                    value={edit?.websiteUrl}
-                                    className='mb-1'
-                                    label="Website Url"
-                                    errors={errors}
-                                    rules={{ required: false }}
-
-                                />
-                            </Col>
-                            <Col md="3" xs="12" >
+                            <Col md="6" xs="12">
                                 <FormGroupCustom
                                     type={"text"}
                                     control={control}
                                     name="designation"
                                     value={edit?.designation}
-                                    className='mb-1'
-                                    label="Designation"
+                                    label="Designation / Role Title"
+                                    placeholder="e.g. Customer Support Lead"
                                     errors={errors}
-                                    rules={{ required: false }}
-
                                 />
                             </Col>
-                            <Hide IF={loginUser?.userType === 1}>
-                                <Col md="3" xs="12" >
+                            <Col md="6" xs="12">
+                                <FormGroupCustom
+                                    type={"text"}
+                                    control={control}
+                                    name="city"
+                                    value={edit?.city}
+                                    label="City / Headquarters"
+                                    placeholder="e.g. Mumbai"
+                                    errors={errors}
+                                />
+                            </Col>
+                        </Row>
+
+                        {/* Section 3: Feature Permissions */}
+                        <div className='d-flex align-items-center mb-2 pb-1 border-bottom'>
+                            <div className='avatar bg-light-info rounded me-1 p-50'>
+                                <CheckSquare size={18} className='text-info' />
+                            </div>
+                            <div>
+                                <h5 className='mb-0 fw-bolder text-dark'>Operational Permissions</h5>
+                                <small className='text-muted'>Enable or restrict platform access privileges</small>
+                            </div>
+                        </div>
+
+                        <Row className='gy-2 mb-3'>
+                            <Col md="6" xs="12">
+                                <div className='d-flex align-items-center justify-content-between p-2 border rounded' style={{ background: '#f8fafc' }}>
+                                    <div className='pe-1'>
+                                        <div className='fw-bold text-dark' style={{ fontSize: '0.92rem' }}>Live Chat Responses</div>
+                                        <small className='text-muted'>Reply to inbound WhatsApp messages in Shared Team Inbox</small>
+                                    </div>
                                     <FormGroupCustom
-                                        type={"select"}
+                                        noLabel
+                                        type={"checkbox"}
                                         control={control}
-                                        name="authority_type"
-                                        value={edit?.authority_type ?? 2}
-                                        // defaultOptions = {2}
-                                        // value = {"2"}
-                                        isClearable
-                                        label="Authority Type"
-                                        errors={errors}
-                                        // label={FM("vacation-trip")}
-                                        options={createConstSelectOptions(AuthorityType)}
-                                        rules={{ required: false }}
-
+                                        name="allow_chat_reply"
+                                        defaultChecked={true}
                                     />
-
-                                </Col>
-                            </Hide>
-                            <Show IF={(loginUser?.userType === 0 || loginUser?.userType === 3) && (watch('userType') === 1 || watch('userType') === 2)}>
-
-                                <Col md="3" xs="12" >
-
+                                </div>
+                            </Col>
+                            <Col md="6" xs="12">
+                                <div className='d-flex align-items-center justify-content-between p-2 border rounded' style={{ background: '#f8fafc' }}>
+                                    <div className='pe-1'>
+                                        <div className='fw-bold text-dark' style={{ fontSize: '0.92rem' }}>Broadcast &amp; Campaigns</div>
+                                        <small className='text-muted'>Send bulk WhatsApp template campaigns to opt-in contacts</small>
+                                    </div>
                                     <FormGroupCustom
-                                        type={"select"}
+                                        noLabel
+                                        type={"checkbox"}
                                         control={control}
-                                        name="account_type"
-                                        value={edit?.account_type}
-                                        isClearable
-                                        label="Account Type"
-                                        // isDisabled={isValid(edit)}
-
-                                        errors={errors}
-                                        // label={FM("vacation-trip")}
-                                        options={createConstSelectOptions(accountType)}
-                                        rules={{ required: true }}
-
+                                        name="allow_broadcast"
+                                        defaultChecked={true}
                                     />
-                                </Col>
-                            </Show>
-                            <Col md="3" xs="12" >
-                                <FormGroupCustom
-                                    type={"number"}
-                                    control={control}
-                                    name="locktimeout"
-                                    value={edit?.locktimeout}
-                                    className='mb-1'
-                                    message={"Minimum locktimeout is 10 min & max 120"}
-                                    label="Locktimeout"
-                                    placeholder="Enter time in minutes"
-                                    errors={errors}
-                                    rules={{ required: false, min: "10" }}
-
-
-                                />
+                                </div>
                             </Col>
-                            <Col md="3" xs="12" >
-                                <FormGroupCustom
-                                    type={"checkbox"}
-                                    control={control}
-                                    name="is_visible_dlt_template_group"
-                                    value={edit?.is_visible_dlt_template_group}
-                                    className='mt-2'
-                                    // message={"Minimum locktimeout is 10 min & max 120"}
-                                    label="Is Visible DLT Template Group"
-                                    // placeholder="Enter time in minutes"
-                                    errors={errors}
-                                    rules={{ required: false }}
-
-
-                                />
+                            <Col md="6" xs="12">
+                                <div className='d-flex align-items-center justify-content-between p-2 border rounded' style={{ background: '#f8fafc' }}>
+                                    <div className='pe-1'>
+                                        <div className='fw-bold text-dark' style={{ fontSize: '0.92rem' }}>Webhook Integrations</div>
+                                        <small className='text-muted'>Register external callback URLs for real-time delivery events</small>
+                                    </div>
+                                    <FormGroupCustom
+                                        noLabel
+                                        type={"checkbox"}
+                                        control={control}
+                                        name="allow_to_add_webhook"
+                                        defaultChecked={true}
+                                    />
+                                </div>
                             </Col>
-                            <Col md="3" xs="12" >
-                                <FormGroupCustom
-                                    type={"checkbox"}
-                                    control={control}
-                                    name="allow_to_add_webhook"
-                                    value={edit?.allow_to_add_webhook}
-                                    className='mt-2'
-                                    // message={"Minimum locktimeout is 10 min & max 120"}
-                                    label="Allow To Add Webhook"
-                                    // placeholder="Enter time in minutes"
-                                    errors={errors}
-                                    rules={{ required: false }}
-
-
-                                />
+                            <Col md="6" xs="12">
+                                <div className='d-flex align-items-center justify-content-between p-2 border rounded' style={{ background: '#f8fafc' }}>
+                                    <div className='pe-1'>
+                                        <div className='fw-bold text-dark' style={{ fontSize: '0.92rem' }}>Analytics &amp; Detailed Reports</div>
+                                        <small className='text-muted'>Export delivery receipts, message logs &amp; performance metrics</small>
+                                    </div>
+                                    <FormGroupCustom
+                                        noLabel
+                                        type={"checkbox"}
+                                        control={control}
+                                        name="allow_detail_report"
+                                        defaultChecked={true}
+                                    />
+                                </div>
                             </Col>
-                            <Col md="3" xs="12" >
-                                <FormGroupCustom
-                                    type={"checkbox"}
-                                    control={control}
-                                    name="allow_detail_report"
-                                    value={edit?.allow_detail_report}
-                                    className='mt-2'
-                                    // message={"Minimum locktimeout is 10 min & max 120"}
-                                    label="Allow To Detail Report"
-                                    // placeholder="Enter time in minutes"
-                                    errors={errors}
-                                    rules={{ required: false }}
+                        </Row>
 
+                        {/* Section 4: Brand Avatar / Company Logo */}
+                        <div className='d-flex align-items-center mb-2 pb-1 border-bottom'>
+                            <div className='avatar bg-light-secondary rounded me-1 p-50'>
+                                <UploadCloud size={18} className='text-secondary' />
+                            </div>
+                            <div>
+                                <h5 className='mb-0 fw-bolder text-dark'>Profile Avatar / Company Logo</h5>
+                                <small className='text-muted'>Upload brand avatar for WhatsApp profile display</small>
+                            </div>
+                        </div>
 
-                                />
-                            </Col>
-
-                            <h4 className="mb-3 mt-2"> Upload File </h4>
-                            <Col md="12" >
+                        <Row>
+                            <Col md="12">
                                 <FormGroupCustom
                                     noLabel
                                     name={"companyLogo"}
                                     type={"hidden"}
                                     errors={errors}
                                     control={control}
-                                    // accept="image/*"
-                                    accept="image/png, image/gif, image/jpeg"
                                     rules={{ required: false }}
-                                    values={edit?.companyLogo}
-
                                 />
-                                <DropZone value={isValid(edit?.companyLogo) ? `${httpConfig.baseUrl2}${edit?.companyLogo}` : null} name={edit?.companyLogo} accept="image/png, image/gif, image/jpeg" onSuccess={e => setValue("companyLogo", e[0]?.file_name)} />
-
+                                <DropZone
+                                    value={isValid(edit?.companyLogo) ? `${httpConfig.baseUrl2}${edit?.companyLogo}` : null}
+                                    name={edit?.companyLogo}
+                                    accept="image/png, image/jpeg, image/webp"
+                                    onSuccess={e => setValue("companyLogo", e[0]?.file_name)}
+                                />
                             </Col>
                         </Row>
                     </CardBody>
                 </form>
             </CenteredModal>
-
         </>
     )
 }

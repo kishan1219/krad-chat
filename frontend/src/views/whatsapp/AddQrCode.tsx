@@ -106,12 +106,12 @@ export default function AddQrCode({ edit = null, noView = false, modal = false, 
             <CenteredModal
                 loading={loading}
                 open={open}
-                scrollControl={false}
+                scrollControl={true}
                 handleModal={handleClose}
-                // modalClass="modal-lg"
+                modalClass="modal-lg"
                 handleSave={handleSubmit(handleSave)}
                 disableSave={loading}
-                title={'Add Qr Code'}>
+                title={'Add WhatsApp QR Code'}>
                 <form>
                     <CardBody>
                         <Row>

@@ -24,7 +24,7 @@ export function isOriginAllowed(
   return false;
 }
 export const idSchema = z.coerce.number().int().positive().max(Number.MAX_SAFE_INTEGER);
-export const passwordSchema = z.string().min(12).max(128);
+export const passwordSchema = z.string().min(6).max(128);
 export const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
 export const token = () => randomBytes(32).toString('hex');
 export function equalSecret(a: string, b: string): boolean {
