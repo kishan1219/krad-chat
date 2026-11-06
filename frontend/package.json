@@ -110,7 +110,7 @@
     "scripts": {
         "dev": "craco start",
         "start": "craco start",
-        "build": "craco build",
+        "build": "node --max-old-space-size=4096 node_modules/@craco/craco/dist/bin/craco.js build",
         "deploy": "wrangler deploy",
         "test": "craco test",
         "eject": "react-scripts eject",

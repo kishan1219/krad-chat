@@ -7,6 +7,7 @@ if (isProduction) {
     process.env.NODE_ENV = 'production'
     process.env.FAST_REFRESH = 'false'
     process.env.DISABLE_ESLINT_PLUGIN = 'true'
+    process.env.GENERATE_SOURCEMAP = 'false'
 }
 
 module.exports = {
@@ -59,6 +60,9 @@ module.exports = {
         //     ]
         // },
         configure: (webpackConfig) => {
+            if (isProduction) {
+                webpackConfig.devtool = false
+            }
             const scopePluginIndex = webpackConfig.resolve.plugins.findIndex(
                 ({ constructor }) => constructor && constructor.name === 'ModuleScopePlugin'
             )
