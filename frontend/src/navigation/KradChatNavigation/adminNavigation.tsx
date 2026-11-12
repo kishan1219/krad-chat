@@ -57,9 +57,16 @@ export default [
         children: [
             {
                 id: 'whatsapp-workflows',
-                title: 'Workflow Builder',
+                title: 'Chatbot Flows',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/whatsapp-workflows',
+                ...Permissions.whatsappSmsList
+            },
+            {
+                id: 'whatsapp-drip-sequences',
+                title: 'Drip Sequences',
+                icon: <ChevronRightOutlined size={12} />,
+                navLink: '/whatsapp-drip-sequences',
                 ...Permissions.whatsappSmsList
             },
             {
@@ -144,7 +151,7 @@ export default [
         children: [
             {
                 id: 'whatsapp-connections',
-                title: 'Business Connections',
+                title: 'Meta 1-Click & Numbers',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/whatsapp-connections',
                 ...Permissions.whatsappConfigList
@@ -335,52 +342,17 @@ export default [
     },
 
     // -------------------------------------------------------------------------
-    // 6. BILLING & INFRASTRUCTURE
+    // 6. BILLING & NOTIFICATIONS
     // -------------------------------------------------------------------------
     {
-        header: "Billing & Infrastructure"
+        header: "Billing & Account"
     },
     {
         id: 'credit-request',
-        title: 'Wallet & Credits',
+        title: 'Billing & Balances',
         icon: <CurrencyRupeeOutlined size={20} />,
         navLink: '/credit-request',
         ...Permissions.creditRequest
-    },
-    {
-        id: 'routes',
-        title: 'Gateway Routes',
-        icon: <StorageOutlined size={20} />,
-        children: [
-            {
-                id: 'primary-route',
-                title: 'Primary Routes',
-                icon: <ChevronRightOutlined size={12} />,
-                navLink: '/primary-routes',
-                ...Permissions.primaryList
-            },
-            {
-                id: 'secondary-route',
-                title: 'Secondary Routes',
-                icon: <ChevronRightOutlined size={12} />,
-                navLink: '/secondary-routes',
-                ...Permissions.secondaryView
-            },
-            {
-                id: 'dlr list',
-                title: 'DLR Return Codes',
-                icon: <ChevronRightOutlined size={12} />,
-                navLink: '/dlr-list',
-                ...Permissions.dlrList
-            },
-            {
-                id: 'get-kannel-status',
-                title: 'Kannel Gateway Status',
-                icon: <ChevronRightOutlined size={12} />,
-                navLink: '/get-current-kennel-status',
-                ...Permissions.currentKannelStatus
-            }
-        ]
     },
     {
         id: 'notification',

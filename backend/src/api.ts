@@ -418,12 +418,17 @@ export class Api {
         : this.metaConnections.createTemplate(actor, templateAction[1], body);
     }
     if (path.startsWith('whatsapp/onboarding/')) {
+      if (path === 'whatsapp/onboarding/config') {
+        if (method === 'GET') return this.metaOnboarding.getConfig(actor);
+        this.requireMethod(method, ['POST'], res);
+        return this.metaOnboarding.saveConfig(actor, body);
+      }
       if (path === 'whatsapp/onboarding/history') {
         this.requireMethod(method, ['GET'], res);
         return this.metaOnboarding.history(actor);
       }
       this.requireMethod(method, ['POST'], res);
-      if (path === 'whatsapp/onboarding/begin') return this.metaOnboarding.begin(actor);
+      if (path === 'whatsapp/onboarding/begin') return this.metaOnboarding.begin(actor, body);
       if (path === 'whatsapp/onboarding/complete') return this.metaOnboarding.complete(actor, body);
       throw new ApiError(404, 'Unknown onboarding action.');
     }
@@ -474,6 +479,27 @@ export class Api {
     if (workflowPublish) {
       this.requireMethod(method, ['POST'], res);
       return this.workflows.publish(actor, workflowPublish[1], body.enabled);
+    }
+
+    if (path === 'drip-sequences') {
+      this.requireMethod(method, ['GET'], res);
+      const [flows, runs] = await Promise.all([
+        this.workflows.list(actor),
+        this.workflows.runs(actor)
+      ]);
+      const activeRuns = runs.filter((r: any) => r.status === 'queued' || r.status === 'running');
+      return {
+        sequences: flows,
+        active_runs: runs,
+        stats: {
+          total_sequences: flows.length,
+          active_sequences: flows.filter((f: any) => f.enabled).length,
+          total_enrolled: runs.length,
+          in_progress: activeRuns.length,
+          completed: runs.filter((r: any) => r.status === 'completed').length,
+          failed: runs.filter((r: any) => r.status === 'failed').length
+        }
+      };
     }
 
     // 8. Invitations

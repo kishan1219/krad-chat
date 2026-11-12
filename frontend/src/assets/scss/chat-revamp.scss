@@ -512,7 +512,8 @@
       align-items: center;
       justify-content: center;
       height: 100%;
-      background-color: #f0f2f5;
+      background-image: none !important;
+      background-color: #f0f2f5 !important;
       text-align: center;
       padding: 2rem;
 
@@ -679,7 +680,8 @@
     }
 
     .chat-app-window .start-chat-area {
-      background-color: #0b141a;
+      background-image: none !important;
+      background-color: #0b141a !important;
 
       .start-chat-title {
         color: #e9edef;

@@ -78,9 +78,12 @@ const userData = JSON.parse(localStorage.getItem('kradChatData') || 'null')
 const TeamInvitations = lazy(() => import('../../views/TeamInvitations'))
 const WebhookEvents = lazy(() => import('../../views/whatsapp/WebhookEvents'))
 const WorkflowBuilder = lazy(() => import('../../views/whatsapp/WorkflowBuilder'))
+const DripSequences = lazy(() => import('../../views/whatsapp/DripSequences'))
 const WhatsappConnections = lazy(() => import('../../views/whatsapp/Connections'))
 const KradChatRoutes = [
     { path: '/whatsapp-workflows', element: <WorkflowBuilder />, meta: { ...Permissions.whatsappSmsList } },
+    { path: '/whatsapp-flows', element: <WorkflowBuilder />, meta: { ...Permissions.whatsappSmsList } },
+    { path: '/whatsapp-drip-sequences', element: <DripSequences />, meta: { ...Permissions.whatsappSmsList } },
     { path: '/whatsapp-broadcasts', element: <SendWhatsapp />, meta: { ...Permissions.whatsappSmsList } },
     { path: '/whatsapp-connections', element: <WhatsappConnections />, meta: { ...Permissions.whatsappConfigList } },
     { path: '/whatsapp-webhook-events', element: <WebhookEvents />, meta: { ...Permissions.whatsappConfigList } },

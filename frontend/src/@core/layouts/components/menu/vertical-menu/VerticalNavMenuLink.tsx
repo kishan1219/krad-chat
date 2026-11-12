@@ -18,6 +18,7 @@ const VerticalNavMenuLink = ({ item, activeItem }) => {
 
   return (
     <li
+      id={item.id}
       className={classnames({
         'nav-item': !item.children,
         disabled: item.disabled,

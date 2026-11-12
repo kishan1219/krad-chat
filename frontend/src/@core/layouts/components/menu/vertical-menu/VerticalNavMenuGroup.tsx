@@ -121,6 +121,7 @@ const VerticalNavMenuGroup = ({
 
   return (
     <li
+      id={item.id}
       className={classnames('nav-item has-sub', {
         open: openClassCondition(item.id),
         'menu-collapsed-open': groupActive.includes(item.id),

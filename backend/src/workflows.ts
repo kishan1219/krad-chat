@@ -12,7 +12,7 @@ const stepSchema=z.discriminatedUnion('kind',[
  z.object({kind:z.literal('contact_update'),field:z.string().regex(/^[a-zA-Z][a-zA-Z0-9_]{0,49}$/),value:z.string().max(1000)}),
  z.object({kind:z.literal('label'),label:z.string().trim().min(1).max(50)}),
  z.object({kind:z.literal('assign'),user_id:idSchema}),
- z.object({kind:z.literal('wait'),seconds:z.number().int().min(1).max(86400)}),
+ z.object({kind:z.literal('wait'),seconds:z.number().int().min(1).max(2592000)}),
  z.object({kind:z.literal('handoff')}),
  z.object({kind:z.literal('note'),text:z.string().trim().min(1).max(4000)}),
  z.object({kind:z.literal('notify'),title:z.string().trim().min(1).max(200),text:z.string().trim().min(1).max(4000)}),

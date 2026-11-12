@@ -7,10 +7,11 @@ import NavbarSearch from './NavbarSearch'
 import NotificationDropdown from './NotificationDropdown'
 
 // ** Third Party Components
-import { Sun, Moon } from 'react-feather'
+import { Sun, Moon, HelpCircle } from 'react-feather'
 
 // ** Reactstrap Imports
-import { NavItem, NavLink } from 'reactstrap'
+import { NavItem, NavLink, UncontrolledTooltip } from 'reactstrap'
+import ProductTour, { createProductTour } from '../../../../views/tour/ProductTour'
 
 const NavbarUser = props => {
   // ** Props
@@ -25,16 +26,26 @@ const NavbarUser = props => {
     }
   }
 
+  const handleStartTour = (e: React.MouseEvent) => {
+    e.preventDefault()
+    const tour = createProductTour()
+    tour.start()
+  }
+
   return (
     <ul className='nav navbar-nav align-items-center ms-auto'>
-      {/* <IntlDropdown /> */}
+      <ProductTour />
+      <NavItem className='d-none d-sm-block me-50'>
+        <NavLink id='nav-tour-guide-btn' className='nav-link-style p-50' onClick={handleStartTour} style={{ cursor: 'pointer' }}>
+          <HelpCircle size={18} className='ficon text-success' />
+          <UncontrolledTooltip target='nav-tour-guide-btn'>Product Tour Guide</UncontrolledTooltip>
+        </NavLink>
+      </NavItem>
       <NavItem className='d-none d-lg-block'>
         <NavLink className='nav-link-style'>
           <ThemeToggler />
         </NavLink>
       </NavItem>
-      {/* <NavbarSearch /> */}
-      {/* <CartDropdown /> */}
       <NotificationDropdown />
       <UserDropdown />
     </ul>

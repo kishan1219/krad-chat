@@ -214,7 +214,7 @@ $chat-profile-sidebar-head-height: 200px;
     // Before starting chat
     .start-chat-area,
     .user-chats {
-      background-image: url($chat-bg-light);
+      background-image: none;
       background-color: $chat-image-back-color;
       background-repeat: repeat;
       background-size: 210px;
