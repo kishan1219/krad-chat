@@ -123,7 +123,7 @@ export async function createApplication(options: { config?: ReturnType<typeof lo
   const workflows = new Workflows(db, campaigns);
   const automation = new Automation(db, campaigns, commerce, workflows);
   const chat = new Chat(db, cfg, providers, notify, campaigns, automation);
-  const webhooks = new Webhooks(cfg, campaigns, chat, billing, db);
+  const webhooks = new Webhooks(cfg, campaigns, chat, billing, db, providers, notify);
   const features = new Features(db);
   const api = new Api(
     cfg,

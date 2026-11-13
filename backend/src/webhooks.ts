@@ -10,7 +10,17 @@ import { customerMessageText } from './whatsapp-message';
 
 export class Webhooks {
   readonly inbox: WebhookInbox;
-  constructor(private cfg: Config, private campaigns: Campaigns, private chat: Chat, private billing: Billing, private db:Db,private providers=new Providers(cfg,db)) { this.inbox=new WebhookInbox(db,body=>this.processMeta(body)); }
+  constructor(
+    private cfg: Config,
+    private campaigns: Campaigns,
+    private chat: Chat,
+    private billing: Billing,
+    private db: Db,
+    private providers = new Providers(cfg, db),
+    private notify?: (tenant: number, event: any) => void
+  ) {
+    this.inbox = new WebhookInbox(db, body => this.processMeta(body));
+  }
   private async processMeta(body:any) {
       for (const entry of body.entry || []) for (const change of entry.changes || []) {
         const value = change.value || {};
@@ -89,6 +99,23 @@ export class Webhooks {
                   "INSERT INTO audit_logs(tenant_id, user_id, action, target) VALUES($1, $2, 'meta.tier.upgrade', $3)",
                   [connection.tenant_id, connection.created_by || 1, `${connection.phone_number_id}:${tier}`]
                 );
+
+                if (this.notify) {
+                  this.notify(connection.tenant_id, {
+                    command: 'notification',
+                    type: 'meta_tier_upgrade',
+                    data: {
+                      title: `WhatsApp Tier Upgraded to ${tier}`,
+                      message: `Meta has automatically upgraded your WhatsApp Business messaging limit for ${connection.display_phone_number || connection.phone_number_id} to ${tier} (${tierDesc}). Your business can now initiate more conversations per rolling 24-hour window!`,
+                      phone_number_id: connection.phone_number_id,
+                      phone_number: connection.display_phone_number,
+                      previous_tier: previousTier,
+                      current_tier: tier,
+                      tier,
+                      event: value.event || 'UPGRADED'
+                    }
+                  });
+                }
               }
             });
           }

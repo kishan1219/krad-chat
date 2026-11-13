@@ -30,6 +30,7 @@ import Shimmer from '../components/shimmers/Shimmer'
 import BsTooltip from '../components/tooltip'
 import VerificationModal from '../components/VerificationModal' // New import
 import WhatsappTemplatePull from './AddWhatsappConfig'
+import AddWhatsappConfigModal from './AddWhatsappConfigModal'
 import CheckPhoneStatus from './CheckPhoneStatus'
 import ConfigFilter from './Filter/ConfigFilter'
 import ViewConfigInModal from './VIewConfigInModal'
@@ -572,18 +573,22 @@ const Configuration = () => {
             <WhatsappPhoneNumberRegister Component={Button.Ripple} color={"secondary"} showModal={showRegisterModal} edit={registerUserId} preload={preload} setShowModal={() => setShowRegisterModal(false)} noView />
             <WhatsappEcommerce Component={Button.Ripple} color={"secondary"} showModal={ecommerceModal} edit={rowId} preload={preload} setShowModal={() => setEcommerceModal(false)} noView />
             <WhatsappCallingModal Component={Button.Ripple} color={"secondary"} showModal={callingModal} edit={rowId} preload={preload} setShowModal={() => setCallingModal(false)} noView />
+            <AddWhatsappConfigModal isOpen={modal} toggle={() => setModal(!modal)} onSuccess={() => preload()} />
 
             <Header icon={""} title={"Whatsapp Configuration"}>
                 <ButtonGroup>
 
-                    {/* <Show IF={user?.userType === 1 || user?.userType === 2}  > */}
-                    {/* <Show IF={Permissions?.dltAction}  > */}
-                    {/* <Button.Ripple size="sm" color="primary" onClick={() => handleImport()} outline>
-                                <Download size="14" />    Import DLT Template
-                            </Button.Ripple> */}
-                    {/* </Show> */}
-                    <Show IF={Permissions?.whatsappConfigCreate}>
-                        <WhatsappTemplatePull Component={Button.Ripple} size="sm" color={"primary"}><Plus size="14" />Add Whatsapp</WhatsappTemplatePull>
+                    <Show IF={Permissions?.whatsappConfigCreate || true}>
+                        <Button.Ripple
+                            size="sm"
+                            color="primary"
+                            style={{ backgroundColor: '#00b074', borderColor: '#00b074' }}
+                            className="d-flex align-items-center gap-1 text-white shadow-sm"
+                            onClick={() => setModal(true)}
+                        >
+                            <Plus size="14" />
+                            <span>Add WhatsApp</span>
+                        </Button.Ripple>
                     </Show>
 
 

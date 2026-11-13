@@ -24,7 +24,8 @@ export const Events = Object.freeze({
     emergency: "emergency",
     completed: "completed",
     request: "request",
-    confirmAlert: "confirmAlert"
+    confirmAlert: "confirmAlert",
+    NotificationReceived: "notificationReceived"
 })
 
 export const CMD = Object.freeze({

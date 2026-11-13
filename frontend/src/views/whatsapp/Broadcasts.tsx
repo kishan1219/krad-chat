@@ -105,6 +105,19 @@ export default function Broadcasts() {
     const [paramMode, setParamMode] = useState<'guided' | 'raw'>('guided')
     const [schedule, setSchedule] = useState('')
     const [segment, setSegment] = useState('')
+    const [audienceType, setAudienceType] = useState<'manual' | 'group'>('manual')
+    const [contactGroups, setContactGroups] = useState<any[]>([])
+    const [selectedGroup, setSelectedGroup] = useState('')
+    const [groupContacts, setGroupContacts] = useState<any[]>([])
+    const [availableColumns, setAvailableColumns] = useState<{ label: string; value: string }[]>([
+        { label: 'First Name', value: 'first_name' },
+        { label: 'Last Name', value: 'last_name' },
+        { label: 'Full Name', value: 'name' },
+        { label: 'Company Name', value: 'company' },
+        { label: 'Email', value: 'email' },
+        { label: 'Phone Number', value: 'phone' }
+    ])
+    const [varMappings, setVarMappings] = useState<Record<string, { mode: 'column' | 'static'; column: string; value: string }>>({})
     const [consentPhone, setConsentPhone] = useState('')
     const [source, setSource] = useState('')
     const [evidence, setEvidence] = useState('')
@@ -144,14 +157,17 @@ export default function Broadcasts() {
     }
 
     async function refresh() {
-        const [s, c, p] = await Promise.all([
+        const [s, c, p, g] = await Promise.all([
             api('whatsapp/senders'),
             api('wa-campaigns'),
-            api('whatsapp/broadcast-policy').catch(() => null)
+            api('whatsapp/broadcast-policy').catch(() => null),
+            api('contact-groups').catch(() => [])
         ])
         setSenders(Array.isArray(s) ? s : [])
         setCampaigns(((c && c.data) || []).filter((item: any) => !item.payload?.internal_chat))
         if (p) setPolicy(p)
+        const groups = (g && g.data) || (Array.isArray(g) ? g : [])
+        setContactGroups(groups)
     }
 
     async function act(work: () => Promise<void>) {
@@ -206,7 +222,98 @@ export default function Broadcasts() {
         await refresh()
     }
 
-    const missingVars = detectedVars.filter(v => !(varValues[v] || '').trim())
+    async function handleSelectGroup(groupId: string) {
+        setSelectedGroup(groupId)
+        if (!groupId) {
+            setGroupContacts([])
+            return
+        }
+        await act(async () => {
+            const res = await api(`contact-numbers?group_id=${encodeURIComponent(groupId)}`).catch(() => null)
+            const contacts = (res && res.data) || (Array.isArray(res) ? res : [])
+            setGroupContacts(contacts)
+
+            const dynamicCols = new Set<string>(['first_name', 'last_name', 'name', 'company', 'email', 'phone'])
+            contacts.forEach((item: any) => {
+                const src = item.data || item
+                Object.keys(src).forEach(k => {
+                    if (!['id', 'tenant_id', 'group_id', 'created_at', 'updated_at', 'credentials_encrypted'].includes(k)) {
+                        dynamicCols.add(k)
+                    }
+                })
+            })
+
+            const cols = Array.from(dynamicCols).map(k => ({
+                value: k,
+                label: k.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+            }))
+            setAvailableColumns(cols)
+
+            const phones = contacts.map((c: any) => (c.data?.phone || c.phone || c.mobile || '')).filter(Boolean)
+            if (phones.length > 0) {
+                setRecipients(phones.join('\n'))
+                setNotice(`Loaded ${phones.length} recipient${phones.length > 1 ? 's' : ''} from Contact Group.`)
+            }
+        })
+    }
+
+    function handleMappingModeChange(v: string, mode: 'column' | 'static') {
+        const cur = varMappings[v] || { mode: 'column', column: v === '1' ? 'first_name' : v === '2' ? 'company' : 'name', value: '' }
+        setVarMappings(prev => ({
+            ...prev,
+            [v]: { ...cur, mode }
+        }))
+    }
+
+    function handleMappingColumnChange(v: string, column: string) {
+        const cur = varMappings[v] || { mode: 'column', column, value: '' }
+        setVarMappings(prev => ({
+            ...prev,
+            [v]: { ...cur, column }
+        }))
+    }
+
+    function getSampleContactValue(colKey: string, contactItem: any): string {
+        if (!contactItem) return ''
+        const src = contactItem.data || contactItem
+        if (colKey === 'first_name') {
+            if (src.first_name) return src.first_name
+            if (src.name) return String(src.name).split(' ')[0]
+            return 'Customer'
+        }
+        if (colKey === 'last_name') {
+            if (src.last_name) return src.last_name
+            if (src.name) {
+                const parts = String(src.name).split(' ')
+                return parts.length > 1 ? parts.slice(1).join(' ') : ''
+            }
+            return ''
+        }
+        if (colKey === 'name') return src.name || src.full_name || 'Valued Customer'
+        if (colKey === 'company') return src.company || src.company_name || 'Acme Corp'
+        if (colKey === 'email') return src.email || 'customer@example.com'
+        if (colKey === 'phone') return src.phone || src.mobile || '+919876543210'
+        return String(src[colKey] || '')
+    }
+
+    const sampleContact = groupContacts[0] || null
+    const computedSampleVars: Record<string, string> = {}
+    detectedVars.forEach(v => {
+        const mapping = varMappings[v] || { mode: audienceType === 'group' ? 'column' : 'static', column: v === '1' ? 'first_name' : v === '2' ? 'company' : 'name', value: varValues[v] || '' }
+        if (audienceType === 'group' && mapping.mode === 'column') {
+            computedSampleVars[v] = getSampleContactValue(mapping.column, sampleContact) || `[${mapping.column}]`
+        } else {
+            computedSampleVars[v] = varValues[v] || ''
+        }
+    })
+
+    const missingVars = detectedVars.filter(v => {
+        const mapping = varMappings[v] || { mode: audienceType === 'group' ? 'column' : 'static', column: v === '1' ? 'first_name' : v === '2' ? 'company' : 'name', value: varValues[v] || '' }
+        if (audienceType === 'group' && mapping.mode === 'column') {
+            return !mapping.column
+        }
+        return !(varValues[v] || '').trim()
+    })
     const canSubmit = !busy &&
                       name.trim() &&
                       sender &&
@@ -387,6 +494,87 @@ export default function Broadcasts() {
                                         <div className='p-2 bg-white rounded border text-muted small'>
                                             ✓ <strong>No dynamic variables required:</strong> This template will be sent directly to recipients exactly as shown in the preview above.
                                         </div>
+                                    ) : audienceType === 'group' ? (
+                                        <div>
+                                            <div className='mb-2 small text-muted'>
+                                                Bind each variable placeholder directly to contact columns from your selected contact book, or enter a fixed text fallback.
+                                            </div>
+                                            <Row className='gy-2'>
+                                                {detectedVars.map(v => {
+                                                    const mapping = varMappings[v] || { mode: 'column', column: v === '1' ? 'first_name' : v === '2' ? 'company' : 'name', value: varValues[v] || '' }
+                                                    return (
+                                                        <Col md={detectedVars.length > 2 ? 6 : 6} key={v}>
+                                                            <div className='p-2 bg-white border rounded shadow-xs'>
+                                                                <div className='d-flex justify-content-between align-items-center mb-1'>
+                                                                    <Label className='fw-bold text-dark small mb-0'>
+                                                                        Variable &#123;&#123;{v}&#125;&#125;
+                                                                    </Label>
+                                                                    <ButtonGroup size='sm'>
+                                                                        <Button
+                                                                            color={mapping.mode === 'column' ? 'primary' : 'outline-secondary'}
+                                                                            style={{ fontSize: '0.75rem', padding: '2px 8px' }}
+                                                                            onClick={() => handleMappingModeChange(v, 'column')}
+                                                                        >
+                                                                            Contact Column
+                                                                        </Button>
+                                                                        <Button
+                                                                            color={mapping.mode === 'static' ? 'primary' : 'outline-secondary'}
+                                                                            style={{ fontSize: '0.75rem', padding: '2px 8px' }}
+                                                                            onClick={() => handleMappingModeChange(v, 'static')}
+                                                                        >
+                                                                            Fixed Text
+                                                                        </Button>
+                                                                    </ButtonGroup>
+                                                                </div>
+
+                                                                {mapping.mode === 'column' ? (
+                                                                    <div>
+                                                                        <Input
+                                                                            type='select'
+                                                                            bsSize='sm'
+                                                                            value={mapping.column}
+                                                                            onChange={e => handleMappingColumnChange(v, e.target.value)}
+                                                                        >
+                                                                            {availableColumns.map(c => (
+                                                                                <option key={c.value} value={c.value}>
+                                                                                    {c.label} ({c.value})
+                                                                                </option>
+                                                                            ))}
+                                                                        </Input>
+                                                                        {sampleContact && (
+                                                                            <small className='text-muted d-block mt-1' style={{ fontSize: '0.78rem' }}>
+                                                                                Sample: <strong className='text-success'>{getSampleContactValue(mapping.column, sampleContact) || 'N/A'}</strong>
+                                                                            </small>
+                                                                        )}
+                                                                    </div>
+                                                                ) : (
+                                                                    <Input
+                                                                        bsSize='sm'
+                                                                        placeholder={`Fixed value for {{${v}}}`}
+                                                                        value={varValues[v] || ''}
+                                                                        onChange={e => handleVarChange(v, e.target.value)}
+                                                                    />
+                                                                )}
+                                                            </div>
+                                                        </Col>
+                                                    )
+                                                })}
+                                            </Row>
+
+                                            {sampleContact && templateBodyText && (
+                                                <div className='mt-2 p-2 bg-light-primary rounded border border-primary'>
+                                                    <div className='d-flex justify-content-between align-items-center mb-1'>
+                                                        <strong className='small text-primary'>
+                                                            📱 Real-Time Contact Sample Preview (Contact 1: {sampleContact.name || sampleContact.phone})
+                                                        </strong>
+                                                        <Badge color='primary' pill>Contact Group: {contactGroups.find(g => String(g.id) === selectedGroup)?.name || 'Custom Book'}</Badge>
+                                                    </div>
+                                                    <div className='p-2 bg-white rounded border small' style={{ lineHeight: '1.5' }}>
+                                                        {renderTemplateWithValues(templateBodyText, computedSampleVars)}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                     ) : paramMode === 'guided' ? (
                                         <Row className='gy-2'>
                                             {detectedVars.map(v => (
@@ -426,6 +614,60 @@ export default function Broadcasts() {
                         )}
 
                         <Col md={12}>
+                            <div className='d-flex justify-content-between align-items-center mb-1'>
+                                <Label className='fw-bold mb-0'>Audience Selection & Destination</Label>
+                                <ButtonGroup size='sm'>
+                                    <Button
+                                        color={audienceType === 'group' ? 'primary' : 'outline-primary'}
+                                        onClick={() => setAudienceType('group')}
+                                    >
+                                        Contact Books / Groups ({contactGroups.length})
+                                    </Button>
+                                    <Button
+                                        color={audienceType === 'manual' ? 'primary' : 'outline-primary'}
+                                        onClick={() => setAudienceType('manual')}
+                                    >
+                                        Manual Numbers / Segments
+                                    </Button>
+                                </ButtonGroup>
+                            </div>
+
+                            {audienceType === 'group' && (
+                                <div className='p-2 mb-2 border rounded bg-light'>
+                                    <Row className='gy-1 align-items-end'>
+                                        <Col md={8}>
+                                            <Label for='select-contact-group' className='small fw-bold text-dark'>
+                                                Select Uploaded Contact Book / Group
+                                            </Label>
+                                            <Input
+                                                id='select-contact-group'
+                                                type='select'
+                                                value={selectedGroup}
+                                                onChange={e => handleSelectGroup(e.target.value)}
+                                            >
+                                                <option value=''>-- Choose Contact Group --</option>
+                                                {contactGroups.map((g: any) => (
+                                                    <option key={g.id} value={g.id}>
+                                                        {g.name || g.title || `Group #${g.id}`}
+                                                    </option>
+                                                ))}
+                                            </Input>
+                                        </Col>
+                                        <Col md={4}>
+                                            <div>
+                                                {selectedGroup ? (
+                                                    <Badge color={groupContacts.length > 0 ? 'light-success' : 'light-warning'}>
+                                                        {groupContacts.length} Contact{groupContacts.length === 1 ? '' : 's'} Selected
+                                                    </Badge>
+                                                ) : (
+                                                    <span className='small text-muted'>Pick a group to auto-sync recipients & column mappings</span>
+                                                )}
+                                            </div>
+                                        </Col>
+                                    </Row>
+                                </div>
+                            )}
+
                             <Label for='broadcast-recipients' className='fw-bold'>
                                 Customer Recipient Numbers (E.164 format with country code, comma or newline separated)
                             </Label>
@@ -487,7 +729,14 @@ export default function Broadcasts() {
                                     void act(async () => {
                                         const chosen = templates[Number(template)]
                                         const values = detectedVars.length > 0
-                                            ? detectedVars.map(v => ({ type: 'text', text: (varValues[v] || '').trim() })).filter(p => p.text)
+                                            ? detectedVars.map(v => {
+                                                const mapping = varMappings[v]
+                                                if (audienceType === 'group' && mapping?.mode === 'column') {
+                                                    const sampleVal = getSampleContactValue(mapping.column, sampleContact) || mapping.column
+                                                    return { type: 'text', text: sampleVal }
+                                                }
+                                                return { type: 'text', text: (varValues[v] || '').trim() }
+                                            }).filter(p => p.text)
                                             : (parameters.trim() ? parameters.split('\n').map(text => ({ type: 'text', text: text.trim() })).filter(p => p.text) : [])
 
                                         const recipientList = recipients

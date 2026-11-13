@@ -26,11 +26,14 @@ import {
     Plus,
     AlertCircle,
     Layers,
-    Info
+    Info,
+    Sliders,
+    Search
 } from 'react-feather'
 import httpConfig from '../../utility/http/httpConfig'
 import EmbeddedSignup from './EmbeddedSignup'
 import TemplateEditor from './TemplateEditor'
+import AddWhatsappConfigModal from './AddWhatsappConfigModal'
 
 function formatTier(tier?: string) {
     switch (tier) {
@@ -69,6 +72,8 @@ export default function Connections() {
     const [notice, setNotice] = useState('')
     const [busy, setBusy] = useState(false)
     const [showManualForm, setShowManualForm] = useState(false)
+    const [showAddModal, setShowAddModal] = useState(false)
+    const [searchTerm, setSearchTerm] = useState('')
 
     async function api(path: string, method = 'GET', body?: any) {
         let token = localStorage.getItem('access_token') || ''
@@ -121,38 +126,86 @@ export default function Connections() {
         setNotice(`${action.charAt(0).toUpperCase() + action.slice(1)} completed successfully.`)
     }
 
+    const filteredConnections = connections.filter(item => {
+        const query = searchTerm.trim().toLowerCase()
+        if (!query) return true
+        const phone = (item.display_phone_number || item.phone_number_id || '').toLowerCase()
+        const cName = (item.name || item.verified_name || '').toLowerCase()
+        return phone.includes(query) || cName.includes(query)
+    })
+
     return (
         <div className='whatsapp-connections-wrapper'>
-            {/* Header Card */}
+            {/* Modern Header Bar matching Project Theme */}
             <Card className='border-0 shadow-sm rounded-2xl mb-3'>
                 <CardBody className='p-3'>
-                    <div className='d-flex flex-wrap align-items-center justify-content-between gap-2'>
-                        <div className='d-flex align-items-center gap-2'>
-                            <div
-                                className='p-2 rounded-3 bg-success bg-opacity-10 text-success d-flex align-items-center justify-content-center'
-                                style={{ width: 44, height: 44 }}
-                            >
-                                <Smartphone size={24} />
-                            </div>
-                            <div>
-                                <h4 className='fw-bolder mb-0 text-dark'>WhatsApp Cloud API Setup</h4>
-                                <p className='text-muted mb-0 small'>
-                                    Connect your Meta WhatsApp Business Account (WABA) and phone numbers to send broadcasts, manage templates, and run chatbots.
-                                </p>
+                    <div className='d-flex flex-wrap align-items-center justify-content-between gap-3'>
+                        <div>
+                            <div className='d-flex align-items-center gap-2'>
+                                <div
+                                    className='p-2 rounded-3 text-white d-flex align-items-center justify-content-center'
+                                    style={{ width: 44, height: 44, backgroundColor: '#00b074' }}
+                                >
+                                    <Smartphone size={24} />
+                                </div>
+                                <div>
+                                    <h4 className='fw-bolder mb-0 text-dark'>WhatsApp Configuration</h4>
+                                    <p className='text-muted mb-0 small'>
+                                        Manage Meta Cloud API connections, official business numbers, and messaging tiers.
+                                    </p>
+                                </div>
                             </div>
                         </div>
 
-                        <div className='d-flex align-items-center gap-2'>
+                        {/* Action Buttons: Add Whatsapp, Filter, Reload & Search */}
+                        <div className='d-flex flex-wrap align-items-center gap-2'>
+                            <Button
+                                color='primary'
+                                size='md'
+                                className='d-flex align-items-center gap-1 text-white shadow-sm fw-bold px-3'
+                                style={{ backgroundColor: '#00b074', borderColor: '#00b074', borderRadius: '10px' }}
+                                onClick={() => setShowAddModal(true)}
+                            >
+                                <Plus size={16} />
+                                <span>Add WhatsApp</span>
+                            </Button>
+
                             <Button
                                 color='light-secondary'
-                                size='sm'
-                                className='d-flex align-items-center gap-1'
+                                size='md'
+                                className='d-flex align-items-center justify-content-center px-2'
+                                style={{ borderRadius: '10px' }}
+                                title='Filter connections'
+                                onClick={() => setShowManualForm(!showManualForm)}
+                            >
+                                <Sliders size={16} />
+                            </Button>
+
+                            <Button
+                                color='light-secondary'
+                                size='md'
+                                className='d-flex align-items-center justify-content-center px-2'
+                                style={{ borderRadius: '10px' }}
+                                title='Refresh connections'
                                 disabled={busy}
                                 onClick={() => void act(refresh)}
                             >
-                                <RefreshCw size={14} className={busy ? 'animate-spin' : ''} />
-                                <span>Sync All</span>
+                                <RefreshCw size={16} className={busy ? 'animate-spin' : ''} />
                             </Button>
+
+                            <div className='position-relative' style={{ minWidth: '220px' }}>
+                                <Input
+                                    placeholder='Search numbers or accounts...'
+                                    value={searchTerm}
+                                    onChange={e => setSearchTerm(e.target.value)}
+                                    style={{ borderRadius: '10px', paddingRight: '32px' }}
+                                />
+                                <Search
+                                    size={16}
+                                    className='position-absolute text-muted'
+                                    style={{ right: '10px', top: '50%', transform: 'translateY(-50%)' }}
+                                />
+                            </div>
                         </div>
                     </div>
 
@@ -308,14 +361,16 @@ export default function Connections() {
                             </tr>
                         </thead>
                         <tbody>
-                            {connections.length === 0 ? (
+                            {filteredConnections.length === 0 ? (
                                 <tr>
                                     <td colSpan={5} className='text-center py-4 text-muted'>
-                                        No WhatsApp phone numbers connected yet. Use 1-Click Embedded Signup or Manual Credentials above to connect.
+                                        {searchTerm
+                                            ? `No WhatsApp phone numbers found matching "${searchTerm}".`
+                                            : 'No WhatsApp phone numbers connected yet. Click "+ Add WhatsApp" above or use 1-Click Embedded Signup.'}
                                     </td>
                                 </tr>
                             ) : (
-                                connections.map(item => (
+                                filteredConnections.map(item => (
                                     <tr key={item.id}>
                                         <td className='px-3 py-3'>
                                             <div className='d-flex align-items-center gap-1'>
@@ -601,6 +656,12 @@ export default function Connections() {
                     </CardBody>
                 </Card>
             )}
+
+            <AddWhatsappConfigModal
+                isOpen={showAddModal}
+                toggle={() => setShowAddModal(!showAddModal)}
+                onSuccess={refresh}
+            />
         </div>
     )
 }

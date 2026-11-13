@@ -14,7 +14,7 @@ import Emitter from '../Emitter'
 import { isValid, isValidArray } from '../helpers/common'
 import useUser from '../hooks/useUser'
 import httpConfig from '../http/httpConfig'
-import { changeConnectedUsersResponse, JsonParseValidate, MessageToast, truncateText } from '../Utils'
+import { changeConnectedUsersResponse, JsonParseValidate, MessageToast, SuccessToast, truncateText } from '../Utils'
 
 type SocketPayload = Record<string, any>
 
@@ -233,6 +233,27 @@ const SocketContext = ({ children }: SocketContextProps) => {
         }
     }
 
+    const handleNotification = (message: any) => {
+        if (!message) return
+        if (
+            message.command === 'notification' ||
+            message.type === 'meta_tier_upgrade' ||
+            message.type === 'notification' ||
+            message.command === 'meta_tier_upgrade'
+        ) {
+            const data = message.data || message
+            const title = data.title || (message.type === 'meta_tier_upgrade' ? 'WhatsApp Tier Upgraded' : 'Notification')
+            const text = data.message || data.text || 'Account status updated.'
+            SuccessToast(text, {}, (
+                <div>
+                    <strong style={{ color: '#065f46' }}>{title}</strong>
+                    <div style={{ color: '#4b5563', fontSize: '0.84rem', marginTop: '2px' }}>{text}</div>
+                </div>
+            ))
+            Emitter.emit(Events.NotificationReceived, message)
+        }
+    }
+
     useEffect(() => {
         if (readyState === ReadyState.OPEN) {
             const parsedMessage = JsonParseValidate(lastMessage?.data)
@@ -240,6 +261,7 @@ const SocketContext = ({ children }: SocketContextProps) => {
             getChats(parsedMessage)
             setRecentMessage(parsedMessage)
             getConnected(parsedMessage)
+            handleNotification(parsedMessage)
         }
     }, [lastMessage, readyState])
 

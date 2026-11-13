@@ -17,7 +17,11 @@ test('durable WABA template webhooks update all sibling numbers without changing
   const one=await connections.createTemplate(actor,first.id,{name:'one',language:'en_US',category:'UTILITY',text:'Order ready'});
   const two=await connections.createTemplate(actor,first.id,{name:'two',language:'en_US',category:'UTILITY',text:'Order shipped'});
   const campaigns=new Campaigns(db,testConfig,providers),chat=new Chat(db,testConfig,providers,()=>{},campaigns);
-  const webhooks=new Webhooks(testConfig,campaigns,chat,new Billing(db,providers),db,providers);
+  const realtimeEvents: any[] = [];
+  const notify = (tenantId: number, event: any) => {
+    realtimeEvents.push({ tenantId, event });
+  };
+  const webhooks=new Webhooks(testConfig,campaigns,chat,new Billing(db,providers),db,providers,notify);
   const body={entry:[{id:'100',changes:[{field:'message_template_status_update',value:{message_template_id:one.id,event:'PAUSED'}}]}]};
   await webhooks.inbox.receive(body);await webhooks.inbox.receive(body);await webhooks.inbox.tick();
   assert.equal((await webhooks.inbox.list(actor))[0].status,'completed');
@@ -36,7 +40,11 @@ test('phone_number_quality_update webhook upgrades messaging tier and creates ad
   const conn=await connections.connect(actor,{name:'Sales Main',waba_id:'200',phone_number_id:'201'});
   
   const campaigns=new Campaigns(db,testConfig,providers),chat=new Chat(db,testConfig,providers,()=>{},campaigns);
-  const webhooks=new Webhooks(testConfig,campaigns,chat,new Billing(db,providers),db,providers);
+  const realtimeEvents: any[] = [];
+  const notify = (tenantId: number, event: any) => {
+    realtimeEvents.push({ tenantId, event });
+  };
+  const webhooks=new Webhooks(testConfig,campaigns,chat,new Billing(db,providers),db,providers,notify);
 
   const body={
     entry:[{
@@ -62,5 +70,11 @@ test('phone_number_quality_update webhook upgrades messaging tier and creates ad
   assert.ok(notifications.length > 0);
   assert.match(notifications[0].data.title, /Tier Upgraded/);
   assert.equal(notifications[0].data.current_tier, 'TIER_10K');
+
+  assert.equal(realtimeEvents.length, 1);
+  assert.equal(realtimeEvents[0].tenantId, actor.tenant_id);
+  assert.equal(realtimeEvents[0].event.command, 'notification');
+  assert.equal(realtimeEvents[0].event.type, 'meta_tier_upgrade');
+  assert.equal(realtimeEvents[0].event.data.tier, 'TIER_10K');
  } finally { await close(); }
 });

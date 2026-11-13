@@ -19,6 +19,8 @@ import { fromNow } from '../../../../utility/Utils'
 import BsTooltip from '../../../../views/components/tooltip'
 import { useNavigate } from 'react-router-dom'
 import Show from '../../../../utility/Show'
+import Emitter from '../../../../utility/Emitter'
+import { Events } from '../../../../utility/Const'
 
 const NotificationDropdown = () => {
 
@@ -66,6 +68,15 @@ const NotificationDropdown = () => {
     useEffect(() => {
         listNotification()
         readNotificationList()
+
+        const onNotification = () => {
+            readNotificationList()
+            listNotification()
+        }
+        Emitter.on(Events.NotificationReceived, onNotification)
+        return () => {
+            Emitter.off(Events.NotificationReceived, onNotification)
+        }
     }, [])
 
     const readAllTheNotification = (item) => {
