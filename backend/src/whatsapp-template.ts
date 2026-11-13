@@ -49,8 +49,38 @@ export const bodyComponentSchema = z.object({
   })).max(30)
 });
 
+export const buttonComponentSchema = z.object({
+  type: z.literal('button'),
+  sub_type: z.enum(['quick_reply', 'url', 'catalog']).optional(),
+  index: z.union([z.string(), z.number()]),
+  parameters: z.array(z.record(z.any())).optional()
+});
+
+export const carouselCardComponentSchema = z.union([
+  headerComponentSchema,
+  bodyComponentSchema,
+  buttonComponentSchema
+]);
+
+export const carouselCardSchema = z.object({
+  card_index: z.number().int().min(0).max(9),
+  components: z.array(carouselCardComponentSchema).min(1).max(10)
+});
+
+export const carouselComponentSchema = z.object({
+  type: z.literal('carousel'),
+  cards: z.array(carouselCardSchema).min(1).max(10)
+});
+
+export const templateComponentSchema = z.union([
+  headerComponentSchema,
+  bodyComponentSchema,
+  carouselComponentSchema,
+  buttonComponentSchema
+]);
+
 export const templateMessageSchema = z.object({
   name: z.string().regex(/^[a-z0-9_]{1,512}$/),
   language: z.object({ code: z.string().regex(/^[a-z]{2,3}(?:_[A-Z]{2})?$/) }),
-  components: z.array(z.union([headerComponentSchema, bodyComponentSchema])).max(3).optional()
+  components: z.array(templateComponentSchema).max(15).optional()
 });

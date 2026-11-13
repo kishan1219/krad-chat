@@ -1701,6 +1701,12 @@ console.log(mediaFilePath, 'mediaFilePath')
                                                                     {/* <iframe src= {avatar ? avatar : "https://via.placeholder.com/200"} width="800" height="600"  /> */}
 
                                                                 </Show>
+                                                                <Show IF={details?.media_type === 'CAROUSEL' || isValidArray(details?.cards)}>
+                                                                    <div className='p-2 my-1 bg-light rounded border text-center'>
+                                                                        <div className='fw-bold text-primary mb-1'>🛍️ Multi-Card Carousel Template</div>
+                                                                        <small className='text-muted'>Interactive catalog cards with dynamic headers & buttons</small>
+                                                                    </div>
+                                                                </Show>
                                                                 <div id="random" className='fw-bolder' dangerouslySetInnerHTML={{ __html: renderTextWithFormatting(details?.header_text) }} />
 
                                                                 <div id="random" className='fw-bold mt-1' dangerouslySetInnerHTML={{ __html: renderTextWithFormatting(details?.message) }} />

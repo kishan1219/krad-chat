@@ -133,3 +133,62 @@ test('templateMessageSchema validates media header attachments (image, document,
     });
   });
 });
+
+test('templateMessageSchema validates multi-card carousel message templates', () => {
+  const { templateMessageSchema } = require('../src/whatsapp-template');
+
+  const validCarousel = templateMessageSchema.parse({
+    name: 'product_catalog_carousel',
+    language: { code: 'en_US' },
+    components: [
+      {
+        type: 'body',
+        parameters: [{ type: 'text', text: 'Exclusive Weekend Catalog' }]
+      },
+      {
+        type: 'carousel',
+        cards: [
+          {
+            card_index: 0,
+            components: [
+              {
+                type: 'header',
+                parameters: [{ type: 'image', image: { link: 'https://images.example.com/item1.png' } }]
+              },
+              {
+                type: 'body',
+                parameters: [{ type: 'text', text: 'Running Shoes' }, { type: 'text', text: '$79.99' }]
+              },
+              {
+                type: 'button',
+                sub_type: 'quick_reply',
+                index: 0,
+                parameters: [{ type: 'payload', payload: 'SELECT_ITEM_1' }]
+              }
+            ]
+          },
+          {
+            card_index: 1,
+            components: [
+              {
+                type: 'header',
+                parameters: [{ type: 'image', image: { link: 'https://images.example.com/item2.png' } }]
+              },
+              {
+                type: 'body',
+                parameters: [{ type: 'text', text: 'Leather Backpack' }, { type: 'text', text: '$129.00' }]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  });
+
+  assert.equal(validCarousel.name, 'product_catalog_carousel');
+  assert.equal(validCarousel.components.length, 2);
+  assert.equal(validCarousel.components[1].type, 'carousel');
+  assert.equal(validCarousel.components[1].cards.length, 2);
+  assert.equal(validCarousel.components[1].cards[0].card_index, 0);
+  assert.equal(validCarousel.components[1].cards[0].components[0].parameters[0].image.link, 'https://images.example.com/item1.png');
+});

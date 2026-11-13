@@ -24,9 +24,20 @@ import {
     AlertTriangle,
     CreditCard,
     ExternalLink,
-    CheckCircle
+    CheckCircle,
+    ChevronLeft,
+    ChevronRight,
+    ShoppingBag,
+    Layers,
+    Zap,
+    RefreshCw
 } from 'react-feather'
 import httpConfig from '../../utility/http/httpConfig'
+import {
+    detectPhoneColumn,
+    autoMapCsvColumns,
+    AutoMappingResult
+} from '../../utility/helpers/fuzzyColumnMatcher'
 
 function formatTier(tier?: string) {
     switch (tier) {
@@ -141,6 +152,18 @@ export default function Broadcasts() {
     const [headerMediaColumn, setHeaderMediaColumn] = useState('')
     const [headerDocumentFilename, setHeaderDocumentFilename] = useState('Document.pdf')
     const [headerTextParam, setHeaderTextParam] = useState('')
+
+    // Carousel Template State
+    const [activeCardIndex, setActiveCardIndex] = useState(0)
+    const [cardMediaUrls, setCardMediaUrls] = useState<Record<number, string>>({})
+    const [cardMediaAssetIds, setCardMediaAssetIds] = useState<Record<number, string>>({})
+    const [cardMediaColumns, setCardMediaColumns] = useState<Record<number, string>>({})
+    const [cardVarValues, setCardVarValues] = useState<Record<number, Record<string, string>>>({})
+    const [cardVarMappings, setCardVarMappings] = useState<Record<number, Record<string, { mode: 'column' | 'static'; column: string; value: string }>>>({})
+
+    // CSV Auto-Mapping Feedback State
+    const [autoMappedVars, setAutoMappedVars] = useState<AutoMappingResult[]>([])
+    const [showAutoMapNotice, setShowAutoMapNotice] = useState(false)
 
     const [availableColumns, setAvailableColumns] = useState<{ label: string; value: string }[]>([
         { label: 'First Name', value: 'first_name' },
@@ -314,6 +337,31 @@ export default function Broadcasts() {
     const headerComp = selectedTemplate?.components?.find((c: any) => c.type === 'HEADER') || null
     const headerFormat = (headerComp?.format || (headerComp?.text ? 'TEXT' : 'NONE')).toUpperCase()
 
+    // Multi-Card Carousel Detection & Helpers
+    const carouselComp = selectedTemplate?.components?.find((c: any) => c.type === 'CAROUSEL') || null
+    const isCarousel = Boolean(carouselComp && Array.isArray(carouselComp.cards) && carouselComp.cards.length > 0)
+    const carouselCards: any[] = isCarousel ? carouselComp.cards : []
+
+    function getCardBodyComp(card: any) {
+        return card?.components?.find((c: any) => c.type === 'BODY') || null
+    }
+
+    function getCardVars(card: any): string[] {
+        const body = getCardBodyComp(card)
+        if (!body?.text) return []
+        const matches = body.text.match(/\{\{(\d+)\}\}/g) || []
+        return Array.from(new Set(matches.map((m: string) => m.replace(/[\{\}]/g, ''))))
+    }
+
+    function getCardHeaderComp(card: any) {
+        return card?.components?.find((c: any) => c.type === 'HEADER') || null
+    }
+
+    function getCardButtons(card: any): any[] {
+        const btnComp = card?.components?.find((c: any) => c.type === 'BUTTONS')
+        return btnComp?.buttons || []
+    }
+
     function processCsvFile(file: File) {
         setCsvFile(file)
         Papa.parse(file, {
@@ -327,9 +375,7 @@ export default function Broadcasts() {
                 }
                 setCsvRows(rows)
                 const headers = results.meta?.fields || Object.keys(rows[0] || {})
-                const detectedPhoneCol = headers.find((h: string) =>
-                    /phone|mobile|contact|tel|number|whatsapp/i.test(h)
-                ) || headers[0] || ''
+                const detectedPhoneCol = detectPhoneColumn(headers) || headers[0] || ''
                 setCsvPhoneColumn(detectedPhoneCol)
 
                 const cols = headers.map((h: string) => ({
@@ -338,16 +384,48 @@ export default function Broadcasts() {
                 }))
                 setAvailableColumns(cols)
 
+                // Intelligent Fuzzy Column Auto-Mapping
+                const autoMappings = autoMapCsvColumns(headers, templateBodyText, detectedVars)
+                if (autoMappings.length > 0) {
+                    setAutoMappedVars(autoMappings)
+                    setShowAutoMapNotice(true)
+                    setVarMappings(prev => {
+                        const next = { ...prev }
+                        autoMappings.forEach(m => {
+                            next[m.variable] = { mode: 'column', column: m.column, value: '' }
+                        })
+                        return next
+                    })
+                }
+
                 const phones = rows
                     .map((r: any) => String(r[detectedPhoneCol] || '').trim())
                     .filter(Boolean)
                 setRecipients(phones.join('\n'))
-                setNotice(`Parsed ${rows.length} contacts from CSV "${file.name}". Phone column set to "${detectedPhoneCol}".`)
+                setNotice(`Parsed ${rows.length} contacts from CSV "${file.name}". Phone column auto-detected as "${detectedPhoneCol}".`)
             },
             error: (err: any) => {
                 setError(`Failed to parse CSV file: ${err.message}`)
             }
         })
+    }
+
+    function reRunAutoMapping() {
+        if (csvRows.length === 0 || detectedVars.length === 0) return
+        const headers = availableColumns.map(c => c.value)
+        const autoMappings = autoMapCsvColumns(headers, templateBodyText, detectedVars)
+        if (autoMappings.length > 0) {
+            setAutoMappedVars(autoMappings)
+            setShowAutoMapNotice(true)
+            setVarMappings(prev => {
+                const next = { ...prev }
+                autoMappings.forEach(m => {
+                    next[m.variable] = { mode: 'column', column: m.column, value: '' }
+                })
+                return next
+            })
+            setNotice(`Re-analyzed and auto-mapped ${autoMappings.length} variables based on CSV headers.`)
+        }
     }
 
     function handleCsvPhoneColumnChange(col: string) {
@@ -447,6 +525,54 @@ export default function Broadcasts() {
     const creditDeficitRupees = Number((estimatedCostRupees - availableBalanceRupees).toFixed(2))
     const hasSufficientCredits = recipientCount === 0 || availableBalanceRupees >= estimatedCostRupees
 
+    function getComputedCardSampleVars(cardIdx: number, card: any): Record<string, string> {
+        const cVars = getCardVars(card)
+        const vars: Record<string, string> = {}
+        cVars.forEach(v => {
+            const mapping = cardVarMappings[cardIdx]?.[v] || {
+                mode: isDynamicAudience ? 'column' : 'static',
+                column: v === '1' ? 'first_name' : v === '2' ? 'company' : 'name',
+                value: cardVarValues[cardIdx]?.[v] || ''
+            }
+            if (isDynamicAudience && mapping.mode === 'column') {
+                vars[v] = getSampleContactValue(mapping.column, sampleContact) || `[${mapping.column}]`
+            } else {
+                vars[v] = cardVarValues[cardIdx]?.[v] || ''
+            }
+        })
+        return vars
+    }
+
+    const carouselMissingVars: { cardIndex: number; missing: string[] }[] = []
+    if (isCarousel) {
+        carouselCards.forEach((card, idx) => {
+            const cVars = getCardVars(card)
+            const missing = cVars.filter(v => {
+                const mapping = cardVarMappings[idx]?.[v] || {
+                    mode: isDynamicAudience ? 'column' : 'static',
+                    column: v === '1' ? 'first_name' : v === '2' ? 'company' : 'name',
+                    value: cardVarValues[idx]?.[v] || ''
+                }
+                if (isDynamicAudience && mapping.mode === 'column') {
+                    return !mapping.column
+                }
+                return !(cardVarValues[idx]?.[v] || '').trim()
+            })
+            if (missing.length > 0) {
+                carouselMissingVars.push({ cardIndex: idx, missing })
+            }
+        })
+    }
+
+    const carouselMissingMedia = isCarousel ? carouselCards.some((card, idx) => {
+        const h = getCardHeaderComp(card)
+        if (h && ['IMAGE', 'VIDEO'].includes((h.format || 'IMAGE').toUpperCase())) {
+            const hasUrl = Boolean(cardMediaUrls[idx] || cardMediaAssetIds[idx] || cardMediaColumns[idx])
+            return !hasUrl
+        }
+        return false
+    }) : false
+
     const hasValidMediaHeader = !['IMAGE', 'DOCUMENT', 'VIDEO', 'AUDIO'].includes(headerFormat) ||
         Boolean(headerMediaUrl || headerMediaAssetId || (headerMediaSource === 'column' && headerMediaColumn))
 
@@ -456,8 +582,9 @@ export default function Broadcasts() {
                       template !== '' &&
                       recipientCount > 0 &&
                       hasSufficientCredits &&
-                      (detectedVars.length === 0 || missingVars.length === 0) &&
-                      hasValidMediaHeader
+                      (isCarousel
+                          ? (carouselMissingVars.length === 0 && !carouselMissingMedia)
+                          : ((detectedVars.length === 0 || missingVars.length === 0) && hasValidMediaHeader))
 
     return (
         <div className='p-2'>
@@ -588,62 +715,204 @@ export default function Broadcasts() {
                                         </div>
                                     </div>
                                     <div className='p-3 bg-white rounded border' style={{ fontSize: '1rem', lineHeight: '1.6' }}>
-                                        {/* Template Header Preview */}
-                                        {headerFormat !== 'NONE' && (
-                                            <div className='mb-2 pb-2 border-bottom'>
-                                                {headerFormat === 'IMAGE' && (
-                                                    <div className='p-2 bg-light rounded text-center border' style={{ maxHeight: '200px', overflow: 'hidden' }}>
-                                                        {headerMediaUrl ? (
-                                                            <img
-                                                                src={headerMediaUrl}
-                                                                alt='Header Preview'
-                                                                style={{ maxHeight: '180px', maxWidth: '100%', objectFit: 'contain' }}
-                                                                className='rounded'
-                                                                onError={e => { (e.currentTarget as any).src = 'https://placehold.co/600x300?text=Invalid+Image+URL' }}
-                                                            />
-                                                        ) : (
-                                                            <div className='text-muted py-3'>
-                                                                <ImageIcon size={32} className='text-primary mb-1 d-block mx-auto' />
-                                                                <small className='fw-bold'>Image Header Attachment</small>
-                                                                <span className='d-block small text-muted'>Specify media URL or choose from library below</span>
+                                        {isCarousel ? (
+                                            <div className='carousel-catalog-preview'>
+                                                {templateBodyText && (
+                                                    <div className='mb-3 pb-2 border-bottom'>
+                                                        {renderTemplateWithValues(templateBodyText, varValues)}
+                                                    </div>
+                                                )}
+                                                <div className='d-flex justify-content-between align-items-center mb-2 px-1'>
+                                                    <div className='d-flex align-items-center gap-1'>
+                                                        <ShoppingBag size={18} className='text-primary' />
+                                                        <strong className='text-dark small'>Interactive Product Carousel ({carouselCards.length} Cards)</strong>
+                                                    </div>
+                                                    <div className='d-flex align-items-center gap-2'>
+                                                        <Badge color='light-primary' pill>
+                                                            Card {activeCardIndex + 1} of {carouselCards.length}
+                                                        </Badge>
+                                                        <ButtonGroup size='sm'>
+                                                            <Button
+                                                                color='outline-secondary'
+                                                                size='sm'
+                                                                style={{ padding: '2px 8px' }}
+                                                                disabled={activeCardIndex === 0}
+                                                                onClick={() => setActiveCardIndex(prev => Math.max(0, prev - 1))}
+                                                            >
+                                                                <ChevronLeft size={16} />
+                                                            </Button>
+                                                            <Button
+                                                                color='outline-secondary'
+                                                                size='sm'
+                                                                style={{ padding: '2px 8px' }}
+                                                                disabled={activeCardIndex === carouselCards.length - 1}
+                                                                onClick={() => setActiveCardIndex(prev => Math.min(carouselCards.length - 1, prev + 1))}
+                                                            >
+                                                                <ChevronRight size={16} />
+                                                            </Button>
+                                                        </ButtonGroup>
+                                                    </div>
+                                                </div>
+
+                                                {/* Carousel Horizontal Card Track */}
+                                                <div
+                                                    className='d-flex gap-3 overflow-auto pb-2 px-1'
+                                                    style={{
+                                                        scrollSnapType: 'x mandatory',
+                                                        WebkitOverflowScrolling: 'touch',
+                                                        scrollbarWidth: 'thin'
+                                                    }}
+                                                >
+                                                    {carouselCards.map((card: any, idx: number) => {
+                                                        const cHeader = getCardHeaderComp(card)
+                                                        const cBody = getCardBodyComp(card)
+                                                        const cButtons = getCardButtons(card)
+                                                        const cVars = getComputedCardSampleVars(idx, card)
+                                                        const mediaUrl = cardMediaUrls[idx] || (cHeader?.example?.header_handle?.[0] ? 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80' : '')
+                                                        const isSelected = activeCardIndex === idx
+
+                                                        return (
+                                                            <div
+                                                                key={idx}
+                                                                onClick={() => setActiveCardIndex(idx)}
+                                                                className={`rounded border transition-all cursor-pointer flex-shrink-0 bg-white ${isSelected ? 'border-primary shadow' : 'border-secondary-subtle opacity-90'}`}
+                                                                style={{
+                                                                    width: '260px',
+                                                                    scrollSnapAlign: 'start',
+                                                                    cursor: 'pointer',
+                                                                    overflow: 'hidden'
+                                                                }}
+                                                            >
+                                                                <div
+                                                                    className='position-relative bg-light d-flex align-items-center justify-content-center'
+                                                                    style={{ height: '140px', overflow: 'hidden' }}
+                                                                >
+                                                                    {mediaUrl ? (
+                                                                        <img
+                                                                            src={mediaUrl}
+                                                                            alt={`Card ${idx + 1}`}
+                                                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                                            onError={e => { (e.currentTarget as any).src = 'https://placehold.co/400x250?text=Card+' + (idx + 1) }}
+                                                                        />
+                                                                    ) : (
+                                                                        <div className='text-center text-muted p-2'>
+                                                                            <ImageIcon size={28} className='text-secondary mb-1 d-block mx-auto' />
+                                                                            <small className='d-block fw-semibold'>Card #{idx + 1} Image</small>
+                                                                            <span style={{ fontSize: '0.72rem' }} className='text-muted'>Add URL in Card Editor</span>
+                                                                        </div>
+                                                                    )}
+                                                                    <Badge
+                                                                        color={isSelected ? 'primary' : 'dark'}
+                                                                        pill
+                                                                        className='position-absolute top-0 start-0 m-1'
+                                                                        style={{ fontSize: '0.7rem' }}
+                                                                    >
+                                                                        Card #{idx + 1}
+                                                                    </Badge>
+                                                                </div>
+
+                                                                <div className='p-2' style={{ minHeight: '90px' }}>
+                                                                    {cBody?.text ? (
+                                                                        <div className='small text-dark' style={{ lineHeight: '1.45' }}>
+                                                                            {renderTemplateWithValues(cBody.text, cVars)}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <span className='text-muted small'>Card item description</span>
+                                                                    )}
+                                                                </div>
+
+                                                                {cButtons.length > 0 && (
+                                                                    <div className='border-top bg-light p-1 d-flex flex-column gap-1'>
+                                                                        {cButtons.map((btn: any, bIdx: number) => (
+                                                                            <div
+                                                                                key={bIdx}
+                                                                                className='btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center gap-1 py-1'
+                                                                                style={{ fontSize: '0.76rem', pointerEvents: 'none' }}
+                                                                            >
+                                                                                {btn.type === 'URL' && <ExternalLink size={12} />}
+                                                                                <span>{btn.text || 'View Item'}</span>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )
+                                                    })}
+                                                </div>
+
+                                                <div className='d-flex justify-content-center gap-1 mt-2'>
+                                                    {carouselCards.map((_, idx) => (
+                                                        <button
+                                                            key={idx}
+                                                            type='button'
+                                                            onClick={() => setActiveCardIndex(idx)}
+                                                            className={`btn btn-sm p-0 rounded-circle ${activeCardIndex === idx ? 'bg-primary' : 'bg-secondary opacity-50'}`}
+                                                            style={{ width: '8px', height: '8px' }}
+                                                            aria-label={`Jump to Card ${idx + 1}`}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                {/* Template Header Preview */}
+                                                {headerFormat !== 'NONE' && (
+                                                    <div className='mb-2 pb-2 border-bottom'>
+                                                        {headerFormat === 'IMAGE' && (
+                                                            <div className='p-2 bg-light rounded text-center border' style={{ maxHeight: '200px', overflow: 'hidden' }}>
+                                                                {headerMediaUrl ? (
+                                                                    <img
+                                                                        src={headerMediaUrl}
+                                                                        alt='Header Preview'
+                                                                        style={{ maxHeight: '180px', maxWidth: '100%', objectFit: 'contain' }}
+                                                                        className='rounded'
+                                                                        onError={e => { (e.currentTarget as any).src = 'https://placehold.co/600x300?text=Invalid+Image+URL' }}
+                                                                    />
+                                                                ) : (
+                                                                    <div className='text-muted py-3'>
+                                                                        <ImageIcon size={32} className='text-primary mb-1 d-block mx-auto' />
+                                                                        <small className='fw-bold'>Image Header Attachment</small>
+                                                                        <span className='d-block small text-muted'>Specify media URL or choose from library below</span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                        {headerFormat === 'DOCUMENT' && (
+                                                            <div className='p-2 bg-light rounded d-flex align-items-center gap-2 border'>
+                                                                <File size={28} className='text-primary flex-shrink-0' />
+                                                                <div className='overflow-hidden'>
+                                                                    <strong className='small d-block text-truncate'>{headerDocumentFilename || 'Document.pdf'}</strong>
+                                                                    <small className='text-muted'>WhatsApp Document Attachment {headerMediaUrl ? '✓ Ready' : '(URL required)'}</small>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        {headerFormat === 'VIDEO' && (
+                                                            <div className='p-3 bg-light rounded text-center border text-muted'>
+                                                                <Video size={32} className='text-primary mb-1 d-block mx-auto' />
+                                                                <small className='fw-bold'>Video Header Attachment</small>
+                                                                <span className='d-block small text-muted'>{headerMediaUrl || 'Specify MP4 video URL below'}</span>
+                                                            </div>
+                                                        )}
+                                                        {headerFormat === 'AUDIO' && (
+                                                            <div className='p-2 bg-light rounded d-flex align-items-center gap-2 border text-muted'>
+                                                                <Music size={24} className='text-primary' />
+                                                                <small className='fw-bold'>Audio Header Attachment ({headerMediaUrl || 'Audio URL required'})</small>
+                                                            </div>
+                                                        )}
+                                                        {headerFormat === 'TEXT' && (
+                                                            <div className='fw-bold text-dark fs-5'>
+                                                                {headerComp?.text ? renderTemplateWithValues(headerComp.text, { '1': headerTextParam || '{{1}}' }) : 'HEADER'}
                                                             </div>
                                                         )}
                                                     </div>
                                                 )}
-                                                {headerFormat === 'DOCUMENT' && (
-                                                    <div className='p-2 bg-light rounded d-flex align-items-center gap-2 border'>
-                                                        <File size={28} className='text-primary flex-shrink-0' />
-                                                        <div className='overflow-hidden'>
-                                                            <strong className='small d-block text-truncate'>{headerDocumentFilename || 'Document.pdf'}</strong>
-                                                            <small className='text-muted'>WhatsApp Document Attachment {headerMediaUrl ? '✓ Ready' : '(URL required)'}</small>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                                {headerFormat === 'VIDEO' && (
-                                                    <div className='p-3 bg-light rounded text-center border text-muted'>
-                                                        <Video size={32} className='text-primary mb-1 d-block mx-auto' />
-                                                        <small className='fw-bold'>Video Header Attachment</small>
-                                                        <span className='d-block small text-muted'>{headerMediaUrl || 'Specify MP4 video URL below'}</span>
-                                                    </div>
-                                                )}
-                                                {headerFormat === 'AUDIO' && (
-                                                    <div className='p-2 bg-light rounded d-flex align-items-center gap-2 border text-muted'>
-                                                        <Music size={24} className='text-primary' />
-                                                        <small className='fw-bold'>Audio Header Attachment ({headerMediaUrl || 'Audio URL required'})</small>
-                                                    </div>
-                                                )}
-                                                {headerFormat === 'TEXT' && (
-                                                    <div className='fw-bold text-dark fs-5'>
-                                                        {headerComp?.text ? renderTemplateWithValues(headerComp.text, { '1': headerTextParam || '{{1}}' }) : 'HEADER'}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
 
-                                        {templateBodyText ? (
-                                            renderTemplateWithValues(templateBodyText, varValues)
-                                        ) : (
-                                            <span className='text-muted'>Template has no body text or components preview.</span>
+                                                {templateBodyText ? (
+                                                    renderTemplateWithValues(templateBodyText, varValues)
+                                                ) : (
+                                                    <span className='text-muted'>Template has no body text or components preview.</span>
+                                                )}
+                                            </>
                                         )}
                                     </div>
                                 </div>
@@ -651,7 +920,7 @@ export default function Broadcasts() {
                         )}
 
                         {/* Template Header Media / Dynamic Header Configuration */}
-                        {selectedTemplate && headerFormat !== 'NONE' && (
+                        {selectedTemplate && !isCarousel && headerFormat !== 'NONE' && (
                             <Col md={12}>
                                 <div className='border rounded p-2 bg-light'>
                                     <div className='d-flex justify-content-between align-items-center mb-1'>
@@ -823,8 +1092,231 @@ export default function Broadcasts() {
                             </Col>
                         )}
 
+                        {/* Intelligent CSV Fuzzy Auto-Mapping Feedback Alert */}
+                        {showAutoMapNotice && autoMappedVars.length > 0 && (
+                            <Col md={12}>
+                                <div className='p-2 mb-2 bg-light-primary rounded border border-primary d-flex justify-content-between align-items-center shadow-xs'>
+                                    <div className='d-flex align-items-center gap-2 small'>
+                                        <Zap size={18} className='text-primary flex-shrink-0' />
+                                        <div>
+                                            <strong>Intelligent CSV Auto-Mapping:</strong> Mapped {autoMappedVars.length} variable{autoMappedVars.length === 1 ? '' : 's'} using fuzzy header matching:
+                                            <span className='ms-1 text-dark'>
+                                                {autoMappedVars.map(m => `{{${m.variable}}} → "${m.column}" (${m.confidence}% match)`).join(' • ')}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className='d-flex gap-1 align-items-center'>
+                                        <Button
+                                            color='outline-primary'
+                                            size='sm'
+                                            style={{ fontSize: '0.72rem', padding: '2px 8px' }}
+                                            onClick={reRunAutoMapping}
+                                        >
+                                            <RefreshCw size={12} className='me-1' /> Re-Analyze
+                                        </Button>
+                                        <button
+                                            type='button'
+                                            className='btn-close'
+                                            style={{ fontSize: '0.65rem' }}
+                                            onClick={() => setShowAutoMapNotice(false)}
+                                        />
+                                    </div>
+                                </div>
+                            </Col>
+                        )}
+
+                        {/* Carousel Card-by-Card Configuration */}
+                        {selectedTemplate && isCarousel && (
+                            <Col md={12}>
+                                <div className='border rounded p-3 bg-light mb-2'>
+                                    <div className='d-flex justify-content-between align-items-center mb-2'>
+                                        <div>
+                                            <h6 className='fw-bold text-dark mb-0 d-flex align-items-center gap-1'>
+                                                <Layers size={18} className='text-primary' />
+                                                Carousel Cards Media & Content Configuration ({carouselCards.length} Cards)
+                                            </h6>
+                                            <small className='text-muted'>
+                                                Configure image attachments and dynamic variables for each interactive card in the carousel catalog.
+                                            </small>
+                                        </div>
+                                        <ButtonGroup size='sm'>
+                                            {carouselCards.map((_, idx) => (
+                                                <Button
+                                                    key={idx}
+                                                    color={activeCardIndex === idx ? 'primary' : 'outline-primary'}
+                                                    onClick={() => setActiveCardIndex(idx)}
+                                                >
+                                                    Card #{idx + 1}
+                                                </Button>
+                                            ))}
+                                        </ButtonGroup>
+                                    </div>
+
+                                    {/* Active Card Configuration Panel */}
+                                    {(() => {
+                                        const currentCard = carouselCards[activeCardIndex]
+                                        const cHeader = getCardHeaderComp(currentCard)
+                                        const cVars = getCardVars(currentCard)
+
+                                        return (
+                                            <div className='p-3 bg-white rounded border'>
+                                                <div className='d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom'>
+                                                    <span className='fw-bold text-primary small'>
+                                                        Configuring Card #{activeCardIndex + 1} of {carouselCards.length}
+                                                    </span>
+                                                    <Badge color='info' pill>Format: {cHeader?.format || 'IMAGE'}</Badge>
+                                                </div>
+
+                                                {/* Card Header Media Input */}
+                                                <div className='mb-3'>
+                                                    <Label className='small fw-bold text-dark d-block mb-1'>
+                                                        Card #{activeCardIndex + 1} Image URL (HTTPS)
+                                                    </Label>
+                                                    <div className='d-flex gap-2 align-items-center'>
+                                                        <Input
+                                                            type='url'
+                                                            placeholder='https://images.example.com/products/item.jpg'
+                                                            value={cardMediaUrls[activeCardIndex] || ''}
+                                                            onChange={e => {
+                                                                const url = e.target.value
+                                                                setCardMediaUrls(prev => ({ ...prev, [activeCardIndex]: url }))
+                                                            }}
+                                                        />
+                                                        {mediaAssets.length > 0 && (
+                                                            <Input
+                                                                type='select'
+                                                                style={{ maxWidth: '200px' }}
+                                                                value={cardMediaAssetIds[activeCardIndex] || ''}
+                                                                onChange={e => {
+                                                                    const aid = e.target.value
+                                                                    setCardMediaAssetIds(prev => ({ ...prev, [activeCardIndex]: aid }))
+                                                                    const asset = mediaAssets.find(a => String(a.id) === aid)
+                                                                    if (asset?.url) {
+                                                                        setCardMediaUrls(prev => ({ ...prev, [activeCardIndex]: asset.url }))
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <option value=''>Asset Library...</option>
+                                                                {mediaAssets.map((a: any) => (
+                                                                    <option key={a.id} value={a.id}>{a.name || a.filename}</option>
+                                                                ))}
+                                                            </Input>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Card Body Variables */}
+                                                {cVars.length > 0 ? (
+                                                    <div>
+                                                        <Label className='small fw-bold text-dark d-block mb-1'>
+                                                            Card #{activeCardIndex + 1} Body Variables ({cVars.map(v => `{{${v}}}`).join(', ')})
+                                                        </Label>
+                                                        <Row className='gy-2'>
+                                                            {cVars.map(v => {
+                                                                const mapping = cardVarMappings[activeCardIndex]?.[v] || {
+                                                                    mode: isDynamicAudience ? 'column' : 'static',
+                                                                    column: v === '1' ? 'first_name' : v === '2' ? 'company' : 'name',
+                                                                    value: cardVarValues[activeCardIndex]?.[v] || ''
+                                                                }
+
+                                                                return (
+                                                                    <Col md={6} key={v}>
+                                                                        <div className='p-2 border rounded bg-light'>
+                                                                            <div className='d-flex justify-content-between align-items-center mb-1'>
+                                                                                <span className='small fw-bold text-dark'>Variable &#123;&#123;{v}&#125;&#125;</span>
+                                                                                {isDynamicAudience && (
+                                                                                    <ButtonGroup size='sm'>
+                                                                                        <Button
+                                                                                            color={mapping.mode === 'column' ? 'primary' : 'outline-secondary'}
+                                                                                            style={{ fontSize: '0.72rem', padding: '1px 6px' }}
+                                                                                            onClick={() => {
+                                                                                                setCardVarMappings(prev => ({
+                                                                                                    ...prev,
+                                                                                                    [activeCardIndex]: {
+                                                                                                        ...(prev[activeCardIndex] || {}),
+                                                                                                        [v]: { ...mapping, mode: 'column' }
+                                                                                                    }
+                                                                                                }))
+                                                                                            }}
+                                                                                        >
+                                                                                            Column
+                                                                                        </Button>
+                                                                                        <Button
+                                                                                            color={mapping.mode === 'static' ? 'primary' : 'outline-secondary'}
+                                                                                            style={{ fontSize: '0.72rem', padding: '1px 6px' }}
+                                                                                            onClick={() => {
+                                                                                                setCardVarMappings(prev => ({
+                                                                                                    ...prev,
+                                                                                                    [activeCardIndex]: {
+                                                                                                        ...(prev[activeCardIndex] || {}),
+                                                                                                        [v]: { ...mapping, mode: 'static' }
+                                                                                                    }
+                                                                                                }))
+                                                                                            }}
+                                                                                        >
+                                                                                            Fixed
+                                                                                        </Button>
+                                                                                    </ButtonGroup>
+                                                                                )}
+                                                                            </div>
+
+                                                                            {mapping.mode === 'column' && isDynamicAudience ? (
+                                                                                <Input
+                                                                                    type='select'
+                                                                                    bsSize='sm'
+                                                                                    value={mapping.column}
+                                                                                    onChange={e => {
+                                                                                        const col = e.target.value
+                                                                                        setCardVarMappings(prev => ({
+                                                                                            ...prev,
+                                                                                            [activeCardIndex]: {
+                                                                                                ...(prev[activeCardIndex] || {}),
+                                                                                                [v]: { ...mapping, column: col }
+                                                                                            }
+                                                                                        }))
+                                                                                    }}
+                                                                                >
+                                                                                    {availableColumns.map(c => (
+                                                                                        <option key={c.value} value={c.value}>{c.label} ({c.value})</option>
+                                                                                    ))}
+                                                                                </Input>
+                                                                            ) : (
+                                                                                <Input
+                                                                                    bsSize='sm'
+                                                                                    placeholder={`Value for {{${v}}}`}
+                                                                                    value={cardVarValues[activeCardIndex]?.[v] || ''}
+                                                                                    onChange={e => {
+                                                                                        const val = e.target.value
+                                                                                        setCardVarValues(prev => ({
+                                                                                            ...prev,
+                                                                                            [activeCardIndex]: {
+                                                                                                ...(prev[activeCardIndex] || {}),
+                                                                                                [v]: val
+                                                                                            }
+                                                                                        }))
+                                                                                    }}
+                                                                                />
+                                                                            )}
+                                                                        </div>
+                                                                    </Col>
+                                                                )
+                                                            })}
+                                                        </Row>
+                                                    </div>
+                                                ) : (
+                                                    <div className='text-muted small'>
+                                                        ✓ Card #{activeCardIndex + 1} has static body text with no placeholders.
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )
+                                    })()}
+                                </div>
+                            </Col>
+                        )}
+
                         {/* Dynamic Template Parameter Editor */}
-                        {selectedTemplate && (
+                        {selectedTemplate && !isCarousel && (
                             <Col md={12}>
                                 <div className='border rounded p-2 bg-light'>
                                     <div className='d-flex justify-content-between align-items-center mb-2'>
@@ -1255,7 +1747,12 @@ export default function Broadcasts() {
                         )}
 
                         <Col md={12} className='mt-2'>
-                            {missingVars.length > 0 && selectedTemplate && (
+                            {isCarousel && carouselMissingVars.length > 0 && (
+                                <Alert color='warning' className='py-1 small mb-1'>
+                                    ⚠️ Carousel cards missing variable values: {carouselMissingVars.map(m => `Card #${m.cardIndex + 1} ({{${m.missing.join(', ')}}})`).join(' • ')}
+                                </Alert>
+                            )}
+                            {!isCarousel && missingVars.length > 0 && selectedTemplate && (
                                 <Alert color='warning' className='py-1 small mb-1'>
                                     ⚠️ Please fill in required variable values for: {missingVars.map(v => `{{${v}}}`).join(', ')}
                                 </Alert>
@@ -1280,53 +1777,100 @@ export default function Broadcasts() {
 
                                         const components: any[] = []
 
-                                        // 1. Header component (Media or Text)
-                                        if (['IMAGE', 'DOCUMENT', 'VIDEO', 'AUDIO'].includes(headerFormat)) {
-                                            const mediaLink = headerMediaSource === 'url'
-                                                ? headerMediaUrl
-                                                : headerMediaSource === 'asset'
-                                                ? (mediaAssets.find(a => String(a.id) === headerMediaAssetId)?.url || headerMediaUrl)
-                                                : (getSampleContactValue(headerMediaColumn, sampleContact) || headerMediaUrl)
+                                        // 1. Single Header component (Media or Text)
+                                        if (!isCarousel) {
+                                            if (['IMAGE', 'DOCUMENT', 'VIDEO', 'AUDIO'].includes(headerFormat)) {
+                                                const mediaLink = headerMediaSource === 'url'
+                                                    ? headerMediaUrl
+                                                    : headerMediaSource === 'asset'
+                                                    ? (mediaAssets.find(a => String(a.id) === headerMediaAssetId)?.url || headerMediaUrl)
+                                                    : (getSampleContactValue(headerMediaColumn, sampleContact) || headerMediaUrl)
 
-                                            if (mediaLink) {
-                                                if (headerFormat === 'IMAGE') {
-                                                    components.push({
-                                                        type: 'header',
-                                                        parameters: [{ type: 'image', image: { link: mediaLink } }]
-                                                    })
-                                                } else if (headerFormat === 'DOCUMENT') {
-                                                    components.push({
-                                                        type: 'header',
-                                                        parameters: [{
-                                                            type: 'document',
-                                                            document: {
-                                                                link: mediaLink,
-                                                                filename: headerDocumentFilename || 'Document.pdf'
-                                                            }
-                                                        }]
-                                                    })
-                                                } else if (headerFormat === 'VIDEO') {
-                                                    components.push({
-                                                        type: 'header',
-                                                        parameters: [{ type: 'video', video: { link: mediaLink } }]
-                                                    })
-                                                } else if (headerFormat === 'AUDIO') {
-                                                    components.push({
-                                                        type: 'header',
-                                                        parameters: [{ type: 'audio', audio: { link: mediaLink } }]
-                                                    })
+                                                if (mediaLink) {
+                                                    if (headerFormat === 'IMAGE') {
+                                                        components.push({
+                                                            type: 'header',
+                                                            parameters: [{ type: 'image', image: { link: mediaLink } }]
+                                                        })
+                                                    } else if (headerFormat === 'DOCUMENT') {
+                                                        components.push({
+                                                            type: 'header',
+                                                            parameters: [{
+                                                                type: 'document',
+                                                                document: {
+                                                                    link: mediaLink,
+                                                                    filename: headerDocumentFilename || 'Document.pdf'
+                                                                }
+                                                            }]
+                                                        })
+                                                    } else if (headerFormat === 'VIDEO') {
+                                                        components.push({
+                                                            type: 'header',
+                                                            parameters: [{ type: 'video', video: { link: mediaLink } }]
+                                                        })
+                                                    } else if (headerFormat === 'AUDIO') {
+                                                        components.push({
+                                                            type: 'header',
+                                                            parameters: [{ type: 'audio', audio: { link: mediaLink } }]
+                                                        })
+                                                    }
                                                 }
+                                            } else if (headerFormat === 'TEXT' && headerTextParam) {
+                                                components.push({
+                                                    type: 'header',
+                                                    parameters: [{ type: 'text', text: headerTextParam }]
+                                                })
                                             }
-                                        } else if (headerFormat === 'TEXT' && headerTextParam) {
-                                            components.push({
-                                                type: 'header',
-                                                parameters: [{ type: 'text', text: headerTextParam }]
-                                            })
                                         }
 
                                         // 2. Body component
                                         if (bodyValues.length > 0) {
                                             components.push({ type: 'body', parameters: bodyValues })
+                                        }
+
+                                        // 3. Multi-Card Carousel component
+                                        if (isCarousel) {
+                                            const carouselCardsPayload = carouselCards.map((card: any, idx: number) => {
+                                                const cHeader = getCardHeaderComp(card)
+                                                const cVars = getCardVars(card)
+                                                const cardComps: any[] = []
+
+                                                const mediaLink = cardMediaUrls[idx] || (cHeader?.example?.header_handle?.[0] ? 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80' : '')
+                                                if (mediaLink) {
+                                                    cardComps.push({
+                                                        type: 'header',
+                                                        parameters: [{ type: 'image', image: { link: mediaLink } }]
+                                                    })
+                                                }
+
+                                                if (cVars.length > 0) {
+                                                    const cardBodyValues = cVars.map((v: string) => {
+                                                        const mapping = cardVarMappings[idx]?.[v]
+                                                        if (isDynamicAudience && mapping?.mode === 'column') {
+                                                            const sampleVal = getSampleContactValue(mapping.column, sampleContact) || mapping.column
+                                                            return { type: 'text', text: sampleVal }
+                                                        }
+                                                        return { type: 'text', text: (cardVarValues[idx]?.[v] || '').trim() }
+                                                    }).filter((p: any) => p.text)
+
+                                                    if (cardBodyValues.length > 0) {
+                                                        cardComps.push({
+                                                            type: 'body',
+                                                            parameters: cardBodyValues
+                                                        })
+                                                    }
+                                                }
+
+                                                return {
+                                                    card_index: idx,
+                                                    components: cardComps
+                                                }
+                                            })
+
+                                            components.push({
+                                                type: 'carousel',
+                                                cards: carouselCardsPayload
+                                            })
                                         }
 
                                         const recipientList = recipients
@@ -1358,6 +1902,10 @@ export default function Broadcasts() {
                                         setRecipients('')
                                         setParameters('')
                                         setVarValues({})
+                                        setCardMediaUrls({})
+                                        setCardVarValues({})
+                                        setCardVarMappings({})
+                                        setActiveCardIndex(0)
                                         setCsvFile(null)
                                         setCsvRows([])
                                         setHeaderMediaUrl('')
