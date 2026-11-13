@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import Papa from 'papaparse'
 import {
     Alert,
     Badge,
@@ -13,6 +14,18 @@ import {
     Row,
     Table
 } from 'reactstrap'
+import {
+    UploadCloud,
+    FileText,
+    Image as ImageIcon,
+    File,
+    Music,
+    Video,
+    AlertTriangle,
+    CreditCard,
+    ExternalLink,
+    CheckCircle
+} from 'react-feather'
 import httpConfig from '../../utility/http/httpConfig'
 
 function formatTier(tier?: string) {
@@ -105,10 +118,30 @@ export default function Broadcasts() {
     const [paramMode, setParamMode] = useState<'guided' | 'raw'>('guided')
     const [schedule, setSchedule] = useState('')
     const [segment, setSegment] = useState('')
-    const [audienceType, setAudienceType] = useState<'manual' | 'group'>('manual')
+    const [audienceType, setAudienceType] = useState<'manual' | 'group' | 'csv'>('manual')
     const [contactGroups, setContactGroups] = useState<any[]>([])
     const [selectedGroup, setSelectedGroup] = useState('')
     const [groupContacts, setGroupContacts] = useState<any[]>([])
+
+    // CSV Direct Drag & Drop State
+    const [csvFile, setCsvFile] = useState<File | null>(null)
+    const [csvRows, setCsvRows] = useState<any[]>([])
+    const [csvPhoneColumn, setCsvPhoneColumn] = useState<string>('')
+    const [isDragging, setIsDragging] = useState<boolean>(false)
+    const fileInputRef = useRef<HTMLInputElement>(null)
+
+    // Wallet & Balance Verification State
+    const [wallet, setWallet] = useState<any>(null)
+
+    // WhatsApp Template Header Media State
+    const [mediaAssets, setMediaAssets] = useState<any[]>([])
+    const [headerMediaSource, setHeaderMediaSource] = useState<'url' | 'asset' | 'column'>('url')
+    const [headerMediaUrl, setHeaderMediaUrl] = useState('')
+    const [headerMediaAssetId, setHeaderMediaAssetId] = useState('')
+    const [headerMediaColumn, setHeaderMediaColumn] = useState('')
+    const [headerDocumentFilename, setHeaderDocumentFilename] = useState('Document.pdf')
+    const [headerTextParam, setHeaderTextParam] = useState('')
+
     const [availableColumns, setAvailableColumns] = useState<{ label: string; value: string }[]>([
         { label: 'First Name', value: 'first_name' },
         { label: 'Last Name', value: 'last_name' },
@@ -157,17 +190,22 @@ export default function Broadcasts() {
     }
 
     async function refresh() {
-        const [s, c, p, g] = await Promise.all([
+        const [s, c, p, g, w, m] = await Promise.all([
             api('whatsapp/senders'),
             api('wa-campaigns'),
             api('whatsapp/broadcast-policy').catch(() => null),
-            api('contact-groups').catch(() => [])
+            api('contact-groups').catch(() => []),
+            api('wallet').catch(() => null),
+            api('wa-files').catch(() => [])
         ])
         setSenders(Array.isArray(s) ? s : [])
         setCampaigns(((c && c.data) || []).filter((item: any) => !item.payload?.internal_chat))
         if (p) setPolicy(p)
         const groups = (g && g.data) || (Array.isArray(g) ? g : [])
         setContactGroups(groups)
+        if (w) setWallet(w)
+        const files = (m && m.data) || (Array.isArray(m) ? m : [])
+        setMediaAssets(files)
     }
 
     async function act(work: () => Promise<void>) {
@@ -273,34 +311,109 @@ export default function Broadcasts() {
         }))
     }
 
+    const headerComp = selectedTemplate?.components?.find((c: any) => c.type === 'HEADER') || null
+    const headerFormat = (headerComp?.format || (headerComp?.text ? 'TEXT' : 'NONE')).toUpperCase()
+
+    function processCsvFile(file: File) {
+        setCsvFile(file)
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: (results: any) => {
+                const rows = results.data || []
+                if (rows.length === 0) {
+                    setError('The uploaded CSV file contains no records.')
+                    return
+                }
+                setCsvRows(rows)
+                const headers = results.meta?.fields || Object.keys(rows[0] || {})
+                const detectedPhoneCol = headers.find((h: string) =>
+                    /phone|mobile|contact|tel|number|whatsapp/i.test(h)
+                ) || headers[0] || ''
+                setCsvPhoneColumn(detectedPhoneCol)
+
+                const cols = headers.map((h: string) => ({
+                    value: h,
+                    label: h.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
+                }))
+                setAvailableColumns(cols)
+
+                const phones = rows
+                    .map((r: any) => String(r[detectedPhoneCol] || '').trim())
+                    .filter(Boolean)
+                setRecipients(phones.join('\n'))
+                setNotice(`Parsed ${rows.length} contacts from CSV "${file.name}". Phone column set to "${detectedPhoneCol}".`)
+            },
+            error: (err: any) => {
+                setError(`Failed to parse CSV file: ${err.message}`)
+            }
+        })
+    }
+
+    function handleCsvPhoneColumnChange(col: string) {
+        setCsvPhoneColumn(col)
+        if (csvRows.length > 0 && col) {
+            const phones = csvRows
+                .map((r: any) => String(r[col] || '').trim())
+                .filter(Boolean)
+            setRecipients(phones.join('\n'))
+        }
+    }
+
+    function handleDragOver(e: React.DragEvent) {
+        e.preventDefault()
+        e.stopPropagation()
+        setIsDragging(true)
+    }
+
+    function handleDragLeave(e: React.DragEvent) {
+        e.preventDefault()
+        e.stopPropagation()
+        setIsDragging(false)
+    }
+
+    function handleDrop(e: React.DragEvent) {
+        e.preventDefault()
+        e.stopPropagation()
+        setIsDragging(false)
+        const droppedFile = e.dataTransfer.files?.[0]
+        if (droppedFile) {
+            if (!droppedFile.name.toLowerCase().endsWith('.csv') && droppedFile.type !== 'text/csv') {
+                setError('Please drop a valid .csv contact spreadsheet.')
+                return
+            }
+            processCsvFile(droppedFile)
+        }
+    }
+
     function getSampleContactValue(colKey: string, contactItem: any): string {
         if (!contactItem) return ''
         const src = contactItem.data || contactItem
-        if (colKey === 'first_name') {
-            if (src.first_name) return src.first_name
-            if (src.name) return String(src.name).split(' ')[0]
-            return 'Customer'
+        if (src[colKey] !== undefined && src[colKey] !== null && String(src[colKey]).trim() !== '') {
+            return String(src[colKey])
         }
-        if (colKey === 'last_name') {
-            if (src.last_name) return src.last_name
-            if (src.name) {
-                const parts = String(src.name).split(' ')
-                return parts.length > 1 ? parts.slice(1).join(' ') : ''
-            }
-            return ''
+        if (colKey.toLowerCase().includes('first') || colKey === 'name') {
+            return src.first_name || (src.name ? String(src.name).split(' ')[0] : '') || src['First Name'] || 'Valued'
         }
-        if (colKey === 'name') return src.name || src.full_name || 'Valued Customer'
-        if (colKey === 'company') return src.company || src.company_name || 'Acme Corp'
-        if (colKey === 'email') return src.email || 'customer@example.com'
-        if (colKey === 'phone') return src.phone || src.mobile || '+919876543210'
+        if (colKey.toLowerCase().includes('last')) {
+            return src.last_name || (src.name ? String(src.name).split(' ').slice(1).join(' ') : '') || src['Last Name'] || 'Customer'
+        }
+        if (colKey === 'name') return src.name || src.full_name || src['Full Name'] || 'Customer'
+        if (colKey === 'company') return src.company || src.company_name || src['Company Name'] || src['Company'] || 'Acme Corp'
+        if (colKey === 'email') return src.email || src['Email'] || 'customer@example.com'
+        if (colKey === 'phone') return src.phone || src.mobile || src['Phone'] || src['Mobile'] || '+919876543210'
         return String(src[colKey] || '')
     }
 
-    const sampleContact = groupContacts[0] || null
+    const sampleContact = audienceType === 'csv'
+        ? (csvRows[0] || null)
+        : (groupContacts[0] || null)
+
+    const isDynamicAudience = audienceType === 'group' || audienceType === 'csv'
     const computedSampleVars: Record<string, string> = {}
     detectedVars.forEach(v => {
-        const mapping = varMappings[v] || { mode: audienceType === 'group' ? 'column' : 'static', column: v === '1' ? 'first_name' : v === '2' ? 'company' : 'name', value: varValues[v] || '' }
-        if (audienceType === 'group' && mapping.mode === 'column') {
+        const mapping = varMappings[v] || { mode: isDynamicAudience ? 'column' : 'static', column: v === '1' ? 'first_name' : v === '2' ? 'company' : 'name', value: varValues[v] || '' }
+        if (isDynamicAudience && mapping.mode === 'column') {
             computedSampleVars[v] = getSampleContactValue(mapping.column, sampleContact) || `[${mapping.column}]`
         } else {
             computedSampleVars[v] = varValues[v] || ''
@@ -308,18 +421,43 @@ export default function Broadcasts() {
     })
 
     const missingVars = detectedVars.filter(v => {
-        const mapping = varMappings[v] || { mode: audienceType === 'group' ? 'column' : 'static', column: v === '1' ? 'first_name' : v === '2' ? 'company' : 'name', value: varValues[v] || '' }
-        if (audienceType === 'group' && mapping.mode === 'column') {
+        const mapping = varMappings[v] || { mode: isDynamicAudience ? 'column' : 'static', column: v === '1' ? 'first_name' : v === '2' ? 'company' : 'name', value: varValues[v] || '' }
+        if (isDynamicAudience && mapping.mode === 'column') {
             return !mapping.column
         }
         return !(varValues[v] || '').trim()
     })
+
+    // Pre-flight Category-Based Pricing & Balance Verification
+    const templateCategory = (selectedTemplate?.category || 'MARKETING').toUpperCase()
+    const unitRate = templateCategory === 'UTILITY'
+        ? 0.165
+        : templateCategory === 'AUTHENTICATION'
+        ? 0.165
+        : 0.835 // Marketing default
+
+    const recipientList = recipients
+        .split(/[,\n]/)
+        .map(v => v.trim())
+        .filter(Boolean)
+    const recipientCount = recipientList.length
+    const estimatedCostRupees = Number((recipientCount * unitRate).toFixed(2))
+    const availableBalancePaise = Number(wallet?.available ?? ((wallet?.balance || 0) - (wallet?.reserved || 0)))
+    const availableBalanceRupees = Number((availableBalancePaise / 100).toFixed(2))
+    const creditDeficitRupees = Number((estimatedCostRupees - availableBalanceRupees).toFixed(2))
+    const hasSufficientCredits = recipientCount === 0 || availableBalanceRupees >= estimatedCostRupees
+
+    const hasValidMediaHeader = !['IMAGE', 'DOCUMENT', 'VIDEO', 'AUDIO'].includes(headerFormat) ||
+        Boolean(headerMediaUrl || headerMediaAssetId || (headerMediaSource === 'column' && headerMediaColumn))
+
     const canSubmit = !busy &&
                       name.trim() &&
                       sender &&
                       template !== '' &&
-                      recipients.trim() &&
-                      (detectedVars.length === 0 || missingVars.length === 0)
+                      recipientCount > 0 &&
+                      hasSufficientCredits &&
+                      (detectedVars.length === 0 || missingVars.length === 0) &&
+                      hasValidMediaHeader
 
     return (
         <div className='p-2'>
@@ -440,6 +578,7 @@ export default function Broadcasts() {
                                             Live Message Preview: <code>{selectedTemplate.name}</code> ({selectedTemplate.language})
                                         </div>
                                         <div className='d-flex gap-1 align-items-center'>
+                                            <Badge color='info' pill>Category: {templateCategory}</Badge>
                                             {detectedVars.length > 0 && (
                                                 <Badge color={missingVars.length === 0 ? 'light-success' : 'light-warning'}>
                                                     {detectedVars.length - missingVars.length} of {detectedVars.length} Variables Filled
@@ -449,12 +588,237 @@ export default function Broadcasts() {
                                         </div>
                                     </div>
                                     <div className='p-3 bg-white rounded border' style={{ fontSize: '1rem', lineHeight: '1.6' }}>
+                                        {/* Template Header Preview */}
+                                        {headerFormat !== 'NONE' && (
+                                            <div className='mb-2 pb-2 border-bottom'>
+                                                {headerFormat === 'IMAGE' && (
+                                                    <div className='p-2 bg-light rounded text-center border' style={{ maxHeight: '200px', overflow: 'hidden' }}>
+                                                        {headerMediaUrl ? (
+                                                            <img
+                                                                src={headerMediaUrl}
+                                                                alt='Header Preview'
+                                                                style={{ maxHeight: '180px', maxWidth: '100%', objectFit: 'contain' }}
+                                                                className='rounded'
+                                                                onError={e => { (e.currentTarget as any).src = 'https://placehold.co/600x300?text=Invalid+Image+URL' }}
+                                                            />
+                                                        ) : (
+                                                            <div className='text-muted py-3'>
+                                                                <ImageIcon size={32} className='text-primary mb-1 d-block mx-auto' />
+                                                                <small className='fw-bold'>Image Header Attachment</small>
+                                                                <span className='d-block small text-muted'>Specify media URL or choose from library below</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                {headerFormat === 'DOCUMENT' && (
+                                                    <div className='p-2 bg-light rounded d-flex align-items-center gap-2 border'>
+                                                        <File size={28} className='text-primary flex-shrink-0' />
+                                                        <div className='overflow-hidden'>
+                                                            <strong className='small d-block text-truncate'>{headerDocumentFilename || 'Document.pdf'}</strong>
+                                                            <small className='text-muted'>WhatsApp Document Attachment {headerMediaUrl ? '✓ Ready' : '(URL required)'}</small>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {headerFormat === 'VIDEO' && (
+                                                    <div className='p-3 bg-light rounded text-center border text-muted'>
+                                                        <Video size={32} className='text-primary mb-1 d-block mx-auto' />
+                                                        <small className='fw-bold'>Video Header Attachment</small>
+                                                        <span className='d-block small text-muted'>{headerMediaUrl || 'Specify MP4 video URL below'}</span>
+                                                    </div>
+                                                )}
+                                                {headerFormat === 'AUDIO' && (
+                                                    <div className='p-2 bg-light rounded d-flex align-items-center gap-2 border text-muted'>
+                                                        <Music size={24} className='text-primary' />
+                                                        <small className='fw-bold'>Audio Header Attachment ({headerMediaUrl || 'Audio URL required'})</small>
+                                                    </div>
+                                                )}
+                                                {headerFormat === 'TEXT' && (
+                                                    <div className='fw-bold text-dark fs-5'>
+                                                        {headerComp?.text ? renderTemplateWithValues(headerComp.text, { '1': headerTextParam || '{{1}}' }) : 'HEADER'}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
                                         {templateBodyText ? (
                                             renderTemplateWithValues(templateBodyText, varValues)
                                         ) : (
                                             <span className='text-muted'>Template has no body text or components preview.</span>
                                         )}
                                     </div>
+                                </div>
+                            </Col>
+                        )}
+
+                        {/* Template Header Media / Dynamic Header Configuration */}
+                        {selectedTemplate && headerFormat !== 'NONE' && (
+                            <Col md={12}>
+                                <div className='border rounded p-2 bg-light'>
+                                    <div className='d-flex justify-content-between align-items-center mb-1'>
+                                        <div>
+                                            <h6 className='fw-bold text-dark mb-0'>
+                                                Header Attachment Configuration: <Badge color='primary'>{headerFormat}</Badge>
+                                            </h6>
+                                            <small className='text-muted'>
+                                                Meta WhatsApp Cloud API requires media headers to provide a valid accessible URL.
+                                            </small>
+                                        </div>
+                                    </div>
+
+                                    {['IMAGE', 'DOCUMENT', 'VIDEO', 'AUDIO'].includes(headerFormat) && (
+                                        <div className='mt-2'>
+                                            <div className='mb-2'>
+                                                <Label className='fw-bold small text-dark me-2'>Media Source:</Label>
+                                                <ButtonGroup size='sm'>
+                                                    <Button
+                                                        color={headerMediaSource === 'url' ? 'primary' : 'outline-primary'}
+                                                        onClick={() => setHeaderMediaSource('url')}
+                                                    >
+                                                        Direct Public URL
+                                                    </Button>
+                                                    {mediaAssets.length > 0 && (
+                                                        <Button
+                                                            color={headerMediaSource === 'asset' ? 'primary' : 'outline-primary'}
+                                                            onClick={() => setHeaderMediaSource('asset')}
+                                                        >
+                                                            Media Assets ({mediaAssets.length})
+                                                        </Button>
+                                                    )}
+                                                    {isDynamicAudience && (
+                                                        <Button
+                                                            color={headerMediaSource === 'column' ? 'primary' : 'outline-primary'}
+                                                            onClick={() => setHeaderMediaSource('column')}
+                                                        >
+                                                            Bind from {audienceType === 'csv' ? 'CSV' : 'Group'} Column
+                                                        </Button>
+                                                    )}
+                                                </ButtonGroup>
+                                            </div>
+
+                                            {headerMediaSource === 'url' && (
+                                                <Row className='gy-1'>
+                                                    <Col md={headerFormat === 'DOCUMENT' ? 8 : 12}>
+                                                        <Label for='header-media-url' className='small fw-bold text-dark'>
+                                                            Public {headerFormat} URL (HTTPS) <span className='text-danger'>*</span>
+                                                        </Label>
+                                                        <Input
+                                                            id='header-media-url'
+                                                            type='url'
+                                                            placeholder={`https://example.com/assets/${headerFormat === 'IMAGE' ? 'banner.png' : headerFormat === 'DOCUMENT' ? 'brochure.pdf' : headerFormat === 'VIDEO' ? 'promo.mp4' : 'audio.mp3'}`}
+                                                            value={headerMediaUrl}
+                                                            onChange={e => setHeaderMediaUrl(e.target.value)}
+                                                        />
+                                                    </Col>
+                                                    {headerFormat === 'DOCUMENT' && (
+                                                        <Col md={4}>
+                                                            <Label for='header-doc-filename' className='small fw-bold text-dark'>
+                                                                Document Filename (with .pdf)
+                                                            </Label>
+                                                            <Input
+                                                                id='header-doc-filename'
+                                                                placeholder='Brochure.pdf'
+                                                                value={headerDocumentFilename}
+                                                                onChange={e => setHeaderDocumentFilename(e.target.value)}
+                                                            />
+                                                        </Col>
+                                                    )}
+                                                </Row>
+                                            )}
+
+                                            {headerMediaSource === 'asset' && (
+                                                <Row className='gy-1'>
+                                                    <Col md={headerFormat === 'DOCUMENT' ? 8 : 12}>
+                                                        <Label for='header-media-asset' className='small fw-bold text-dark'>
+                                                            Select Media Asset
+                                                        </Label>
+                                                        <Input
+                                                            id='header-media-asset'
+                                                            type='select'
+                                                            value={headerMediaAssetId}
+                                                            onChange={e => {
+                                                                const aid = e.target.value
+                                                                setHeaderMediaAssetId(aid)
+                                                                const asset = mediaAssets.find(a => String(a.id) === aid)
+                                                                if (asset?.url) setHeaderMediaUrl(asset.url)
+                                                            }}
+                                                        >
+                                                            <option value=''>-- Choose Uploaded Media Asset --</option>
+                                                            {mediaAssets.map((a: any) => (
+                                                                <option key={a.id} value={a.id}>
+                                                                    {a.name || a.filename || `File #${a.id}`}
+                                                                </option>
+                                                            ))}
+                                                        </Input>
+                                                    </Col>
+                                                    {headerFormat === 'DOCUMENT' && (
+                                                        <Col md={4}>
+                                                            <Label for='header-doc-filename-asset' className='small fw-bold text-dark'>
+                                                                Document Filename
+                                                            </Label>
+                                                            <Input
+                                                                id='header-doc-filename-asset'
+                                                                value={headerDocumentFilename}
+                                                                onChange={e => setHeaderDocumentFilename(e.target.value)}
+                                                            />
+                                                        </Col>
+                                                    )}
+                                                </Row>
+                                            )}
+
+                                            {headerMediaSource === 'column' && (
+                                                <Row className='gy-1'>
+                                                    <Col md={headerFormat === 'DOCUMENT' ? 8 : 12}>
+                                                        <Label for='header-media-col' className='small fw-bold text-dark'>
+                                                            Audience Column with {headerFormat} URL
+                                                        </Label>
+                                                        <Input
+                                                            id='header-media-col'
+                                                            type='select'
+                                                            value={headerMediaColumn}
+                                                            onChange={e => {
+                                                                setHeaderMediaColumn(e.target.value)
+                                                                const sampleVal = getSampleContactValue(e.target.value, sampleContact)
+                                                                if (sampleVal && sampleVal.startsWith('http')) setHeaderMediaUrl(sampleVal)
+                                                            }}
+                                                        >
+                                                            <option value=''>-- Select Column with Media URL --</option>
+                                                            {availableColumns.map(c => (
+                                                                <option key={c.value} value={c.value}>
+                                                                    {c.label} ({c.value})
+                                                                </option>
+                                                            ))}
+                                                        </Input>
+                                                    </Col>
+                                                    {headerFormat === 'DOCUMENT' && (
+                                                        <Col md={4}>
+                                                            <Label for='header-doc-filename-col' className='small fw-bold text-dark'>
+                                                                Document Filename
+                                                            </Label>
+                                                            <Input
+                                                                id='header-doc-filename-col'
+                                                                value={headerDocumentFilename}
+                                                                onChange={e => setHeaderDocumentFilename(e.target.value)}
+                                                            />
+                                                        </Col>
+                                                    )}
+                                                </Row>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {headerFormat === 'TEXT' && headerComp?.text?.includes('{{1}}') && (
+                                        <div className='mt-1'>
+                                            <Label for='header-text-param' className='small fw-bold text-dark'>
+                                                Header Variable &#123;&#123;1&#125;&#125;
+                                            </Label>
+                                            <Input
+                                                id='header-text-param'
+                                                placeholder='e.g. Special Offer or Account Alert'
+                                                value={headerTextParam}
+                                                onChange={e => setHeaderTextParam(e.target.value)}
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             </Col>
                         )}
@@ -494,10 +858,10 @@ export default function Broadcasts() {
                                         <div className='p-2 bg-white rounded border text-muted small'>
                                             ✓ <strong>No dynamic variables required:</strong> This template will be sent directly to recipients exactly as shown in the preview above.
                                         </div>
-                                    ) : audienceType === 'group' ? (
+                                    ) : isDynamicAudience ? (
                                         <div>
                                             <div className='mb-2 small text-muted'>
-                                                Bind each variable placeholder directly to contact columns from your selected contact book, or enter a fixed text fallback.
+                                                Bind each variable placeholder directly to contact columns from your selected {audienceType === 'csv' ? 'CSV file' : 'contact book'}, or enter a fixed text fallback.
                                             </div>
                                             <Row className='gy-2'>
                                                 {detectedVars.map(v => {
@@ -515,7 +879,7 @@ export default function Broadcasts() {
                                                                             style={{ fontSize: '0.75rem', padding: '2px 8px' }}
                                                                             onClick={() => handleMappingModeChange(v, 'column')}
                                                                         >
-                                                                            Contact Column
+                                                                            {audienceType === 'csv' ? 'CSV Column' : 'Contact Column'}
                                                                         </Button>
                                                                         <Button
                                                                             color={mapping.mode === 'static' ? 'primary' : 'outline-secondary'}
@@ -565,9 +929,11 @@ export default function Broadcasts() {
                                                 <div className='mt-2 p-2 bg-light-primary rounded border border-primary'>
                                                     <div className='d-flex justify-content-between align-items-center mb-1'>
                                                         <strong className='small text-primary'>
-                                                            📱 Real-Time Contact Sample Preview (Contact 1: {sampleContact.name || sampleContact.phone})
+                                                            📱 Real-Time Contact Sample Preview (Row 1: {sampleContact.name || sampleContact.phone || sampleContact['Phone'] || 'Contact'})
                                                         </strong>
-                                                        <Badge color='primary' pill>Contact Group: {contactGroups.find(g => String(g.id) === selectedGroup)?.name || 'Custom Book'}</Badge>
+                                                        <Badge color='primary' pill>
+                                                            {audienceType === 'csv' ? `CSV Source: ${csvFile?.name || 'Uploaded CSV'}` : `Contact Group: ${contactGroups.find(g => String(g.id) === selectedGroup)?.name || 'Custom Book'}`}
+                                                        </Badge>
                                                     </div>
                                                     <div className='p-2 bg-white rounded border small' style={{ lineHeight: '1.5' }}>
                                                         {renderTemplateWithValues(templateBodyText, computedSampleVars)}
@@ -624,6 +990,12 @@ export default function Broadcasts() {
                                         Contact Books / Groups ({contactGroups.length})
                                     </Button>
                                     <Button
+                                        color={audienceType === 'csv' ? 'primary' : 'outline-primary'}
+                                        onClick={() => setAudienceType('csv')}
+                                    >
+                                        Direct CSV Upload {csvRows.length > 0 && `(${csvRows.length})`}
+                                    </Button>
+                                    <Button
                                         color={audienceType === 'manual' ? 'primary' : 'outline-primary'}
                                         onClick={() => setAudienceType('manual')}
                                     >
@@ -665,6 +1037,103 @@ export default function Broadcasts() {
                                             </div>
                                         </Col>
                                     </Row>
+                                </div>
+                            )}
+
+                            {audienceType === 'csv' && (
+                                <div className='p-3 mb-2 border rounded bg-light'>
+                                    <input
+                                        type='file'
+                                        ref={fileInputRef}
+                                        style={{ display: 'none' }}
+                                        accept='.csv,text/csv'
+                                        onChange={e => {
+                                            const f = e.target.files?.[0]
+                                            if (f) processCsvFile(f)
+                                        }}
+                                    />
+                                    {csvFile && csvRows.length > 0 ? (
+                                        <div>
+                                            <div className='d-flex justify-content-between align-items-center mb-2'>
+                                                <div className='d-flex align-items-center gap-2'>
+                                                    <div className='p-2 bg-success text-white rounded'>
+                                                        <FileText size={22} />
+                                                    </div>
+                                                    <div>
+                                                        <strong className='d-block text-dark'>{csvFile.name}</strong>
+                                                        <small className='text-muted'>
+                                                            {(csvFile.size / 1024).toFixed(1)} KB • {csvRows.length.toLocaleString()} records loaded
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                                <div className='d-flex gap-1'>
+                                                    <Button
+                                                        size='sm'
+                                                        color='outline-secondary'
+                                                        onClick={() => fileInputRef.current?.click()}
+                                                    >
+                                                        Replace CSV
+                                                    </Button>
+                                                    <Button
+                                                        size='sm'
+                                                        color='outline-danger'
+                                                        onClick={() => {
+                                                            setCsvFile(null)
+                                                            setCsvRows([])
+                                                            setCsvPhoneColumn('')
+                                                            setRecipients('')
+                                                        }}
+                                                    >
+                                                        Clear
+                                                    </Button>
+                                                </div>
+                                            </div>
+
+                                            <Row className='gy-1 align-items-end'>
+                                                <Col md={7}>
+                                                    <Label for='csv-phone-col' className='small fw-bold text-dark'>
+                                                        Phone Number Column from CSV <span className='text-danger'>*</span>
+                                                    </Label>
+                                                    <Input
+                                                        id='csv-phone-col'
+                                                        type='select'
+                                                        bsSize='sm'
+                                                        value={csvPhoneColumn}
+                                                        onChange={e => handleCsvPhoneColumnChange(e.target.value)}
+                                                    >
+                                                        {availableColumns.map(c => (
+                                                            <option key={c.value} value={c.value}>
+                                                                {c.label} ({c.value})
+                                                            </option>
+                                                        ))}
+                                                    </Input>
+                                                </Col>
+                                                <Col md={5}>
+                                                    <div className='p-1 bg-white rounded border text-muted small'>
+                                                        Extracted: <strong className='text-success'>{recipientCount}</strong> valid phone numbers
+                                                    </div>
+                                                </Col>
+                                            </Row>
+                                        </div>
+                                    ) : (
+                                        <div
+                                            className={`border-2 border-dashed rounded p-4 text-center cursor-pointer transition-all ${isDragging ? 'border-primary bg-light-primary' : 'border-secondary-subtle bg-white'}`}
+                                            style={{ cursor: 'pointer', borderStyle: 'dashed' }}
+                                            onDragOver={handleDragOver}
+                                            onDragLeave={handleDragLeave}
+                                            onDrop={handleDrop}
+                                            onClick={() => fileInputRef.current?.click()}
+                                        >
+                                            <UploadCloud size={38} className={`mb-2 ${isDragging ? 'text-primary' : 'text-muted'}`} />
+                                            <h6 className='fw-bold text-dark mb-1'>Drag & Drop Audience CSV File Here</h6>
+                                            <p className='text-muted small mb-2'>
+                                                or <span className='text-primary fw-semibold text-decoration-underline'>click to browse your computer</span>
+                                            </p>
+                                            <small className='text-muted d-block'>
+                                                Supported format: <code>.csv</code> with phone numbers and custom columns (e.g. Name, Company, Order ID).
+                                            </small>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
@@ -715,6 +1184,76 @@ export default function Broadcasts() {
                             />
                         </Col>
 
+                        {/* Pre-Flight Credit Verification & Category Rate Alert */}
+                        {recipientCount > 0 && (
+                            <Col md={12} className='mt-2'>
+                                {!hasSufficientCredits ? (
+                                    <Alert color='danger' className='p-3 mb-2 border border-danger rounded shadow-sm'>
+                                        <div className='d-flex align-items-start gap-2'>
+                                            <AlertTriangle size={26} className='text-danger flex-shrink-0 mt-1' />
+                                            <div className='flex-grow-1'>
+                                                <div className='d-flex justify-content-between align-items-center mb-1'>
+                                                    <h6 className='fw-bold text-danger mb-0'>
+                                                        Insufficient Wallet Credits for Broadcast Dispatch
+                                                    </h6>
+                                                    <Badge color='danger' pill>Action Required</Badge>
+                                                </div>
+                                                <p className='small text-dark mb-2'>
+                                                    You are attempting to send <strong>{recipientCount.toLocaleString()} {templateCategory}</strong> message{recipientCount === 1 ? '' : 's'}.
+                                                    Your available wallet balance is insufficient to cover the required messaging costs.
+                                                </p>
+                                                <div className='p-2 bg-white rounded border border-danger-subtle d-flex flex-wrap gap-4 small mb-2'>
+                                                    <div>
+                                                        <span className='text-muted d-block'>Required Credits:</span>
+                                                        <strong className='text-danger fs-6'>₹{estimatedCostRupees.toFixed(2)}</strong>
+                                                        <span className='text-muted ms-1'>({recipientCount.toLocaleString()} × ₹{unitRate.toFixed(3)})</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className='text-muted d-block'>Available Balance:</span>
+                                                        <strong className='text-dark fs-6'>₹{availableBalanceRupees.toFixed(2)}</strong>
+                                                    </div>
+                                                    <div>
+                                                        <span className='text-muted d-block'>Deficit Amount:</span>
+                                                        <strong className='text-danger fs-6'>-₹{creditDeficitRupees.toFixed(2)}</strong>
+                                                    </div>
+                                                    <div>
+                                                        <span className='text-muted d-block'>Category Rate:</span>
+                                                        <span className='fw-bold text-secondary'>{templateCategory} (₹{unitRate.toFixed(3)}/msg)</span>
+                                                    </div>
+                                                </div>
+                                                <div className='d-flex gap-2 align-items-center'>
+                                                    <Button
+                                                        color='danger'
+                                                        size='sm'
+                                                        tag='a'
+                                                        href='/wallet'
+                                                        target='_blank'
+                                                        className='d-inline-flex align-items-center'
+                                                    >
+                                                        <CreditCard size={14} className='me-1' /> Recharge Wallet
+                                                        <ExternalLink size={12} className='ms-1' />
+                                                    </Button>
+                                                    <small className='text-muted'>
+                                                        Broadcast launch is locked until your wallet is recharged.
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </Alert>
+                                ) : (
+                                    <div className='p-2 mb-2 bg-light-success rounded border border-success d-flex justify-content-between align-items-center'>
+                                        <div className='d-flex align-items-center gap-2 small'>
+                                            <CheckCircle size={18} className='text-success flex-shrink-0' />
+                                            <span>
+                                                <strong>Pre-Flight Credit Check Passed:</strong> Estimated cost is <strong>₹{estimatedCostRupees.toFixed(2)}</strong> for {recipientCount.toLocaleString()} {templateCategory} message{recipientCount === 1 ? '' : 's'} (Rate: ₹{unitRate.toFixed(3)}/msg).
+                                            </span>
+                                        </div>
+                                        <Badge color='success' pill>Available: ₹{availableBalanceRupees.toFixed(2)}</Badge>
+                                    </div>
+                                )}
+                            </Col>
+                        )}
+
                         <Col md={12} className='mt-2'>
                             {missingVars.length > 0 && selectedTemplate && (
                                 <Alert color='warning' className='py-1 small mb-1'>
@@ -728,16 +1267,67 @@ export default function Broadcasts() {
                                 onClick={() =>
                                     void act(async () => {
                                         const chosen = templates[Number(template)]
-                                        const values = detectedVars.length > 0
+                                        const bodyValues = detectedVars.length > 0
                                             ? detectedVars.map(v => {
                                                 const mapping = varMappings[v]
-                                                if (audienceType === 'group' && mapping?.mode === 'column') {
+                                                if (isDynamicAudience && mapping?.mode === 'column') {
                                                     const sampleVal = getSampleContactValue(mapping.column, sampleContact) || mapping.column
                                                     return { type: 'text', text: sampleVal }
                                                 }
                                                 return { type: 'text', text: (varValues[v] || '').trim() }
                                             }).filter(p => p.text)
                                             : (parameters.trim() ? parameters.split('\n').map(text => ({ type: 'text', text: text.trim() })).filter(p => p.text) : [])
+
+                                        const components: any[] = []
+
+                                        // 1. Header component (Media or Text)
+                                        if (['IMAGE', 'DOCUMENT', 'VIDEO', 'AUDIO'].includes(headerFormat)) {
+                                            const mediaLink = headerMediaSource === 'url'
+                                                ? headerMediaUrl
+                                                : headerMediaSource === 'asset'
+                                                ? (mediaAssets.find(a => String(a.id) === headerMediaAssetId)?.url || headerMediaUrl)
+                                                : (getSampleContactValue(headerMediaColumn, sampleContact) || headerMediaUrl)
+
+                                            if (mediaLink) {
+                                                if (headerFormat === 'IMAGE') {
+                                                    components.push({
+                                                        type: 'header',
+                                                        parameters: [{ type: 'image', image: { link: mediaLink } }]
+                                                    })
+                                                } else if (headerFormat === 'DOCUMENT') {
+                                                    components.push({
+                                                        type: 'header',
+                                                        parameters: [{
+                                                            type: 'document',
+                                                            document: {
+                                                                link: mediaLink,
+                                                                filename: headerDocumentFilename || 'Document.pdf'
+                                                            }
+                                                        }]
+                                                    })
+                                                } else if (headerFormat === 'VIDEO') {
+                                                    components.push({
+                                                        type: 'header',
+                                                        parameters: [{ type: 'video', video: { link: mediaLink } }]
+                                                    })
+                                                } else if (headerFormat === 'AUDIO') {
+                                                    components.push({
+                                                        type: 'header',
+                                                        parameters: [{ type: 'audio', audio: { link: mediaLink } }]
+                                                    })
+                                                }
+                                            }
+                                        } else if (headerFormat === 'TEXT' && headerTextParam) {
+                                            components.push({
+                                                type: 'header',
+                                                parameters: [{ type: 'text', text: headerTextParam }]
+                                            })
+                                        }
+
+                                        // 2. Body component
+                                        if (bodyValues.length > 0) {
+                                            components.push({ type: 'body', parameters: bodyValues })
+                                        }
 
                                         const recipientList = recipients
                                             .split(/[,\n]/)
@@ -756,7 +1346,7 @@ export default function Broadcasts() {
                                                     template: {
                                                         name: chosen.name,
                                                         language: { code: chosen.language },
-                                                        ...(values.length ? { components: [{ type: 'body', parameters: values }] } : {})
+                                                        ...(components.length ? { components } : {})
                                                     }
                                                 }
                                             },
@@ -768,6 +1358,9 @@ export default function Broadcasts() {
                                         setRecipients('')
                                         setParameters('')
                                         setVarValues({})
+                                        setCsvFile(null)
+                                        setCsvRows([])
+                                        setHeaderMediaUrl('')
                                     })
                                 }
                             >

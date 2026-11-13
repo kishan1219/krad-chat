@@ -68,8 +68,9 @@ test('phone_number_quality_update webhook upgrades messaging tier and creates ad
 
   const notifications=(await db.query("SELECT * FROM resources WHERE tenant_id=$1 AND kind='notification' ORDER BY id DESC",[actor.tenant_id])).rows;
   assert.ok(notifications.length > 0);
-  assert.match(notifications[0].data.title, /Tier Upgraded/);
+  assert.match(notifications[0].data.title, /Tier (?:Upgraded|Boosted)/i);
   assert.equal(notifications[0].data.current_tier, 'TIER_10K');
+  assert.equal(notifications[0].data.is_owner_alert, true);
 
   assert.equal(realtimeEvents.length, 1);
   assert.equal(realtimeEvents[0].tenantId, actor.tenant_id);
@@ -77,4 +78,58 @@ test('phone_number_quality_update webhook upgrades messaging tier and creates ad
   assert.equal(realtimeEvents[0].event.type, 'meta_tier_upgrade');
   assert.equal(realtimeEvents[0].event.data.tier, 'TIER_10K');
  } finally { await close(); }
+});
+
+test('templateMessageSchema validates media header attachments (image, document, audio)', () => {
+  const { templateMessageSchema } = require('../src/whatsapp-template');
+
+  const validImage = templateMessageSchema.parse({
+    name: 'summer_promo',
+    language: { code: 'en_US' },
+    components: [
+      {
+        type: 'header',
+        parameters: [
+          { type: 'image', image: { link: 'https://images.example.com/banner.png' } }
+        ]
+      },
+      {
+        type: 'body',
+        parameters: [
+          { type: 'text', text: 'Alice' }
+        ]
+      }
+    ]
+  });
+  assert.equal(validImage.components[0].type, 'header');
+  assert.equal(validImage.components[0].parameters[0].image.link, 'https://images.example.com/banner.png');
+
+  const validDoc = templateMessageSchema.parse({
+    name: 'invoice_delivery',
+    language: { code: 'en_US' },
+    components: [
+      {
+        type: 'header',
+        parameters: [
+          { type: 'document', document: { link: 'https://files.example.com/inv-101.pdf', filename: 'Invoice-101.pdf' } }
+        ]
+      }
+    ]
+  });
+  assert.equal(validDoc.components[0].parameters[0].document.filename, 'Invoice-101.pdf');
+
+  assert.throws(() => {
+    templateMessageSchema.parse({
+      name: 'broken',
+      language: { code: 'en_US' },
+      components: [
+        {
+          type: 'header',
+          parameters: [
+            { type: 'image', image: {} }
+          ]
+        }
+      ]
+    });
+  });
 });

@@ -77,43 +77,44 @@ export class Webhooks {
 
               if (isUpgraded || previousTier !== tier) {
                 const tierDesc = tier === 'TIER_UNLIMITED' ? 'Unlimited' : tier.replace('TIER_', '') + ' messages / 24h';
+                const owners = (await c.query(
+                  "SELECT id, email, name FROM users WHERE tenant_id=$1 AND role='admin' AND active=true",
+                  [connection.tenant_id]
+                )).rows;
+
+                const notifData = {
+                  title: `🚀 WhatsApp Messaging Tier Boosted to ${tier}!`,
+                  message: `Meta has officially upgraded your WhatsApp Business messaging limit for ${connection.display_phone_number || connection.phone_number_id} to ${tier} (${tierDesc}). Your business can now initiate more conversations per rolling 24-hour window!`,
+                  phone_number_id: connection.phone_number_id,
+                  phone_number: connection.display_phone_number,
+                  previous_tier: previousTier,
+                  current_tier: tier,
+                  tier,
+                  event: value.event || 'UPGRADED',
+                  type: 'meta_tier_upgrade',
+                  is_owner_alert: true,
+                  upgraded_at: new Date().toISOString()
+                };
+
                 await c.query(
                   `INSERT INTO resources(tenant_id, kind, data, created_by)
                    VALUES($1, 'notification', $2, $3)`,
                   [
                     connection.tenant_id,
-                    JSON.stringify({
-                      title: `WhatsApp Tier Upgraded to ${tier}`,
-                      message: `Meta has automatically upgraded your WhatsApp Business messaging limit for ${connection.display_phone_number || connection.phone_number_id} to ${tier} (${tierDesc}). Your business can now initiate more conversations per rolling 24-hour window!`,
-                      phone_number_id: connection.phone_number_id,
-                      phone_number: connection.display_phone_number,
-                      previous_tier: previousTier,
-                      current_tier: tier,
-                      event: value.event || 'UPGRADED',
-                      type: 'meta_tier_upgrade'
-                    }),
+                    JSON.stringify(notifData),
                     connection.created_by || 1
                   ]
                 );
                 await c.query(
-                  "INSERT INTO audit_logs(tenant_id, user_id, action, target) VALUES($1, $2, 'meta.tier.upgrade', $3)",
-                  [connection.tenant_id, connection.created_by || 1, `${connection.phone_number_id}:${tier}`]
+                  "INSERT INTO audit_logs(tenant_id, user_id, action, target) VALUES($1, $2, 'meta.tier.upgrade.owner_notified', $3)",
+                  [connection.tenant_id, connection.created_by || 1, `${connection.phone_number_id}:${tier}:owners=${owners.length}`]
                 );
 
                 if (this.notify) {
                   this.notify(connection.tenant_id, {
                     command: 'notification',
                     type: 'meta_tier_upgrade',
-                    data: {
-                      title: `WhatsApp Tier Upgraded to ${tier}`,
-                      message: `Meta has automatically upgraded your WhatsApp Business messaging limit for ${connection.display_phone_number || connection.phone_number_id} to ${tier} (${tierDesc}). Your business can now initiate more conversations per rolling 24-hour window!`,
-                      phone_number_id: connection.phone_number_id,
-                      phone_number: connection.display_phone_number,
-                      previous_tier: previousTier,
-                      current_tier: tier,
-                      tier,
-                      event: value.event || 'UPGRADED'
-                    }
+                    data: notifData
                   });
                 }
               }

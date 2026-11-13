@@ -8,7 +8,7 @@ import ListIcon from '@mui/icons-material/List'
 import ReplyIcon from '@mui/icons-material/Reply'
 import PlaceholderImage from '@src/assets/images/logo/image.png'
 import { forwardRef, useEffect, useRef, useState } from 'react'
-import { ArrowLeft } from 'react-feather'
+import { ArrowLeft, AlertTriangle, CheckCircle, CreditCard, ExternalLink } from 'react-feather'
 import { useFieldArray, useForm } from 'react-hook-form'
 import ReactPaginate from 'react-paginate'
 import { useDispatch, useSelector } from 'react-redux'
@@ -147,6 +147,14 @@ const SendWhatsapp = () => {
     const [fileCaption, setFileCaption] = useState(null)
     const [mediaFilePath, setMediaFilePath] = useState(null)
     const [charge, setCharge] = useState(null)
+    const [wallet, setWallet] = useState<any>(null)
+
+    useEffect(() => {
+        httpConfig.get('wallet').then((res: any) => {
+            if (res?.data) setWallet(res.data)
+        }).catch(() => {})
+    }, [])
+
     const [apiFilterData, setApiFilterData] = useState({
         per_page_record: 15,
         user_id: users?.id
@@ -811,7 +819,29 @@ console.log(mediaFilePath, 'mediaFilePath')
     //     return !re
     // }
 
+    const templateCategory = (details?.category || 'MARKETING').toUpperCase()
+    const unitRate = templateCategory === 'UTILITY'
+        ? 0.165
+        : templateCategory === 'AUTHENTICATION'
+        ? 0.165
+        : 0.835
+
+    const targetRecipientsCount = (dataTotal && dataTotal.length > 0)
+        ? dataTotal.length
+        : (rowsSelected && rowsSelected.length > 0)
+        ? rowsSelected.length
+        : watch('mobile_numbers')
+        ? String(watch('mobile_numbers')).split(/[,\n]/).filter(Boolean).length
+        : (count || 1)
+
+    const estimatedCostRupees = Number((targetRecipientsCount * unitRate).toFixed(2))
+    const availableBalancePaise = Number(wallet?.available ?? ((wallet?.balance || 0) - (wallet?.reserved || 0)))
+    const availableBalanceRupees = Number((availableBalancePaise / 100).toFixed(2))
+    const creditDeficitRupees = Number((estimatedCostRupees - availableBalanceRupees).toFixed(2))
+    const hasSufficientCredits = !wallet || availableBalanceRupees >= estimatedCostRupees
+
     const isfDisabled = () => {
+        if (!hasSufficientCredits) return true
         let re = false
 
         if (isValidArray(mediaRef.current?.files)) {
@@ -1713,6 +1743,67 @@ console.log(mediaFilePath, 'mediaFilePath')
                                     </div>
                                 </div>
                             </div>
+                            {/* Pre-Flight Category-Based Credit Validation Alert */}
+                            {details && (
+                                <Row className='mt-2'>
+                                    <Col md='12'>
+                                        {!hasSufficientCredits ? (
+                                            <Alert color='danger' className='p-2 mb-1 border border-danger rounded text-start shadow-sm'>
+                                                <div className='d-flex align-items-start gap-2'>
+                                                    <AlertTriangle size={24} className='text-danger flex-shrink-0 mt-1' />
+                                                    <div className='flex-grow-1'>
+                                                        <h6 className='fw-bold text-danger mb-1'>
+                                                            Insufficient Credits to Send {templateCategory} Message
+                                                        </h6>
+                                                        <p className='small text-dark mb-1'>
+                                                            Sending <strong>{targetRecipientsCount.toLocaleString()}</strong> message{targetRecipientsCount === 1 ? '' : 's'} requires more wallet credits than your current balance.
+                                                        </p>
+                                                        <div className='p-2 bg-white rounded border border-danger-subtle d-flex flex-wrap gap-3 small mb-2'>
+                                                            <div>
+                                                                <span className='text-muted d-block'>Required:</span>
+                                                                <strong className='text-danger'>₹{estimatedCostRupees.toFixed(2)}</strong> ({targetRecipientsCount} × ₹{unitRate.toFixed(3)})
+                                                            </div>
+                                                            <div>
+                                                                <span className='text-muted d-block'>Available:</span>
+                                                                <strong className='text-dark'>₹{availableBalanceRupees.toFixed(2)}</strong>
+                                                            </div>
+                                                            <div>
+                                                                <span className='text-muted d-block'>Deficit:</span>
+                                                                <strong className='text-danger'>-₹{creditDeficitRupees.toFixed(2)}</strong>
+                                                            </div>
+                                                        </div>
+                                                        <div className='d-flex gap-2 align-items-center'>
+                                                            <Button
+                                                                color='danger'
+                                                                size='sm'
+                                                                tag='a'
+                                                                href='/wallet'
+                                                                target='_blank'
+                                                                className='d-inline-flex align-items-center'
+                                                            >
+                                                                <CreditCard size={14} className='me-1' /> Recharge Wallet
+                                                            </Button>
+                                                            <small className='text-muted'>
+                                                                Message sending is locked until sufficient credits are available.
+                                                            </small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </Alert>
+                                        ) : (
+                                            <div className='p-1 px-2 mb-1 bg-light-success rounded border border-success d-flex justify-content-between align-items-center text-start'>
+                                                <div className='d-flex align-items-center gap-1 small'>
+                                                    <CheckCircle size={16} className='text-success flex-shrink-0' />
+                                                    <span>
+                                                        <strong>Pre-Flight Credit Check Passed:</strong> Estimated cost: <strong>₹{estimatedCostRupees.toFixed(2)}</strong> ({targetRecipientsCount} × ₹{unitRate.toFixed(3)}/msg) | Category: <strong>{templateCategory}</strong>
+                                                    </span>
+                                                </div>
+                                                <span className='badge bg-success'>Wallet: ₹{availableBalanceRupees.toFixed(2)}</span>
+                                            </div>
+                                        )}
+                                    </Col>
+                                </Row>
+                            )}
                             <Row className='text-center mt-2'>
                                 <Col md="12" className='text-center'>
                                     <LoadingButton loading={loading} type='submit' disabled={isfDisabled() || loading}
