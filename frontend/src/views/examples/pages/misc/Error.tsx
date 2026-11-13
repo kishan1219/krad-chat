@@ -8,15 +8,19 @@ import { Button } from 'reactstrap'
 // ** Custom Hooks
 import { useSkin } from '@hooks/useSkin'
 
+// ** Assets
+import errorLight from '@src/assets/images/pages/error.svg'
+import errorDark from '@src/assets/images/pages/error-dark.svg'
+import logoDark from '../../../../assets/images/logo/krad-chat-dark.svg'
+
 // ** Styles
 import '@styles/base/pages/page-misc.scss'
 
 const Error = () => {
   // ** Hooks
   const { skin } = useSkin()
+  const source = skin === 'dark' ? errorDark : errorLight
 
-  const illustration = skin === 'dark' ? 'error-dark.svg' : 'error.svg',
-    source = require(`@src/assets/images/pages/${illustration}`).default
   return (
     <div className='misc-wrapper'>
     <Link className='brand-logo' to='/'>
@@ -24,19 +28,21 @@ const Error = () => {
         <img
           style={{ height: 80, width: 225 }}
           className='img-fluid'
-          src={require('../../../../assets/images/logo/krad-chat-dark.svg').default}
+          src={logoDark}
+          alt='Krad Chat Logo'
         />{' '}
-        {/* <h2 className='text-dark ms-1 mt-25'>{themeConfig.app.appName}</h2> */}
       </h2>
     </Link>
     <div className='misc-inner p-2 p-sm-3'>
       <div className='w-100 text-center'>
         <h2 className='mb-1'>Page Not Found 🕵🏻‍♀️</h2>
         <p className='mb-2'>Oops! 😖 The requested URL was not found on this server.</p>
-        <Button tag={Link} to='/' color='primary' className='btn-sm-block mb-2'>
+        <Button tag={Link} to='/dashboard' color='primary' className='btn-sm-block mb-2'>
           Back to home
         </Button>
-        <img className='img-fluid' src={source} alt='Not authorized page' />
+        <div className='mt-2'>
+          <img className='img-fluid' style={{ maxHeight: '380px' }} src={source} alt='Page Not Found' />
+        </div>
       </div>
     </div>
   </div>

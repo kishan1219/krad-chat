@@ -136,6 +136,7 @@ export class Users {
       company_name: body.company_name ?? body.companyName,
       website_url: body.website_url ?? body.websiteUrl,
       zipcode: body.zipcode ?? body.zipCode,
+      active: body.active !== undefined ? Boolean(body.active) : (body.status !== undefined ? (Number(body.status) === 1 || body.status === '1' || body.status === true) : undefined),
       authority_type: body.authority_type !== undefined ? Number(body.authority_type) : (body.authorityType !== undefined ? Number(body.authorityType) : undefined),
       locktimeout: body.locktimeout !== undefined ? Number(body.locktimeout) : undefined,
       is_add_webhook: body.is_add_webhook !== undefined ? Boolean(body.is_add_webhook) : (body.allow_to_add_webhook !== undefined ? (body.allow_to_add_webhook === 1 || body.allow_to_add_webhook === true) : undefined),

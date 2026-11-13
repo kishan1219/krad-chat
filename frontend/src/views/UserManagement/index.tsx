@@ -4,7 +4,7 @@ import { forwardRef, useContext, useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 // ** Third Party Components
 import DataTable from 'react-data-table-component'
-import { ChevronDown, Edit, Eye, MoreVertical, Plus, RefreshCcw, Search, Sliders, Trash, Unlock, Users } from 'react-feather'
+import { CheckCircle, ChevronDown, Edit, Eye, MoreVertical, Plus, RefreshCcw, Search, Sliders, Trash, Unlock, UserCheck, Users, UserX } from 'react-feather'
 import ReactPaginate from 'react-paginate'
 // ** Reactstrap Imports
 import { useForm } from 'react-hook-form'
@@ -192,7 +192,7 @@ const UserList = () => {
 
                 dispatch(handleLogin(m))
                 if (resData?.permissions) ability.update(m?.ability)
-                navigate('/admin-send-sms')
+                navigate('/dashboard')
             }
         })
     }
@@ -315,7 +315,7 @@ const UserList = () => {
         },
         {
             name: "Status",
-            selector: (row) => (Number(row?.status) === 1 ? <Badge color='success' className='badge-glow'>Active</Badge> : <Badge color='danger' className='badge-glow'>In-Active</Badge>),
+            selector: (row) => ((row?.status === 1 || row?.status === '1' || row?.active === true || row?.active === 1) ? <Badge color='success' className='badge-glow'>Active</Badge> : <Badge color='danger' className='badge-glow'>In-Active</Badge>),
             sortable: true,
             minWidth: '140px'
         },
@@ -326,6 +326,7 @@ const UserList = () => {
             allowOverflow: true,
             minWidth: '170px',
             cell: row => {
+                const isUserActive = row?.status === 1 || row?.status === '1' || row?.active === true || row?.active === 1
                 return (
                     <div>
                         <DropDownMenu
@@ -342,6 +343,25 @@ const UserList = () => {
                                         childLoginButton(row)
                                     },
                                     name: "Child Login"
+                                },
+                                {
+                                    IF: String(userLogin?.id) !== String(row?.id),
+                                    icon: isUserActive ? <UserX size={14} /> : <UserCheck size={14} />,
+                                    onClick: () => {
+                                        userAction({
+                                            jsonData: {
+                                                ids: [row?.id],
+                                                action: isUserActive ? 'disable' : 'enable',
+                                                status: isUserActive ? 0 : 1,
+                                                user_ids: [row?.id]
+                                            },
+                                            loading: setLoading,
+                                            success: () => {
+                                                preload()
+                                            }
+                                        })
+                                    },
+                                    name: isUserActive ? "Deactivate User" : "Activate User"
                                 },
                                 {
                                     IF: Permissions?.userChangePassword && String(userLogin?.id) !== String(row?.id),
@@ -522,8 +542,8 @@ const UserList = () => {
                                         Actions
                                     </DropdownToggle>
                                     <DropdownMenu>
-                                        <DropdownItem onClick={submitHandler} href='/' tag='a'>Active</DropdownItem>
-                                        <DropdownItem onClick={submitHandler2} href='/' tag='a'>In-Active</DropdownItem>
+                                        <DropdownItem onClick={submitHandler} tag='button'>Activate Selected</DropdownItem>
+                                        <DropdownItem onClick={submitHandler2} tag='button'>Deactivate Selected</DropdownItem>
                                     </DropdownMenu>
                                 </UncontrolledButtonDropdown>
                             </CardHeader>

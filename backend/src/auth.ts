@@ -25,7 +25,44 @@ export function publicUser(row: Record<string, any>) {
   else if (row.role === 'reseller') userType = 1;
   else if (row.role === 'operator') userType = 2;
 
+  // Map backend permissions to frontend navigation and action permissions for non-admin accounts
+  const mappedUiPermissions: string[] = [];
+  const perms = row.permissions || [];
+  if (perms.includes('users:read') || perms.includes('users:write') || row.role === 'reseller') {
+    mappedUiPermissions.push('users-list', 'user-view', 'user-action', 'user-change-password');
+  }
+  if (perms.includes('users:write') || row.role === 'reseller') {
+    mappedUiPermissions.push('user-create', 'user-edit', 'user-change-api-key', 'set-user-ratio');
+  }
+  if (perms.includes('contacts:read') || perms.includes('contacts:write')) {
+    mappedUiPermissions.push('phone-book-list', 'phone-book-view');
+  }
+  if (perms.includes('contacts:write')) {
+    mappedUiPermissions.push('phone-book-create', 'phone-book-edit', 'phone-book-delete', 'blacklist');
+  }
+  if (perms.includes('templates:read') || perms.includes('templates:write')) {
+    mappedUiPermissions.push('whatsapp-template-list', 'whatsapp-template-view');
+  }
+  if (perms.includes('templates:write')) {
+    mappedUiPermissions.push('whatsapp-template-create', 'whatsapp-template-edit', 'whatsapp-template-delete');
+  }
+  if (perms.includes('campaign:create')) {
+    mappedUiPermissions.push('whatsapp-sms', 'whatsapp-file-upload', 'reports');
+  }
+  if (perms.includes('billing:transfer') || row.role === 'reseller') {
+    mappedUiPermissions.push('credit-request', 'user-credit-add');
+  }
+  if (row.role === 'reseller' || row.role === 'operator') {
+    mappedUiPermissions.push(
+      'dashboard-view',
+      'whatsapp-get-analytics',
+      'whatsapp-get-conversation-analytics',
+      'whatsapp-get-template-analytics'
+    );
+  }
+
   const username = row.user_name || (row.email ? row.email.split('@')[0] : '') || row.name || '';
+  const isActive = row.active === true || row.active === 1 || row.active === 'true' || row.active === '1';
 
   return {
     ...user,
@@ -34,6 +71,8 @@ export function publicUser(row: Record<string, any>) {
     userType,
     username,
     user_name: username,
+    active: isActive,
+    status: isActive ? 1 : 0,
     mobile: row.mobile || '',
     address: row.address || '',
     city: row.city || '',
@@ -50,7 +89,12 @@ export function publicUser(row: Record<string, any>) {
     allow_detail_report: row.is_detail_report ? 1 : 2,
     is_visible_dlt_template_group: row.is_visible_dlt_template_group ? 1 : 2,
     companyLogo: row.company_logo || '',
-    permissions: [...new Set([...(row.permissions || []), ...uiPermissions, ...(row.role === 'admin' ? frontendPermissions : [])])].map((name: string) => ({ name }))
+    permissions: [...new Set([
+      ...(row.permissions || []),
+      ...uiPermissions,
+      ...mappedUiPermissions,
+      ...(row.role === 'admin' ? frontendPermissions : [])
+    ])].map((name: string) => ({ name }))
   };
 }
 export class Auth {

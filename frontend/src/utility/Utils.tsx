@@ -1,5 +1,6 @@
 import moment from 'moment'
 import toast from 'react-hot-toast'
+import { AlertCircle, CheckCircle, X } from 'react-feather'
 import { DefaultRoute } from '../router/routes'
 import { Events } from './Const'
 import Emitter from './Emitter'
@@ -103,7 +104,71 @@ export const getHomeRouteForLoggedInUser = user => {
 }
 
 export const ErrorToast = (message, settings = {}, comp = null) => {
-    toast.error(comp ?? message, settings)
+    return toast.custom(
+        (t) => (
+            <div
+                className={`custom-krad-toast error-toast ${t.visible ? 'animate-enter' : 'animate-leave'}`}
+                style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    minWidth: '320px',
+                    maxWidth: '460px',
+                    backgroundColor: '#ffffff',
+                    color: '#2d3748',
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 25px -5px rgba(239, 68, 68, 0.18), 0 8px 10px -6px rgba(0, 0, 0, 0.08)',
+                    borderLeft: '5px solid #ef4444',
+                    borderTop: '1px solid #fee2e2',
+                    borderRight: '1px solid #fee2e2',
+                    borderBottom: '1px solid #fee2e2',
+                    gap: '12px',
+                    pointerEvents: 'auto'
+                }}
+            >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+                    <div style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        backgroundColor: '#fee2e2',
+                        color: '#dc2626',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                    }}>
+                        <AlertCircle size={18} />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+                        <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#991b1b', lineHeight: 1.2 }}>Notice</span>
+                        <div style={{ fontSize: '0.84rem', color: '#4b5563', marginTop: '2px', wordBreak: 'break-word' }}>
+                            {comp ?? message}
+                        </div>
+                    </div>
+                </div>
+                <button
+                    onClick={() => toast.dismiss(t.id)}
+                    aria-label="Close"
+                    style={{
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: '4px',
+                        borderRadius: '6px',
+                        color: '#9ca3af',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}
+                >
+                    <X size={16} />
+                </button>
+            </div>
+        ),
+        { duration: 5000, ...settings }
+    )
 }
 // ** React Select Theme Colors
 export const selectThemeColors = theme => ({
@@ -119,12 +184,74 @@ export const selectThemeColors = theme => ({
 })
 
 export const SuccessToast = (message, settings = {}, comp = null) => {
-    toast.success(comp ?? message, settings)
+    return toast.custom(
+        (t) => (
+            <div
+                className={`custom-krad-toast success-toast ${t.visible ? 'animate-enter' : 'animate-leave'}`}
+                style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    minWidth: '320px',
+                    maxWidth: '460px',
+                    backgroundColor: '#ffffff',
+                    color: '#2d3748',
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 25px -5px rgba(16, 185, 129, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.08)',
+                    borderLeft: '5px solid #10b981',
+                    borderTop: '1px solid #d1fae5',
+                    borderRight: '1px solid #d1fae5',
+                    borderBottom: '1px solid #d1fae5',
+                    gap: '12px',
+                    pointerEvents: 'auto'
+                }}
+            >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+                    <div style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        backgroundColor: '#d1fae5',
+                        color: '#059669',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                    }}>
+                        <CheckCircle size={18} />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+                        <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#065f46', lineHeight: 1.2 }}>Success</span>
+                        <div style={{ fontSize: '0.84rem', color: '#4b5563', marginTop: '2px', wordBreak: 'break-word' }}>
+                            {comp ?? message}
+                        </div>
+                    </div>
+                </div>
+                <button
+                    onClick={() => toast.dismiss(t.id)}
+                    aria-label="Close"
+                    style={{
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: '4px',
+                        borderRadius: '6px',
+                        color: '#9ca3af',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}
+                >
+                    <X size={16} />
+                </button>
+            </div>
+        ),
+        { duration: 4000, ...settings }
+    )
 }
-export const MessageToast = (message) => {
-    toast.success((e) => (<div
-        dangerouslySetInnerHTML={{ __html: message }}
-    />))
+export const MessageToast = (message, settings = {}) => {
+    return SuccessToast(message, settings)
 }
 
 export const fromNow = (data) => {

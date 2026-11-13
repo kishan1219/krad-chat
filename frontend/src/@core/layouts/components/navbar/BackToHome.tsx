@@ -29,10 +29,7 @@ const BackToHome = () => {
     const ability = useContext(AbilityContext)
 
     const refreshPage = () => {
-        // window.location.href = window.location.href
-        window.location.assign("admin-send-sms")
-        navigate("/admin-send-sms")
-        
+        navigate("/users-list")
     }
     // const childLoginButton = () => {
     //     // const encoded = base64.encode(row?.uuid)

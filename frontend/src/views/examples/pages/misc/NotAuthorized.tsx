@@ -11,6 +11,11 @@ import { useSkin } from '@hooks/useSkin'
 // ** Utils
 import { getUserData, getHomeRouteForLoggedInUser } from '@utils'
 
+// ** Assets
+import notAuthLight from '@src/assets/images/pages/not-authorized.svg'
+import notAuthDark from '@src/assets/images/pages/not-authorized-dark.svg'
+import logoDark from '../../../../assets/images/logo/krad-chat-dark.svg'
+
 // ** Styles
 import '@styles/base/pages/page-misc.scss'
 
@@ -20,9 +25,8 @@ const NotAuthorized = () => {
 
   // ** Vars
   const user = getUserData()
+  const source = skin === 'dark' ? notAuthDark : notAuthLight
 
-  const illustration = skin === 'dark' ? 'not-authorized-dark.svg' : 'not-authorized.svg',
-    source = require(`@src/assets/images/pages/${illustration}`).default
   return (
     <div className='misc-wrapper'>
       <Link className='brand-logo' to='/dashboard'>
@@ -30,26 +34,28 @@ const NotAuthorized = () => {
         <img
           style={{ height: 80, width: 225 }}
           className='img-fluid'
-          src={require('../../../../assets/images/logo/krad-chat-dark.svg').default}
+          src={logoDark}
+          alt='Krad Chat Logo'
         />{' '}
-        {/* <h2 className='text-dark ms-1 mt-25'>{themeConfig.app.appName}</h2> */}
       </h2>
       </Link>
       <div className='misc-inner p-2 p-sm-3'>
         <div className='w-100 text-center'>
           <h2 className='mb-1'>You are not authorized! 🔐</h2>
-          <p className='mb-2'>
-           Please contact to the Admin for further Support
+          <p className='mb-2 text-muted'>
+           Please contact your administrator for access to this resource.
           </p>
           <Button
             tag={Link}
             color='primary'
-            className='btn-sm-block mb-1'
-            to={user ? getHomeRouteForLoggedInUser(user.role) : '/'}
+            className='btn-sm-block mb-2 shadow-sm'
+            to={user ? getHomeRouteForLoggedInUser(user.role) : '/dashboard'}
           >
             Back to Home
           </Button>
-          <img className='img-fluid' src={source} alt='Not authorized page' />
+          <div className='mt-2'>
+            <img className='img-fluid' style={{ maxHeight: '380px' }} src={source} alt='Not authorized page' />
+          </div>
         </div>
       </div>
     </div>

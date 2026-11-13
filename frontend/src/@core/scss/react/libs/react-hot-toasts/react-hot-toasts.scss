@@ -10,11 +10,66 @@
   border-radius: $border-radius;
 }
 
+.custom-krad-toast {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  &.animate-enter {
+    animation: toastEnter 0.25s cubic-bezier(0.21, 1.02, 0.73, 1) forwards;
+  }
+  &.animate-leave {
+    animation: toastLeave 0.2s ease-in forwards;
+  }
+}
+
+@keyframes toastEnter {
+  from {
+    transform: scale(0.9) translateY(12px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes toastLeave {
+  from {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.9) translateY(12px);
+    opacity: 0;
+  }
+}
+
 // Dark Layout
 .dark-layout {
   .react-hot-toast {
     color: $theme-dark-body-color;
     background: $theme-dark-card-bg;
     box-shadow: 0px 8px 16px -4px rgb(19 17 32 / 65%);
+  }
+  .custom-krad-toast {
+    background-color: #283046 !important;
+    color: #d0d2d6 !important;
+    border-color: #3b4253 !important;
+    &.success-toast {
+      border-left-color: #28c76f !important;
+      span {
+        color: #28c76f !important;
+      }
+      div {
+        color: #b4b7bd !important;
+      }
+    }
+    &.error-toast {
+      border-left-color: #ea5455 !important;
+      span {
+        color: #ea5455 !important;
+      }
+      div {
+        color: #b4b7bd !important;
+      }
+    }
   }
 }

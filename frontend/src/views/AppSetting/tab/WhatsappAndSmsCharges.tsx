@@ -45,7 +45,6 @@ const WhatsappAndSmsCharges = ({ activeTab }) => {
         })
     }
 
-    console.log(charge)
     useEffect(() => {
         if (activeTab === "8") {
             preload()

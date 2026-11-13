@@ -1,36 +1,28 @@
 // @ts-nocheck
-import React, { useEffect, useRef, useState } from 'react'
-import { Plus, Trash2 } from 'react-feather'
+import React, { useEffect, useState } from 'react'
+import { Plus, Shield, Trash2, CheckCircle, AlertTriangle } from 'react-feather'
 import { useForm } from 'react-hook-form'
 import { useDispatch } from 'react-redux'
-import { Card, CardHeader, Col, Form, Row, Table } from 'reactstrap'
+import { Alert, Badge, Card, CardBody, CardHeader, CardTitle, Col, Form, Input, Row, Table } from 'reactstrap'
 import { handleLogin } from '../../../redux/authentication'
-import { setActiveTab } from '../../../redux/navbar'
 import { ipDelete } from '../../../redux/reducers/ip'
-import { formatDate } from '../../../utility/Utils'
+import { formatDate, SuccessToast, ErrorToast } from '../../../utility/Utils'
 import { addIp, deleteIp, loadIp } from '../../../utility/apis/IpList'
 import { enableApiSecurity } from '../../../utility/apis/userManagement'
 import ConfirmAlert from '../../../utility/helpers/ConfirmAlert'
-import { isValidArray } from '../../../utility/helpers/common'
 import LoadingButton from '../../components/buttons/LoadingButton'
 import FormGroupCustom from '../../components/formGroupCustom'
 import Shimmer from '../../components/shimmers/Shimmer'
 
 const AdditionalSecurity = ({ activeTab, user }) => {
-    // const user = useSelector(state => state.auth.userData)
     const [loading, setLoading] = useState(false)
-    const [api, setApi] = useState(null)
     const [ip, setIp] = useState(null)
-    const [loadingSet, setLoadingSet] = useState(false)
-    const [loadingX, setLoadingX] = useState(false)
+    const [loadingToggle, setLoadingToggle] = useState(false)
     const [deleted, setDeleted] = useState(false)
     const [failed, setFailed] = useState(false)
-    const form = useForm()
-    const { formState: { errors }, handleSubmit, control, reset, setValue, watch, setError, getValues } = form
     const [deletedId, setDeletedId] = useState(null)
-    const [copied, setCopied] = useState(false)
-    // const userT = useUser()
-    const ref = useRef(null)
+    const form = useForm()
+    const { formState: { errors }, handleSubmit, control, reset, watch } = form
     const dispatch = useDispatch()
 
     const getAllIp = () => {
@@ -41,215 +33,200 @@ const AdditionalSecurity = ({ activeTab, user }) => {
         })
     }
 
-    const enableSecurity = (data) => {
+    const isSecurityEnabled = Number(user?.is_enabled_api_ip_security) === 1
+
+    const handleToggleSecurity = (e) => {
+        const nextState = e.target.checked ? 1 : 0
+        setLoadingToggle(true)
         enableApiSecurity({
             jsonData: {
                 ...user,
-                ...data,
-                is_enabled_api_ip_security: watch("is_enabled_api_ip_security") ? 1 : 0
+                is_enabled_api_ip_security: nextState
             },
             success: (d) => {
-                const x = {
+                setLoadingToggle(false)
+                dispatch(handleLogin({
                     ...user,
-                    ...d?.data
-                }
-                setLoadingX(false)
-                dispatch(handleLogin(x))
-                dispatch(setActiveTab("7"))
+                    ...d?.data,
+                    is_enabled_api_ip_security: nextState
+                }))
+                SuccessToast(nextState === 1 ? 'IP Whitelisting security enabled!' : 'IP Whitelisting disabled.')
+            },
+            errors: () => {
+                setLoadingToggle(false)
+                ErrorToast('Failed to update IP security setting.')
             }
         })
     }
 
-    // useEffect(() => {
-    //     if (activeTab === "7") {
-    //         enableSecurity()
-    //     }
-    // }, [watch("is_enabled_api_ip_security")])
-
-
     useEffect(() => {
-        if (activeTab === "7") {
+        if (activeTab === '7') {
             getAllIp()
         }
-    }, [loading, activeTab])
+    }, [activeTab])
 
-
-    const onSubmit = (dataa) => {
+    const onSubmit = (data) => {
         addIp({
             jsonData: {
-                ip_address: dataa?.ip_address
-
+                ip_address: data?.ip_address?.trim()
             },
             loading: setLoading,
             success: () => {
-                ///  getAllIp()
+                reset({ ip_address: '' })
+                getAllIp()
+                SuccessToast('IP address added to whitelist!')
             },
-            errors: (e) => {
-                const d = e?.data?.data
-                for (const key in d) {
-                    if (Object.hasOwnProperty.call(d, key)) {
-                        if (isValidArray(d[key])) {
-                            const message = d[key]?.map(a => `${a} \n`)
-                            setError(key, { message, type: "validate" })
-                        }
-                    }
-                }
-
+            errors: (err) => {
+                ErrorToast(err?.message || 'Invalid IP address format.')
             }
         })
     }
 
     return (
-        <>
-            <Card className='p-2'>
-                <Row>
+        <Card className='border-0 shadow-sm'>
+            <CardHeader className='border-bottom py-2 bg-light-primary bg-opacity-10 d-flex justify-content-between align-items-center'>
+                <div className='d-flex align-items-center gap-2'>
+                    <div className='p-1 rounded-circle bg-primary bg-opacity-10 text-primary'>
+                        <Shield size={20} />
+                    </div>
+                    <div>
+                        <CardTitle tag='h4' className='mb-0 fw-bolder text-dark'>IP Whitelist & Network Security</CardTitle>
+                        <small className='text-muted'>Restrict API access strictly to your designated and approved server IP addresses</small>
+                    </div>
+                </div>
+                <Badge color={isSecurityEnabled ? 'light-success' : 'light-secondary'} pill className='px-2 py-1'>
+                    {isSecurityEnabled ? 'Active Filter' : 'Filter Disabled'}
+                </Badge>
+            </CardHeader>
 
-                    <Card className='border mt-2  col-6'>
-                        <CardHeader className='p-0 pt-1 mb-2'>
-                            <Row className='flex-1 g-2 align-item-center'>
-                                <Col md="9">
-                                    <h4 className='h2 mb-0 pb-0 text-dark fw-bolder' >
-                                        Enable additional security
-                                    </h4>
-                                </Col>
-                                <Col md="3" className='d-flex justify-content-end'>
+            <CardBody className='p-3'>
+                {/* Security Toggle Switch Banner */}
+                <div className='p-3 border rounded-3 bg-light bg-opacity-50 mb-3 d-flex flex-wrap align-items-center justify-content-between gap-2'>
+                    <div>
+                        <h5 className='fw-bold mb-1 text-dark'>Enforce IP Whitelist Protection</h5>
+                        <p className='text-muted small mb-0'>
+                            When enabled, our gateway strictly rejects all API key requests originating from unlisted IP addresses.
+                        </p>
+                    </div>
+                    <div className='form-check form-switch'>
+                        <Input
+                            type='switch'
+                            id='ip-security-switch'
+                            checked={isSecurityEnabled}
+                            disabled={loadingToggle}
+                            onChange={handleToggleSecurity}
+                            style={{ width: '42px', height: '22px', cursor: 'pointer' }}
+                        />
+                    </div>
+                </div>
+
+                {isSecurityEnabled ? (
+                    <Row className='gy-3'>
+                        {/* Add IP Address Form */}
+                        <Col lg={5} md={12}>
+                            <div className='p-3 border rounded-3 bg-white h-100 shadow-xs'>
+                                <h5 className='fw-bold mb-2 text-dark d-flex align-items-center gap-1'>
+                                    <Plus size={16} className='text-primary' />
+                                    <span>Add Whitelisted IP</span>
+                                </h5>
+                                <Form onSubmit={handleSubmit(onSubmit)}>
                                     <FormGroupCustom
-                                        noLabel
-                                        noGroup
-                                        // tooltip="Enable Api IP Security"
-                                        type={"checkbox"}
+                                        type='text'
                                         control={control}
-                                        disabled={loadingX}
-                                        name="is_enabled_api_ip_security"
-                                        value={user?.is_enabled_api_ip_security}
-                                        onChangeValue={e => {
-                                            setLoadingX(true)
-                                            setTimeout(() => {
-                                                enableSecurity()
-                                            }, 120)
-                                        }}
-                                        // value={edit?.userType}
-                                        // isClearable
-                                        // label="User Type"
+                                        name='ip_address'
+                                        label='IPv4 or IPv6 Address'
+                                        placeholder='e.g. 198.51.100.1 or 2001:db8::1'
                                         errors={errors}
-                                    // label={FM("vacation-trip")}
-                                    // options={createConstSelectOptions(UserType)}
+                                        className='mb-2'
+                                        rules={{ required: 'IP Address is required' }}
                                     />
-                                </Col>
-                            </Row>
-                        </CardHeader>
+                                    <LoadingButton loading={loading} type='submit' color='primary' block className='shadow-sm'>
+                                        <Plus size={14} className='me-1' /> Add to Whitelist
+                                    </LoadingButton>
+                                </Form>
+                            </div>
+                        </Col>
 
-                        <p className='col-12 fw-bold'>System will accepts requests only from allowed IPs, and all other requests from any random IPs will be discarded</p>
-                        {
-                            loadingX && <>
-                                <Shimmer style={{ height: 50, marginBottom: 4, borderRadius: 2 }} />
-                                <Shimmer style={{ height: 50, marginBottom: 4, borderRadius: 2 }} />
-                            </>
-                        }
-                        {(!loadingX && user?.is_enabled_api_ip_security === 1 ? <Row className='mb-2'>
-                            <Form onSubmit={handleSubmit(onSubmit)}>
+                        {/* Whitelisted IPs Table */}
+                        <Col lg={7} md={12}>
+                            <div className='p-3 border rounded-3 bg-white h-100 shadow-xs'>
+                                <h5 className='fw-bold mb-2 text-dark d-flex align-items-center justify-content-between'>
+                                    <span>Authorized IP Addresses</span>
+                                    <Badge color='light-info' pill>{ip?.data?.length || 0} IPs</Badge>
+                                </h5>
 
-                                <Col md="12">
-                                    <FormGroupCustom
-
-                                        type={"text"}
-                                        control={control}
-                                        name="ip_address"
-                                        // value={edit?.userType}
-                                        isClearable
-                                        label="IP Address"
-                                        placeholder="Enter Your IP Address"
-                                        errors={errors}
-
-                                    />
-                                </Col>
-
-                                <LoadingButton loading={loading} type='submit' className='btn-icon mt-2 round' color='primary' block>
-                                    <Plus size={14} />
-                                    <span className='align-middle ms-25'>Add New IP</span>
-                                </LoadingButton>
-                            </Form>
-                        </Row> : "")}
-
-                    </Card>
-
-                    {(!loadingX && user?.is_enabled_api_ip_security === 1 ? <Card className='border mt-2 col-6 p-1'>
-                        <CardHeader>
-                            <h4 className='h2 text-dark fw-bolder' >
-                                Enable additional security
-                            </h4>
-                        </CardHeader>
-                        {loading ? <>   <Shimmer style={{ height: 25, marginBottom: 4, borderRadius: 2 }} />
-                            <Shimmer style={{ height: 20, width: "90%", marginBottom: 4, borderRadius: 2 }} />
-                            <Shimmer style={{ height: 20, width: "50%", marginBottom: 25, borderRadius: 2 }} />
-
-                            <Shimmer style={{ height: 25, marginBottom: 4, borderRadius: 2 }} />
-                            <Shimmer style={{ height: 20, width: "90%", marginBottom: 4, borderRadius: 2 }} />
-                            <Shimmer style={{ height: 20, width: "50%", marginBottom: 25, borderRadius: 2 }} />
-
-                            <Shimmer style={{ height: 25, marginBottom: 4, borderRadius: 2 }} />
-                            <Shimmer style={{ height: 20, width: "90%", marginBottom: 4, borderRadius: 2 }} />
-                            <Shimmer style={{ height: 20, width: "50%", marginBottom: 25, borderRadius: 2 }} />
-                            <Shimmer style={{ height: 25, marginBottom: 4, borderRadius: 2 }} />
-                            <Shimmer style={{ height: 20, width: "90%", marginBottom: 4, borderRadius: 2 }} />
-                            <Shimmer style={{ height: 20, width: "50%", marginBottom: 25, borderRadius: 2 }} />
-                        </> : <> <Table responsive>
-                            <thead>
-                                <tr>
-                                    <th scope='col' className='text-nowrap'>
-                                        #
-                                    </th>
-                                    <th scope='col' className='text-nowrap'>
-                                        IP Address
-                                    </th>
-                                    <th scope='col' className='text-nowrap'>
-                                        Created At
-                                    </th>
-                                    <th scope='col' className='text-nowrap'>
-                                        Action
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {ip?.data?.map((item, i) => {
-                                    return (
-
-                                        <tr>
-                                            <td className='text-nowrap'> {i + 1}</td>
-                                            <td className='text-nowrap'> {item?.ip_address} </td>
-                                            <td className='text-nowrap'>  {formatDate(item?.created_at, "DD-MM-YYYY")}</td>
-                                            <td className='text-nowrap'>
-                                                <ConfirmAlert
-                                                    title={`Delete ${item?.ip_address} ?`}
-                                                    color='text-warning'
-                                                    onClickYes={() => deleteIp({ id: item?.id, loading: setLoadingSet, success: e => { setDeletedId(item?.id); setDeleted(e) }, error: setFailed })}
-                                                    // onClickYes={() => deletePrimaryRoute({ id: row?.id, loading: setLoading, success: setDeleted, error: setFailed })}
-                                                    onSuccess={deleted}
-                                                    onFailed={failed}
-
-                                                    onClose={(e) => {
-                                                        if (e) {
-                                                            dispatch(ipDelete(deletedId))
-                                                        }
-                                                        setDeleted(null)
-                                                        setFailed(null)
-                                                    }}
-                                                    className="waves-effect btn btn-danger btn-sm"
-                                                    id={`grid-delete-${item?.id}`}>
-                                                    <Trash2 size={15} />
-                                                </ConfirmAlert></td>
-                                        </tr>
-
-                                    )
-                                })}
-                            </tbody>
-                        </Table> </>}
-
-                    </Card> : "")}
-                </Row>
-            </Card>
-
-        </>
+                                {loading ? (
+                                    <>
+                                        <Shimmer style={{ height: 35, marginBottom: 8, borderRadius: 4 }} />
+                                        <Shimmer style={{ height: 35, marginBottom: 8, borderRadius: 4 }} />
+                                    </>
+                                ) : (
+                                    <div className='table-responsive'>
+                                        <Table hover size='sm' className='mb-0'>
+                                            <thead>
+                                                <tr className='text-muted small'>
+                                                    <th>#</th>
+                                                    <th>IP Address</th>
+                                                    <th>Added On</th>
+                                                    <th className='text-end'>Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {ip?.data && ip.data.length > 0 ? (
+                                                    ip.data.map((item, idx) => (
+                                                        <tr key={item?.id || idx}>
+                                                            <td>{idx + 1}</td>
+                                                            <td>
+                                                                <code className='text-primary fw-semibold'>{item?.ip_address}</code>
+                                                            </td>
+                                                            <td className='text-muted small'>
+                                                                {formatDate(item?.created_at, 'DD MMM YYYY')}
+                                                            </td>
+                                                            <td className='text-end'>
+                                                                <ConfirmAlert
+                                                                    title={`Remove ${item?.ip_address}?`}
+                                                                    color='text-warning'
+                                                                    onClickYes={() => deleteIp({
+                                                                        id: item?.id,
+                                                                        success: () => {
+                                                                            dispatch(ipDelete(item?.id))
+                                                                            getAllIp()
+                                                                            SuccessToast('IP removed successfully')
+                                                                        },
+                                                                        error: () => ErrorToast('Failed to delete IP')
+                                                                    })}
+                                                                    className='btn btn-flat-danger btn-sm p-1'
+                                                                    id={`del-ip-${item?.id}`}
+                                                                >
+                                                                    <Trash2 size={14} />
+                                                                </ConfirmAlert>
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                ) : (
+                                                    <tr>
+                                                        <td colSpan={4} className='text-center py-4 text-muted small'>
+                                                            No IP addresses whitelisted yet. All requests are currently blocked.
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </Table>
+                                    </div>
+                                )}
+                            </div>
+                        </Col>
+                    </Row>
+                ) : (
+                    <Alert color='warning' className='d-flex align-items-center gap-2 mb-0 py-2'>
+                        <AlertTriangle size={18} className='flex-shrink-0 text-warning' />
+                        <div className='small text-dark'>
+                            <strong>IP Whitelisting is currently inactive:</strong> Your API endpoints will accept requests from any client IP address holding a valid API key. Enable the switch above to enforce IP security.
+                        </div>
+                    </Alert>
+                )}
+            </CardBody>
+        </Card>
     )
 }
 

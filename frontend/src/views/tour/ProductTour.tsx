@@ -91,7 +91,7 @@ export function createProductTour() {
     tour.addStep({
         id: 'flow-builder',
         title: '🤖 Step 5: Visual Chatbot Flow Builder',
-        text: 'Under Chatbots & Flows > Flow Builder, drag and drop interactive menus, buttons, and wait steps on an intuitive canvas to automate FAQs, order bookings, and lead qualification 24/7.',
+        text: 'Under WhatsApp Chatbot > Flow Builder, drag and drop interactive menus, buttons, and wait steps on an intuitive canvas to automate FAQs, order bookings, and lead qualification 24/7.',
         attachTo: { element: '#whatsapp-automation-suite', on: 'right' },
         buttons: [
             { text: 'Back', classes: backBtnClass, action: () => tour.back() },
@@ -103,7 +103,7 @@ export function createProductTour() {
     tour.addStep({
         id: 'whatsapp-setup',
         title: '⚡ Step 6: Connect WhatsApp Phone Numbers',
-        text: 'Go to WhatsApp Settings > Connect Phone Numbers to link your official WhatsApp Business numbers in seconds with Meta 1-Click Embedded Signup.',
+        text: 'Go to Settings & Gateways > Connect Phone Numbers to link your official WhatsApp Business numbers in seconds with Meta 1-Click Embedded Signup.',
         attachTo: { element: '#whatsapp-channels-config', on: 'right' },
         buttons: [
             { text: 'Back', classes: backBtnClass, action: () => tour.back() },

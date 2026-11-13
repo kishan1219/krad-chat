@@ -1,216 +1,221 @@
 // @ts-nocheck
-import ContentCopyIcon from '@mui/icons-material/ContentCopy'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { CopyToClipboard } from '@components/copy-to-clipboard'
-import { Key } from 'react-feather'
-import { useForm } from 'react-hook-form'
-import toast from 'react-hot-toast'
-import { useDispatch, useSelector } from 'react-redux'
-import { Button, Card, CardHeader, Row, UncontrolledTooltip } from 'reactstrap'
-import { addIp, loadIp } from '../../../utility/apis/IpList'
-import { enableApiSecurity, userChangeApi } from '../../../utility/apis/userManagement'
-import useUser from '../../../utility/hooks/useUser'
+import { Check, Copy, Eye, EyeOff, Key, RefreshCw, Shield, Terminal } from 'react-feather'
+import { Alert, Badge, Button, Card, CardBody, CardHeader, Col, Input, InputGroup, Row } from 'reactstrap'
+import { userChangeApi } from '../../../utility/apis/userManagement'
 import ConfirmStop from '../../../utility/helpers/ConfirmStop'
-import { log } from '../../../utility/helpers/common'
-import { emitAlertStatus } from '../../../utility/Utils'
-
+import { emitAlertStatus, SuccessToast, ErrorToast } from '../../../utility/Utils'
 
 const AppInfo = ({ activeTab }) => {
-    const user = useSelector(state => state.auth.userData)
     const [loading, setLoading] = useState(false)
     const [api, setApi] = useState(null)
-    const form = useForm()
-    const [ip, setIp] = useState(null)
-    const [loadingSet, setLoadingSet] = useState(false)
-    const [deleted, setDeleted] = useState(false)
-    const [failed, setFailed] = useState(false)
-    const { formState: { errors }, handleSubmit, control, reset, setValue, watch, getValues } = form
-    const [deletedId, setDeletedId] = useState(null)
-    const [copied, setCopied] = useState(false)
-    const userT = useUser()
-    const ref = useRef(null)
+    const [showSecret, setShowSecret] = useState(false)
+    const [copiedKey, setCopiedKey] = useState(false)
+    const [copiedSecret, setCopiedSecret] = useState(false)
+    const [copiedCurl, setCopiedCurl] = useState(false)
 
-    const handleCopy = ({ target: { api } }) => {
-        setApi(api)
-        if (copied) {
-            setCopied(false)
-        }
-    }
-
-    const onCopyKey = () => {
-        setCopied(true)
-        toast.success('Api key Copied !')
-    }
-    const onCopySecret = () => {
-        setCopied(true)
-        toast.success('Api Secret Copied !')
-    }
-
-    const dispatch = useDispatch()
-    const [count, setCount] = useState(1)
-
-    const increaseCount = () => {
-        setCount(count + 1)
-    }
-
-    const deleteForm = e => {
-        e.preventDefault()
-        const slideDownWrapper = e.target.closest('.react-slidedown'),
-            form = e.target.closest('form')
-        if (slideDownWrapper) {
-            slideDownWrapper.remove()
-        } else {
-            form.remove()
-        }
-    }
-
-    const userApi = () => {
+    const fetchUserApi = () => {
+        setLoading(true)
         userChangeApi({
+            loading: setLoading,
             success: (d) => {
-                setApi(d)
-
+                setApi(d?.data || d)
+            },
+            errors: () => {
+                ErrorToast('Failed to load API credentials.')
             }
         })
     }
 
     useEffect(() => {
-        if (activeTab === "4") {
-            userApi()
+        if (activeTab === '4') {
+            fetchUserApi()
         }
-    }, [watch("change_api"), activeTab])
+    }, [activeTab])
 
-    const [copySuccess, setCopySuccess] = useState('')
-    const textAreaRef = useRef(null)
-
-    const copyToClipboard = (e) => {
-        textAreaRef.current.select()
-        document.execCommand('copy')
-        // This is just personal preference.
-        // I prefer to not show the whole text area selected.
-        e?.target?.focus()
-        setCopySuccess('Copied!')
+    const handleCopyKey = () => {
+        setCopiedKey(true)
+        SuccessToast('API Key copied to clipboard!')
+        setTimeout(() => setCopiedKey(false), 2500)
     }
 
-    const enableSecurity = (data) => {
-        enableApiSecurity({
-            jsonData: {
-                // ...userT,
-                ...data,
-                is_enabled_api_ip_security: watch("is_enabled_api_ip_security") ? 1 : 0
-            },
-            success: (d) => {
-
-            }
-        })
-    }
-    const getAllIp = () => {
-        loadIp({
-            success: (d) => {
-                setIp(d)
-            }
-        })
+    const handleCopySecret = () => {
+        setCopiedSecret(true)
+        SuccessToast('API Secret copied to clipboard!')
+        setTimeout(() => setCopiedSecret(false), 2500)
     }
 
-
-    const onSubmit = (dataa) => {
-        addIp({
-            jsonData: {
-                ip_address: dataa?.ip_address
-
-            },
-            loading: setLoading,
-            success: () => {
-                ///  getAllIp()
-            }
-        })
+    const handleCopyCurl = () => {
+        setCopiedCurl(true)
+        SuccessToast('Sample cURL command copied!')
+        setTimeout(() => setCopiedCurl(false), 2500)
     }
 
-    const handleSave = () => {
+    const handleRotateKeys = () => {
         userChangeApi({
             jsonData: {
                 change_key: 1
-
             },
             loading: setLoading,
             success: (e) => {
-                userApi()
-                emitAlertStatus("success", null, 'stop-campaign')
+                setApi(e?.data || e)
+                emitAlertStatus('success', null, 'rotate-api-keys')
+                SuccessToast('New API Key & Secret generated successfully!')
+            },
+            errors: () => {
+                ErrorToast('Failed to rotate API credentials.')
             }
         })
     }
 
+    const apiKey = api?.app_key || api?.api_key || ''
+    const apiSecret = api?.app_secret || api?.key_id || ''
+
+    const sampleCurl = `curl -X POST https://krad-chat.guptakishan805.workers.dev/api/v1/send-whatsapp \\
+  -H "Authorization: Bearer ${apiKey || 'YOUR_API_KEY'}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"recipient": "+1234567890", "message": "Hello from KRAD Chat!"}'`
 
     return (
-        <>
-            <Card className='p-2'>
-                <Row>
-                    <CardHeader className='border-bottom d-flex justify-content-between align-items-center mb-2'>
-                        <h4 className='h4 text-dark fw-bolder mb-0'>
-                            Api Keys
-                        </h4>
-
-                        <div className='d-flex justify-content-end'>
-                            <ConfirmStop
-                                eventId={`stop-campaign`}
-                                title={`Change API Key & Secret?`}
-                                color='text-warning'
-                                onClickYes={() => handleSave()}
-                            >
-                                <Button.Ripple size="sm" color="primary">
-                                    <Key size="14" /> Change API Key & Secret
-                                </Button.Ripple>
-                            </ConfirmStop>
+        <div className='app-keys-management'>
+            <Card className='border-0 shadow-sm mb-3'>
+                <CardHeader className='border-bottom py-2 bg-light-primary bg-opacity-10 d-flex flex-wrap justify-content-between align-items-center gap-2'>
+                    <div className='d-flex align-items-center gap-2'>
+                        <div className='p-1 rounded-circle bg-primary bg-opacity-10 text-primary'>
+                            <Shield size={22} />
                         </div>
-                    </CardHeader>
+                        <div>
+                            <h4 className='fw-bolder mb-0 text-dark'>Developer API Keys</h4>
+                            <small className='text-muted'>
+                                Secure credentials for integrating WhatsApp chatbots, webhook endpoints, and automated campaigns
+                            </small>
+                        </div>
+                    </div>
 
-                    {(() => {
-                        const apiKey = api?.app_key || api?.api_key || ''
-                        const apiSecret = api?.app_secret || api?.key_id || ''
-                        return (
-                            <>
-                                <div className='d-flex justify-content-between align-items-center border p-1 rounded-top'>
-                                    <div className='h5 mb-0 text-dark fw-bolder'>
-                                        Api key
-                                    </div>
-                                    <div className="h5 mb-0 text-dark fw-bolder d-flex align-items-center">
-                                        {apiKey ? (
-                                            <>
-                                                <code className='user-select-all text-primary me-1' style={{ fontSize: '0.9rem' }}>{apiKey}</code>
-                                                <CopyToClipboard onCopy={onCopyKey} text={apiKey}>
-                                                    <ContentCopyIcon className='text-success' style={{ cursor: 'pointer' }} />
-                                                </CopyToClipboard>
-                                            </>
-                                        ) : (
-                                            <span className='text-muted fw-normal fst-italic' style={{ fontSize: '0.85rem' }}>
-                                                Click &quot;Change API Key &amp; Secret&quot; to generate keys
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className='d-flex justify-content-between align-items-center border-start border-end border-bottom p-1 rounded-bottom'>
-                                    <div className='h5 mb-0 text-dark fw-bolder'>
-                                        Api Secret
-                                    </div>
-                                    <div className="h5 mb-0 text-dark fw-bolder d-flex align-items-center">
-                                        {apiSecret ? (
-                                            <>
-                                                <code className='user-select-all text-secondary me-1' style={{ fontSize: '0.9rem' }}>{apiSecret}</code>
-                                                <CopyToClipboard onCopy={onCopySecret} text={apiSecret}>
-                                                    <ContentCopyIcon className='text-success' style={{ cursor: 'pointer' }} />
-                                                </CopyToClipboard>
-                                            </>
-                                        ) : (
-                                            <span className='text-muted fw-normal fst-italic' style={{ fontSize: '0.85rem' }}>—</span>
-                                        )}
-                                    </div>
-                                </div>
-                            </>
-                        )
-                    })()}
+                    <div className='d-flex align-items-center gap-2'>
+                        <ConfirmStop
+                            eventId='rotate-api-keys'
+                            title='Regenerate API Key & Secret?'
+                            description='Existing integrations using the old credentials will stop functioning immediately.'
+                            color='text-warning'
+                            onClickYes={handleRotateKeys}
+                        >
+                            <Button color='primary' size='sm' className='d-flex align-items-center gap-1 shadow-sm' disabled={loading}>
+                                <RefreshCw size={14} className={loading ? 'spin' : ''} />
+                                <span>Change API Key & Secret</span>
+                            </Button>
+                        </ConfirmStop>
+                    </div>
+                </CardHeader>
 
-                </Row>
+                <CardBody className='p-3'>
+                    <Alert color='info' className='d-flex align-items-center gap-2 mb-3 py-2'>
+                        <Key size={18} className='flex-shrink-0 text-info' />
+                        <div className='small text-dark'>
+                            <strong>Keep your API credentials private:</strong> Never commit API keys or secrets to public repositories or expose them in client-side code.
+                        </div>
+                    </Alert>
+
+                    <Row className='gy-3'>
+                        {/* API Key Box */}
+                        <Col md={12}>
+                            <div className='p-3 border rounded-3 bg-white shadow-xs'>
+                                <div className='d-flex justify-content-between align-items-center mb-1'>
+                                    <div className='d-flex align-items-center gap-2'>
+                                        <span className='fw-bold text-dark' style={{ fontSize: '0.92rem' }}>API Key</span>
+                                        <Badge color='light-success' pill className='px-2'>Production</Badge>
+                                    </div>
+                                    <span className='text-muted small'>Header: <code className='text-primary'>x-api-key</code> or <code className='text-primary'>Bearer</code></span>
+                                </div>
+                                <InputGroup className='align-items-center'>
+                                    <Input
+                                        type='text'
+                                        readOnly
+                                        value={apiKey || 'Click "Change API Key & Secret" to generate your key'}
+                                        className='font-monospace bg-light border-end-0 fw-semibold text-primary'
+                                        style={{ fontSize: '0.88rem', letterSpacing: '0.5px' }}
+                                    />
+                                    {apiKey && (
+                                        <CopyToClipboard onCopy={handleCopyKey} text={apiKey}>
+                                            <Button color='primary' outline className='d-flex align-items-center gap-1'>
+                                                {copiedKey ? <Check size={15} className='text-success' /> : <Copy size={15} />}
+                                                <span className='d-none d-sm-inline'>{copiedKey ? 'Copied' : 'Copy'}</span>
+                                            </Button>
+                                        </CopyToClipboard>
+                                    )}
+                                </InputGroup>
+                            </div>
+                        </Col>
+
+                        {/* API Secret Box */}
+                        <Col md={12}>
+                            <div className='p-3 border rounded-3 bg-white shadow-xs'>
+                                <div className='d-flex justify-content-between align-items-center mb-1'>
+                                    <div className='d-flex align-items-center gap-2'>
+                                        <span className='fw-bold text-dark' style={{ fontSize: '0.92rem' }}>API Secret</span>
+                                        <Badge color='light-warning' pill className='px-2'>Confidential</Badge>
+                                    </div>
+                                    <span className='text-muted small'>Used to sign secure webhook payloads</span>
+                                </div>
+                                <InputGroup className='align-items-center'>
+                                    <Input
+                                        type={showSecret ? 'text' : 'password'}
+                                        readOnly
+                                        value={apiSecret || '••••••••••••••••••••••••••••••••'}
+                                        className='font-monospace bg-light border-end-0 fw-semibold text-dark'
+                                        style={{ fontSize: '0.88rem', letterSpacing: '0.5px' }}
+                                    />
+                                    {apiSecret && (
+                                        <>
+                                            <Button
+                                                color='secondary'
+                                                outline
+                                                onClick={() => setShowSecret(!showSecret)}
+                                                title={showSecret ? 'Hide secret' : 'Reveal secret'}
+                                                className='border-start-0'
+                                            >
+                                                {showSecret ? <EyeOff size={15} /> : <Eye size={15} />}
+                                            </Button>
+                                            <CopyToClipboard onCopy={handleCopySecret} text={apiSecret}>
+                                                <Button color='primary' outline className='d-flex align-items-center gap-1'>
+                                                    {copiedSecret ? <Check size={15} className='text-success' /> : <Copy size={15} />}
+                                                    <span className='d-none d-sm-inline'>{copiedSecret ? 'Copied' : 'Copy'}</span>
+                                                </Button>
+                                            </CopyToClipboard>
+                                        </>
+                                    )}
+                                </InputGroup>
+                            </div>
+                        </Col>
+                    </Row>
+                </CardBody>
             </Card>
-        </>
+
+            {/* Integration Quick Start Section */}
+            <Card className='border-0 shadow-sm'>
+                <CardHeader className='border-bottom py-2 bg-light bg-opacity-50 d-flex justify-content-between align-items-center'>
+                    <div className='d-flex align-items-center gap-2'>
+                        <Terminal size={18} className='text-primary' />
+                        <h5 className='mb-0 fw-bold text-dark'>Quick Integration Preview</h5>
+                    </div>
+                    <CopyToClipboard onCopy={handleCopyCurl} text={sampleCurl}>
+                        <Button color='flat-primary' size='sm' className='d-flex align-items-center gap-1'>
+                            {copiedCurl ? <Check size={14} className='text-success' /> : <Copy size={14} />}
+                            <span>{copiedCurl ? 'Copied' : 'Copy cURL'}</span>
+                        </Button>
+                    </CopyToClipboard>
+                </CardHeader>
+                <CardBody className='p-3'>
+                    <pre
+                        className='bg-dark text-white p-3 rounded-3 mb-0 user-select-all font-monospace'
+                        style={{ fontSize: '0.82rem', overflowX: 'auto', lineHeight: '1.6' }}
+                    >
+                        {sampleCurl}
+                    </pre>
+                </CardBody>
+            </Card>
+        </div>
     )
 }
 

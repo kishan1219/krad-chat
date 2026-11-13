@@ -1,78 +1,81 @@
 // @ts-nocheck
-// ** Reactstrap Imports
+import React from 'react'
 import { Nav, NavItem, NavLink } from 'reactstrap'
-
-// ** Icons Imports
-import { Lock, Server, User } from 'react-feather'
+import { CreditCard, Key, Lock, Shield, Sliders, User } from 'react-feather'
 import { useSelector } from 'react-redux'
-import Hide from '../../../utility/Hide'
 import { Permissions } from '../../../utility/Permissions'
 import Show from '../../../utility/Show'
-import CurrencyRupee from '@mui/icons-material/CurrencyRupee'
 
 const Tabs = ({ activeTab, toggleTab }) => {
-
     const loginUser = useSelector(state => state.auth.userData)
 
+    const navItems = [
+        {
+            id: '1',
+            title: 'Profile Info',
+            icon: <User size={16} className='me-1' />,
+            show: true
+        },
+        {
+            id: '3',
+            title: 'Password & Security',
+            icon: <Lock size={16} className='me-1' />,
+            show: true
+        },
+        {
+            id: '4',
+            title: 'API Credentials',
+            icon: <Key size={16} className='me-1' />,
+            show: Boolean(Permissions?.userApiKey)
+        },
+        {
+            id: '5',
+            title: 'Credits & Balances',
+            icon: <CreditCard size={16} className='me-1' />,
+            show: Boolean(Permissions?.userCreditAdd)
+        },
+        {
+            id: '8',
+            title: 'Messaging Rates',
+            icon: <Sliders size={16} className='me-1' />,
+            show: true
+        },
+        {
+            id: '7',
+            title: 'IP Security Whitelist',
+            icon: <Shield size={16} className='me-1' />,
+            show: Boolean(Permissions?.userApiKey)
+        }
+    ]
+
     return (
-        <Nav pills className='mb-2'>
-            {/* <Show IF= {Permissions?.appSettingView} > */}
-
-            <NavItem>
-                <NavLink active={activeTab === '1'} onClick={() => toggleTab('1')}>
-                    <User size={18} className='me-50' />
-                    <span className='fw-bold'>Info</span>
-                </NavLink>
-            </NavItem>
-
-            <Hide IF={loginUser?.userType === 3} >
-
-            </Hide>
-            <NavItem>
-                <NavLink active={activeTab === '3'} onClick={() => toggleTab('3')}>
-                    <Lock size={18} className='me-50' />
-                    <span className='fw-bold'>Security</span>
-                </NavLink>
-            </NavItem>
-            <Show IF={Permissions?.userApiKey} >
-
-                <NavItem>
-                    <NavLink active={activeTab === '4'} onClick={() => toggleTab('4')}>
-
-                        <Server size={18} className='me-50' />
-                        <span className='fw-bold'>App Keys</span>
-                    </NavLink>
-                </NavItem>
-            </Show>
-            <Show IF={Permissions?.userCreditAdd}>
-                <NavItem>
-                    <NavLink active={activeTab === '5'} onClick={() => toggleTab('5')}>
-                        <Lock size={18} className='me-50' />
-                        <span className='fw-bold'>Credit Info</span>
-                    </NavLink>
-                </NavItem>
-            </Show>
-            {/* <Show IF={Permissions?.userCreditAdd}> */}
-                <NavItem>
-                    <NavLink active={activeTab === '8'} onClick={() => toggleTab('8')}>
-                    <CurrencyRupee size={18} className='me-50' />
-                        <span className='fw-bold'>Whatsapp & SMS Charges</span>
-                    </NavLink>
-                </NavItem>
-            {/* </Show> */}
-            <Show IF={Permissions?.userApiKey} >
-
-                <NavItem>
-                    <NavLink active={activeTab === '7'} onClick={() => toggleTab('7')}>
-                        <Lock size={18} className='me-50' />
-                        <span className='fw-bold'>Additional Security</span>
-                    </NavLink>
-                </NavItem>
-            </Show>
-
-
-        </Nav>
-
+        <div className='settings-tabs-wrapper mb-3'>
+            <Nav pills className='flex-wrap gap-2 p-1 bg-white rounded-3 shadow-xs border'>
+                {navItems.filter(item => item.show).map(tab => {
+                    const isActive = activeTab === tab.id
+                    return (
+                        <NavItem key={tab.id} className='mb-0'>
+                            <NavLink
+                                active={isActive}
+                                onClick={() => toggleTab(tab.id)}
+                                className={`d-flex align-items-center px-3 py-2 rounded-2 fw-semibold cursor-pointer ${
+                                    isActive
+                                        ? 'bg-primary text-white shadow-sm'
+                                        : 'text-dark bg-transparent hover-bg-light'
+                                }`}
+                                style={{
+                                    transition: 'all 0.2s ease-in-out',
+                                    fontSize: '0.88rem'
+                                }}
+                            >
+                                {tab.icon}
+                                <span>{tab.title}</span>
+                            </NavLink>
+                        </NavItem>
+                    )
+                })}
+            </Nav>
+        </div>
     )
 }
 
