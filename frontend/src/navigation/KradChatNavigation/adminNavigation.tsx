@@ -214,14 +214,14 @@ export default [
     },
 
     // -------------------------------------------------------------------------
-    // 4. TEAM & ACCESS CONTROL
+    // 4. USER MANAGEMENT & ACCESS CONTROL
     // -------------------------------------------------------------------------
     {
-        header: "Team & Administration"
+        header: "User Management"
     },
     {
         id: 'user',
-        title: 'Team Members',
+        title: 'User Management',
         icon: <UserPlus size={18} />,
         navLink: '/users-list',
         ...Permissions.userList
