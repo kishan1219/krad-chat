@@ -1,5 +1,18 @@
 import { useEffect, useState } from 'react'
-import { Alert, Badge, Button, Card, CardBody, CardTitle, Col, Input, Label, Row, Table } from 'reactstrap'
+import {
+    Alert,
+    Badge,
+    Button,
+    ButtonGroup,
+    Card,
+    CardBody,
+    CardTitle,
+    Col,
+    Input,
+    Label,
+    Row,
+    Table
+} from 'reactstrap'
 import httpConfig from '../../utility/http/httpConfig'
 
 function formatTier(tier?: string) {
@@ -26,6 +39,59 @@ function getTierBadgeColor(tier?: string) {
     }
 }
 
+function extractVariables(template: any): string[] {
+    if (!template) return []
+    const texts: string[] = []
+    if (Array.isArray(template.components)) {
+        for (const comp of template.components) {
+            if ((comp.type === 'BODY' || comp.type === 'HEADER') && comp.text) {
+                texts.push(comp.text)
+            }
+        }
+    }
+    if (template.body && typeof template.body === 'string') texts.push(template.body)
+    if (template.text && typeof template.text === 'string') texts.push(template.text)
+
+    const combined = texts.join('\n')
+    const matches = combined.match(/{{\s*([a-zA-Z0-9_-]+)\s*}}/g) || []
+    const vars: string[] = []
+    for (const m of matches) {
+        const cleaned = m.replace(/[{}]/g, '').trim()
+        if (!vars.includes(cleaned)) {
+            vars.push(cleaned)
+        }
+    }
+    return vars.sort((a, b) => {
+        const numA = Number(a)
+        const numB = Number(b)
+        if (!isNaN(numA) && !isNaN(numB)) return numA - numB
+        return a.localeCompare(b)
+    })
+}
+
+function renderTemplateWithValues(text: string, vars: Record<string, string>) {
+    if (!text) return null
+    const parts = text.split(/({{\s*[a-zA-Z0-9_-]+\s*}})/g)
+    return parts.map((part, index) => {
+        const match = part.match(/{{\s*([a-zA-Z0-9_-]+)\s*}}/)
+        if (match) {
+            const varKey = match[1].trim()
+            const val = vars[varKey]
+            return (
+                <span
+                    key={index}
+                    className={`px-1 mx-1 rounded fw-bold ${val ? 'bg-primary text-white' : 'bg-warning text-dark'}`}
+                    style={{ fontSize: '0.9em', display: 'inline-block' }}
+                    title={val ? `Variable {{${varKey}}}` : `Missing value for Variable {{${varKey}}}`}
+                >
+                    {val || `{{${varKey}}}`}
+                </span>
+            )
+        }
+        return <span key={index}>{part}</span>
+    })
+}
+
 export default function Broadcasts() {
     const [senders, setSenders] = useState<any[]>([])
     const [campaigns, setCampaigns] = useState<any[]>([])
@@ -35,6 +101,8 @@ export default function Broadcasts() {
     const [name, setName] = useState('')
     const [recipients, setRecipients] = useState('')
     const [parameters, setParameters] = useState('')
+    const [varValues, setVarValues] = useState<Record<string, string>>({})
+    const [paramMode, setParamMode] = useState<'guided' | 'raw'>('guided')
     const [schedule, setSchedule] = useState('')
     const [segment, setSegment] = useState('')
     const [consentPhone, setConsentPhone] = useState('')
@@ -106,6 +174,28 @@ export default function Broadcasts() {
     const selectedSender = senders.find(s => String(s.id) === sender)
     const templates = selectedSender?.templates || []
     const selectedTemplate = template !== '' ? templates[Number(template)] : null
+    const detectedVars = extractVariables(selectedTemplate)
+    const templateBodyText = selectedTemplate?.components?.find((c: any) => c.type === 'BODY')?.text ||
+                             selectedTemplate?.body ||
+                             selectedTemplate?.text ||
+                             ''
+
+    function handleVarChange(key: string, val: string) {
+        const updated = { ...varValues, [key]: val }
+        setVarValues(updated)
+        const lines = detectedVars.map(v => updated[v] || '')
+        setParameters(lines.join('\n'))
+    }
+
+    function handleRawParamChange(rawText: string) {
+        setParameters(rawText)
+        const lines = rawText.split('\n')
+        const updated: Record<string, string> = {}
+        detectedVars.forEach((v, idx) => {
+            if (lines[idx] !== undefined) updated[v] = lines[idx]
+        })
+        setVarValues(updated)
+    }
 
     async function savePolicy(next: any) {
         await api('whatsapp/broadcast-policy', 'POST', {
@@ -115,6 +205,14 @@ export default function Broadcasts() {
         })
         await refresh()
     }
+
+    const missingVars = detectedVars.filter(v => !(varValues[v] || '').trim())
+    const canSubmit = !busy &&
+                      name.trim() &&
+                      sender &&
+                      template !== '' &&
+                      recipients.trim() &&
+                      (detectedVars.length === 0 || missingVars.length === 0)
 
     return (
         <div className='p-2'>
@@ -155,6 +253,8 @@ export default function Broadcasts() {
                                 onChange={e => {
                                     setSender(e.target.value)
                                     setTemplate('')
+                                    setVarValues({})
+                                    setParameters('')
                                 }}
                             >
                                 <option value=''>Select sender phone number</option>
@@ -173,7 +273,11 @@ export default function Broadcasts() {
                                 type='select'
                                 value={template}
                                 disabled={!sender || templates.length === 0}
-                                onChange={e => setTemplate(e.target.value)}
+                                onChange={e => {
+                                    setTemplate(e.target.value)
+                                    setVarValues({})
+                                    setParameters('')
+                                }}
                             >
                                 <option value=''>
                                     {!sender
@@ -226,32 +330,100 @@ export default function Broadcasts() {
                                 <div className='p-2 border rounded bg-light border-primary'>
                                     <div className='d-flex justify-content-between align-items-center mb-1'>
                                         <div className='fw-bold text-primary'>
-                                            Template Preview: <code>{selectedTemplate.name}</code> ({selectedTemplate.language})
+                                            Live Message Preview: <code>{selectedTemplate.name}</code> ({selectedTemplate.language})
                                         </div>
-                                        <Badge color='success'>{selectedTemplate.status || 'APPROVED'}</Badge>
+                                        <div className='d-flex gap-1 align-items-center'>
+                                            {detectedVars.length > 0 && (
+                                                <Badge color={missingVars.length === 0 ? 'light-success' : 'light-warning'}>
+                                                    {detectedVars.length - missingVars.length} of {detectedVars.length} Variables Filled
+                                                </Badge>
+                                            )}
+                                            <Badge color='success'>{selectedTemplate.status || 'APPROVED'}</Badge>
+                                        </div>
                                     </div>
-                                    <div className='p-2 bg-white rounded border small' style={{ whiteSpace: 'pre-wrap' }}>
-                                        {selectedTemplate.components?.find((c: any) => c.type === 'BODY')?.text ||
-                                         selectedTemplate.body ||
-                                         'Template has no body text or components preview.'}
+                                    <div className='p-3 bg-white rounded border' style={{ fontSize: '1rem', lineHeight: '1.6' }}>
+                                        {templateBodyText ? (
+                                            renderTemplateWithValues(templateBodyText, varValues)
+                                        ) : (
+                                            <span className='text-muted'>Template has no body text or components preview.</span>
+                                        )}
                                     </div>
                                 </div>
                             </Col>
                         )}
 
-                        <Col md={12}>
-                            <Label for='broadcast-values' className='fw-bold'>
-                                Template Body Variable Values (one value per line, e.g. for &#123;&#123;1&#125;&#125;, &#123;&#123;2&#125;&#125;)
-                            </Label>
-                            <Input
-                                id='broadcast-values'
-                                type='textarea'
-                                rows={2}
-                                placeholder='John&#10;Order #1234'
-                                value={parameters}
-                                onChange={e => setParameters(e.target.value)}
-                            />
-                        </Col>
+                        {/* Dynamic Template Parameter Editor */}
+                        {selectedTemplate && (
+                            <Col md={12}>
+                                <div className='border rounded p-2 bg-light'>
+                                    <div className='d-flex justify-content-between align-items-center mb-2'>
+                                        <div>
+                                            <h6 className='fw-bold text-dark mb-0'>Template Variable Values</h6>
+                                            <small className='text-muted'>
+                                                {detectedVars.length > 0
+                                                    ? `Detected ${detectedVars.length} variable placeholder${detectedVars.length > 1 ? 's' : ''} in template text.`
+                                                    : 'This template is static and does not contain dynamic variable placeholders.'}
+                                            </small>
+                                        </div>
+                                        {detectedVars.length > 0 && (
+                                            <ButtonGroup size='sm'>
+                                                <Button
+                                                    color={paramMode === 'guided' ? 'primary' : 'outline-primary'}
+                                                    onClick={() => setParamMode('guided')}
+                                                >
+                                                    Guided Fields
+                                                </Button>
+                                                <Button
+                                                    color={paramMode === 'raw' ? 'primary' : 'outline-primary'}
+                                                    onClick={() => setParamMode('raw')}
+                                                >
+                                                    Raw Multi-Line
+                                                </Button>
+                                            </ButtonGroup>
+                                        )}
+                                    </div>
+
+                                    {detectedVars.length === 0 ? (
+                                        <div className='p-2 bg-white rounded border text-muted small'>
+                                            ✓ <strong>No dynamic variables required:</strong> This template will be sent directly to recipients exactly as shown in the preview above.
+                                        </div>
+                                    ) : paramMode === 'guided' ? (
+                                        <Row className='gy-2'>
+                                            {detectedVars.map(v => (
+                                                <Col md={detectedVars.length > 2 ? 4 : 6} key={v}>
+                                                    <Label for={`var-${v}`} className='fw-bold text-dark small'>
+                                                        Variable &#123;&#123;{v}&#125;&#125;
+                                                        {!(varValues[v] || '').trim() && (
+                                                            <span className='text-danger ms-1'>*</span>
+                                                        )}
+                                                    </Label>
+                                                    <Input
+                                                        id={`var-${v}`}
+                                                        placeholder={`Enter value for {{${v}}}`}
+                                                        value={varValues[v] || ''}
+                                                        onChange={e => handleVarChange(v, e.target.value)}
+                                                    />
+                                                </Col>
+                                            ))}
+                                        </Row>
+                                    ) : (
+                                        <div>
+                                            <Label for='broadcast-values' className='small fw-bold text-dark'>
+                                                Enter one variable value per line (corresponding to {detectedVars.map(v => `{{${v}}}`).join(', ')})
+                                            </Label>
+                                            <Input
+                                                id='broadcast-values'
+                                                type='textarea'
+                                                rows={detectedVars.length + 1}
+                                                placeholder={detectedVars.map(v => `Value for {{${v}}}`).join('\n')}
+                                                value={parameters}
+                                                onChange={e => handleRawParamChange(e.target.value)}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            </Col>
+                        )}
 
                         <Col md={12}>
                             <Label for='broadcast-recipients' className='fw-bold'>
@@ -302,16 +474,22 @@ export default function Broadcasts() {
                         </Col>
 
                         <Col md={12} className='mt-2'>
+                            {missingVars.length > 0 && selectedTemplate && (
+                                <Alert color='warning' className='py-1 small mb-1'>
+                                    ⚠️ Please fill in required variable values for: {missingVars.map(v => `{{${v}}}`).join(', ')}
+                                </Alert>
+                            )}
                             <Button
                                 color='primary'
                                 size='lg'
-                                disabled={busy || !name.trim() || !sender || template === '' || !recipients.trim()}
+                                disabled={!canSubmit}
                                 onClick={() =>
                                     void act(async () => {
                                         const chosen = templates[Number(template)]
-                                        const values = parameters.trim()
-                                            ? parameters.split('\n').map(text => ({ type: 'text', text: text.trim() })).filter(p => p.text)
-                                            : []
+                                        const values = detectedVars.length > 0
+                                            ? detectedVars.map(v => ({ type: 'text', text: (varValues[v] || '').trim() })).filter(p => p.text)
+                                            : (parameters.trim() ? parameters.split('\n').map(text => ({ type: 'text', text: text.trim() })).filter(p => p.text) : [])
+
                                         const recipientList = recipients
                                             .split(/[,\n]/)
                                             .map(v => v.trim())
@@ -340,6 +518,7 @@ export default function Broadcasts() {
                                         setName('')
                                         setRecipients('')
                                         setParameters('')
+                                        setVarValues({})
                                     })
                                 }
                             >

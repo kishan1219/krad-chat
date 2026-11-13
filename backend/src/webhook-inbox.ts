@@ -10,7 +10,7 @@ export class WebhookInbox {
     // Persist the entire accepted batch atomically before acknowledging it.
     await this.db.transaction(async c=>{
       for(const entry of body.entry)for(const change of entry.changes||[]){
-        const value=change.value||{},phone=String(value.metadata?.phone_number_id||'');
+        const value=change.value||{},phone=String(value.metadata?.phone_number_id||value.phone_number_id||'');
         const mappings=(await c.query("SELECT DISTINCT tenant_id FROM meta_connections WHERE status='connected' AND (($1<>'' AND phone_number_id=$1) OR ($1='' AND waba_id=$2))",[phone,String(entry.id||'')])).rows;
         const tenant=mappings.length===1?mappings[0].tenant_id:null;
         await c.query('INSERT INTO meta_webhook_events(event_hash,tenant_id,phone_number_id,payload,status,error) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(event_hash) DO NOTHING',[sha256(JSON.stringify({waba:entry.id,field:change.field,value})),tenant,phone,{entry:[{id:entry.id,changes:[change]}]},tenant?'queued':'quarantined',tenant?null:'No unique account mapping.']);

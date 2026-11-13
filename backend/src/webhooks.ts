@@ -21,13 +21,90 @@ export class Webhooks {
           continue;
         }
         if(change.field==='phone_number_quality_update'){
-          // A health notification is a signal to read current state, not itself a quality rating.
-          const connections=(await this.db.query("SELECT * FROM meta_connections WHERE waba_id=$1 AND status='connected'",[String(entry.id)])).rows;
+          const targetPhone = String(value.phone_number_id || value.metadata?.phone_number_id || '');
+          const connections = (await this.db.query(
+            "SELECT * FROM meta_connections WHERE status='connected' AND (($1 <> '' AND phone_number_id = $1) OR ($1 = '' AND waba_id = $2))",
+            [targetPhone, String(entry.id)]
+          )).rows;
+
           for(const connection of connections){
-            if(connection.simulated)continue;
-            const phone=await this.providers.meta(`${connection.phone_number_id}?fields=id,quality_rating`,'GET',undefined,decrypt(connection.token_encrypted,this.cfg.ENCRYPTION_KEY));
-            await this.db.query('UPDATE meta_connections SET quality_rating=$2,updated_at=now() WHERE id=$1',[connection.id,phone.quality_rating||'UNKNOWN']);
-          }continue;
+            let quality = connection.quality_rating || 'UNKNOWN';
+            let tier = connection.messaging_limit_tier || 'TIER_1K';
+            let verifiedName = connection.verified_name;
+
+            if (value.current_limit) {
+              tier = String(value.current_limit);
+            }
+
+            if (!connection.simulated) {
+              try {
+                const phone = await this.providers.meta(
+                  `${connection.phone_number_id}?fields=id,quality_rating,messaging_limit_tier,verified_name,code_verification_status,display_phone_number`,
+                  'GET',
+                  undefined,
+                  decrypt(connection.token_encrypted, this.cfg.ENCRYPTION_KEY)
+                );
+                if (phone.quality_rating) quality = phone.quality_rating;
+                if (phone.messaging_limit_tier) tier = phone.messaging_limit_tier;
+                if (phone.verified_name) verifiedName = phone.verified_name;
+              } catch {
+                // Keep direct webhook values if provider query fails
+              }
+            } else if (value.current_limit) {
+              tier = String(value.current_limit);
+            }
+
+            const previousTier = connection.messaging_limit_tier || 'TIER_1K';
+            const isUpgraded = value.event === 'UPGRADED' || (previousTier !== tier && tier !== 'TIER_50');
+
+            await this.db.transaction(async c => {
+              await c.query(
+                `UPDATE meta_connections 
+                 SET quality_rating=$2, messaging_limit_tier=$3, verified_name=COALESCE($4, verified_name), last_sync_at=now(), updated_at=now() 
+                 WHERE id=$1`,
+                [connection.id, quality, tier, verifiedName || null]
+              );
+
+              if (isUpgraded || previousTier !== tier) {
+                const tierDesc = tier === 'TIER_UNLIMITED' ? 'Unlimited' : tier.replace('TIER_', '') + ' messages / 24h';
+                await c.query(
+                  `INSERT INTO resources(tenant_id, kind, data, created_by)
+                   VALUES($1, 'notification', $2, $3)`,
+                  [
+                    connection.tenant_id,
+                    JSON.stringify({
+                      title: `WhatsApp Tier Upgraded to ${tier}`,
+                      message: `Meta has automatically upgraded your WhatsApp Business messaging limit for ${connection.display_phone_number || connection.phone_number_id} to ${tier} (${tierDesc}). Your business can now initiate more conversations per rolling 24-hour window!`,
+                      phone_number_id: connection.phone_number_id,
+                      phone_number: connection.display_phone_number,
+                      previous_tier: previousTier,
+                      current_tier: tier,
+                      event: value.event || 'UPGRADED',
+                      type: 'meta_tier_upgrade'
+                    }),
+                    connection.created_by || 1
+                  ]
+                );
+                await c.query(
+                  "INSERT INTO audit_logs(tenant_id, user_id, action, target) VALUES($1, $2, 'meta.tier.upgrade', $3)",
+                  [connection.tenant_id, connection.created_by || 1, `${connection.phone_number_id}:${tier}`]
+                );
+              }
+            });
+          }
+          continue;
+        }
+        if(change.field==='phone_number_name_update'){
+          const targetPhone = String(value.phone_number_id || value.metadata?.phone_number_id || '');
+          const verifiedName = String(value.verified_name || '');
+          if(verifiedName){
+            await this.db.query(
+              `UPDATE meta_connections SET verified_name=$2, code_verification_status='VERIFIED', updated_at=now() 
+               WHERE status='connected' AND (($1 <> '' AND phone_number_id=$1) OR ($1 = '' AND waba_id=$3))`,
+              [targetPhone, verifiedName, String(entry.id)]
+            );
+          }
+          continue;
         }
         if (change.field !== 'messages') throw new ApiError(422, 'This event type requires a dedicated handler.');
         if (value.messages?.length) {

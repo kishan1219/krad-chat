@@ -7,3 +7,4 @@ CREATE TABLE IF NOT EXISTS platform_settings (
 ALTER TABLE meta_connections ADD COLUMN IF NOT EXISTS messaging_limit_tier TEXT DEFAULT 'TIER_1K';
 ALTER TABLE meta_connections ADD COLUMN IF NOT EXISTS verified_name TEXT;
 ALTER TABLE meta_connections ADD COLUMN IF NOT EXISTS code_verification_status TEXT;
+
