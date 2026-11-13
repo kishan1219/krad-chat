@@ -16,7 +16,7 @@ export function authorize(actor: Actor, permission: string) {
 }
 export function publicUser(row: Record<string, any>) {
   const { password_hash, ...user } = row;
-  const uiPermissions: string[] = ['user-ddl-list', 'edit-profile'];
+  const uiPermissions: string[] = ['user-ddl-list', 'edit-profile', 'whatsapp-configurations', 'whatsapp-sms', 'dashboard-view'];
   if (row.permissions?.includes('chat:reply')) uiPermissions.push('whatsapp-sms', 'user-ddl-list', 'edit-profile');
   if (row.permissions?.includes('admin:write')) uiPermissions.push('whatsapp-configurations');
 

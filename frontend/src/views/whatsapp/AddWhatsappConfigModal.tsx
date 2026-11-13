@@ -25,9 +25,14 @@ import {
     Check,
     CheckCircle,
     Info,
+    Key,
     Phone,
     Shield,
     Smartphone,
+    Video,
+    MoreVertical,
+    Send,
+    Settings,
     X,
     Zap
 } from 'react-feather'
@@ -73,6 +78,12 @@ export default function AddWhatsappConfigModal({ isOpen, toggle, onSuccess }: Ad
     const [error, setError] = useState('')
     const [notice, setNotice] = useState('')
     const [config, setConfig] = useState<any>(null)
+    const [showQuickConfig, setShowQuickConfig] = useState(false)
+    const [quickAppId, setQuickAppId] = useState('')
+    const [quickConfigId, setQuickConfigId] = useState('')
+    const [quickAppSecret, setQuickAppSecret] = useState('')
+    const [quickGraphVersion, setQuickGraphVersion] = useState('v22.0')
+    const [savingQuickConfig, setSavingQuickConfig] = useState(false)
 
     const cleanup = useRef<() => void>(() => {})
 
@@ -83,6 +94,7 @@ export default function AddWhatsappConfigModal({ isOpen, toggle, onSuccess }: Ad
             setStep(1)
             setError('')
             setNotice('')
+            setShowQuickConfig(false)
         }
         return () => cleanup.current()
     }, [isOpen])
@@ -114,8 +126,32 @@ export default function AddWhatsappConfigModal({ isOpen, toggle, onSuccess }: Ad
         try {
             const data = await api('config', 'GET')
             setConfig(data)
+            if (data.app_id) setQuickAppId(data.app_id)
+            if (data.config_id) setQuickConfigId(data.config_id)
+            if (data.graph_version) setQuickGraphVersion(data.graph_version)
         } catch {
             setConfig({ configured: false, app_id: null, config_id: null, simulated: true })
+        }
+    }
+
+    async function handleSaveQuickConfig(e: React.FormEvent) {
+        e.preventDefault()
+        setSavingQuickConfig(true)
+        setError('')
+        try {
+            await api('config', 'POST', {
+                app_id: quickAppId.trim(),
+                config_id: quickConfigId.trim(),
+                graph_version: quickGraphVersion.trim() || 'v22.0',
+                app_secret: quickAppSecret.trim()
+            })
+            SuccessToast('Meta App credentials saved to server successfully!')
+            setShowQuickConfig(false)
+            await fetchConfig()
+        } catch (err: any) {
+            setError(err.message || 'Could not save Meta configuration.')
+        } finally {
+            setSavingQuickConfig(false)
         }
     }
 
@@ -518,8 +554,8 @@ export default function AddWhatsappConfigModal({ isOpen, toggle, onSuccess }: Ad
                             </p>
                         </div>
 
-                        <Row className='align-items-center gy-3'>
-                            {/* Summary Details */}
+                        <Row className='align-items-start gy-3'>
+                            {/* Left Column: Summary & Meta Actions */}
                             <Col md={7}>
                                 <div className='p-3 rounded-2xl bg-light border mb-3'>
                                     <h6 className='fw-bold text-dark mb-2'>Configuration Summary</h6>
@@ -540,6 +576,74 @@ export default function AddWhatsappConfigModal({ isOpen, toggle, onSuccess }: Ad
                                         </span>
                                     </div>
                                 </div>
+
+                                {/* Quick Meta App Credentials Card if not configured or expanded */}
+                                {(!config?.configured || showQuickConfig) && (
+                                    <div className='p-3 rounded-2xl border mb-3' style={{ backgroundColor: '#fffbeb', borderColor: '#fde68a' }}>
+                                        <div className='d-flex align-items-center justify-content-between mb-2'>
+                                            <div className='d-flex align-items-center gap-1'>
+                                                <Key size={16} className='text-warning' />
+                                                <h6 className='fw-bold text-dark mb-0'>Meta Developer App Credentials</h6>
+                                            </div>
+                                            <Badge color={config?.configured ? 'light-success' : 'light-warning'} pill>
+                                                {config?.configured ? 'Server Configured' : 'Setup Required'}
+                                            </Badge>
+                                        </div>
+                                        <p className='small text-muted mb-2'>
+                                            Enter your Meta credentials from your <a href='https://developers.facebook.com/apps/' target='_blank' rel='noreferrer'>Meta Developer Console</a> to enable 1-Click Embedded Signup.
+                                        </p>
+                                        <Form onSubmit={handleSaveQuickConfig}>
+                                            <div className='mb-1'>
+                                                <Label for='quick-app-id' className='small fw-semibold text-dark'>Meta App ID *</Label>
+                                                <Input
+                                                    id='quick-app-id'
+                                                    size='sm'
+                                                    placeholder='e.g. 598395012455883'
+                                                    value={quickAppId}
+                                                    onChange={e => setQuickAppId(e.target.value)}
+                                                    required
+                                                    style={{ borderRadius: '8px' }}
+                                                />
+                                            </div>
+                                            <div className='mb-1'>
+                                                <Label for='quick-config-id' className='small fw-semibold text-dark'>WhatsApp Configuration ID *</Label>
+                                                <Input
+                                                    id='quick-config-id'
+                                                    size='sm'
+                                                    placeholder='From WhatsApp > Configuration in Meta Dashboard'
+                                                    value={quickConfigId}
+                                                    onChange={e => setQuickConfigId(e.target.value)}
+                                                    required
+                                                    style={{ borderRadius: '8px' }}
+                                                />
+                                            </div>
+                                            <div className='mb-2'>
+                                                <Label for='quick-app-secret' className='small fw-semibold text-dark'>Meta App Secret *</Label>
+                                                <Input
+                                                    id='quick-app-secret'
+                                                    size='sm'
+                                                    type='password'
+                                                    autoComplete='new-password'
+                                                    placeholder='From App settings > Basic > App secret'
+                                                    value={quickAppSecret}
+                                                    onChange={e => setQuickAppSecret(e.target.value)}
+                                                    required
+                                                    style={{ borderRadius: '8px' }}
+                                                />
+                                            </div>
+                                            <div className='d-flex justify-content-end gap-1'>
+                                                {config?.configured && (
+                                                    <Button size='sm' color='light-secondary' type='button' onClick={() => setShowQuickConfig(false)}>
+                                                        Cancel
+                                                    </Button>
+                                                )}
+                                                <Button size='sm' color='primary' type='submit' disabled={savingQuickConfig} style={{ backgroundColor: '#00b074', borderColor: '#00b074' }}>
+                                                    {savingQuickConfig ? <Spinner size='sm' /> : 'Save & Enable Live Signup'}
+                                                </Button>
+                                            </div>
+                                        </Form>
+                                    </div>
+                                )}
 
                                 <div className='d-grid gap-2'>
                                     <Button
@@ -565,64 +669,162 @@ export default function AddWhatsappConfigModal({ isOpen, toggle, onSuccess }: Ad
                                         )}
                                     </Button>
 
-                                    {/* Sandbox simulation fallback */}
-                                    <Button
-                                        color='light-secondary'
-                                        size='sm'
-                                        className='mt-1'
-                                        disabled={busy}
-                                        onClick={() => void handleConnectWithFacebook('sandbox')}
-                                    >
-                                        <Zap size={14} className='me-1 text-warning' />
-                                        <span>Test in Sandbox Simulation Mode (Local / No FB App)</span>
-                                    </Button>
+                                    {/* Action button row: configure credentials & sandbox test */}
+                                    <div className='d-flex gap-2 mt-1'>
+                                        <Button
+                                            color='light-primary'
+                                            size='sm'
+                                            className='flex-fill d-flex align-items-center justify-content-center gap-1'
+                                            onClick={() => setShowQuickConfig(!showQuickConfig)}
+                                        >
+                                            <Settings size={14} />
+                                            <span>{showQuickConfig ? 'Hide Settings' : 'Meta App Settings'}</span>
+                                        </Button>
+
+                                        <Button
+                                            color='light-secondary'
+                                            size='sm'
+                                            className='flex-fill d-flex align-items-center justify-content-center gap-1'
+                                            disabled={busy}
+                                            onClick={() => void handleConnectWithFacebook('sandbox')}
+                                        >
+                                            <Zap size={14} className='text-warning' />
+                                            <span>Sandbox Simulation</span>
+                                        </Button>
+                                    </div>
                                 </div>
                             </Col>
 
-                            {/* Phone Mockup Graphic */}
+                            {/* Right Column: Realistic WhatsApp Phone Mockup matching Image 6 */}
                             <Col md={5} className='text-center'>
                                 <div
-                                    className='p-3 mx-auto shadow-md rounded-2xl bg-white border'
+                                    className='mx-auto shadow-lg text-start'
                                     style={{
-                                        maxWidth: '240px',
-                                        borderRadius: '24px',
-                                        border: '8px solid #1e293b'
+                                        maxWidth: '260px',
+                                        borderRadius: '34px',
+                                        border: '8px solid #1e293b',
+                                        backgroundColor: '#111827',
+                                        overflow: 'hidden'
                                     }}
                                 >
+                                    {/* Phone speaker & camera notch */}
+                                    <div className='d-flex justify-content-center align-items-center py-1 bg-dark'>
+                                        <div style={{ width: 44, height: 4, backgroundColor: '#374151', borderRadius: 4 }} />
+                                        <div className='ms-1 rounded-circle' style={{ width: 6, height: 6, backgroundColor: '#1f2937' }} />
+                                    </div>
+
+                                    {/* WhatsApp Top Bar */}
                                     <div
-                                        className='p-2 rounded-top text-white text-start mb-2 d-flex align-items-center gap-1'
-                                        style={{ backgroundColor: '#075E54', fontSize: '0.75rem' }}
+                                        className='p-2 text-white d-flex align-items-center justify-content-between'
+                                        style={{ backgroundColor: '#075E54' }}
                                     >
+                                        <div className='d-flex align-items-center gap-1 overflow-hidden'>
+                                            <div
+                                                className='rounded-circle bg-white text-dark d-flex align-items-center justify-content-center flex-shrink-0'
+                                                style={{ width: 26, height: 26, fontWeight: 'bold', fontSize: '11px', color: '#075E54' }}
+                                            >
+                                                {(name || 'Brand').charAt(0).toUpperCase()}
+                                            </div>
+                                            <div className='overflow-hidden text-truncate'>
+                                                <div className='d-flex align-items-center gap-50'>
+                                                    <span className='fw-bold small text-truncate text-white' style={{ fontSize: '0.75rem' }}>
+                                                        {name || 'Your Brand'}
+                                                    </span>
+                                                    <span className='badge bg-success rounded-circle p-0 d-inline-flex align-items-center justify-content-center' style={{ width: 12, height: 12 }}>
+                                                        ✓
+                                                    </span>
+                                                </div>
+                                                <div style={{ fontSize: '0.62rem', color: '#bbf7d0', lineHeight: 1 }}>Active Now</div>
+                                            </div>
+                                        </div>
+                                        <div className='d-flex align-items-center gap-1 text-white opacity-75' style={{ fontSize: '12px' }}>
+                                            <Video size={13} />
+                                            <Phone size={12} />
+                                            <MoreVertical size={13} />
+                                        </div>
+                                    </div>
+
+                                    {/* WhatsApp Chat Canvas */}
+                                    <div
+                                        className='p-2'
+                                        style={{
+                                            backgroundColor: '#efeae2',
+                                            minHeight: '230px',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            justifyContent: 'space-between'
+                                        }}
+                                    >
+                                        <div>
+                                            {/* Date pill */}
+                                            <div className='text-center my-1'>
+                                                <span
+                                                    className='px-2 py-50 rounded shadow-2xs text-muted'
+                                                    style={{ backgroundColor: '#ffffff', fontSize: '0.58rem' }}
+                                                >
+                                                    TODAY
+                                                </span>
+                                            </div>
+
+                                            {/* Incoming client bubble */}
+                                            <div
+                                                className='p-2 rounded-2xl bg-white shadow-xs mb-1 text-dark'
+                                                style={{
+                                                    maxWidth: '85%',
+                                                    fontSize: '0.68rem',
+                                                    borderTopLeftRadius: '2px',
+                                                    lineHeight: 1.3
+                                                }}
+                                            >
+                                                Hello! Could I get more information about your official services?
+                                                <div className='text-muted text-end' style={{ fontSize: '0.55rem', marginTop: '2px' }}>
+                                                    10:30 AM
+                                                </div>
+                                            </div>
+
+                                            {/* Business response bubble */}
+                                            <div
+                                                className='p-2 rounded-2xl shadow-xs ms-auto mb-1 text-dark'
+                                                style={{
+                                                    maxWidth: '88%',
+                                                    backgroundColor: '#dcf8c6',
+                                                    fontSize: '0.68rem',
+                                                    borderTopRightRadius: '2px',
+                                                    lineHeight: 1.3
+                                                }}
+                                            >
+                                                {enableAutoResponse
+                                                    ? autoResponseMessage
+                                                    : `Welcome to ${name || 'our official business line'}! We are ready to assist you.`}
+                                                <div className='text-muted text-end d-flex align-items-center justify-content-end gap-50' style={{ fontSize: '0.55rem', marginTop: '2px' }}>
+                                                    <span>10:30 AM</span>
+                                                    <span style={{ color: '#34B7F1', fontWeight: 'bold' }}>✓✓</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Chat input mockup */}
                                         <div
-                                            className='rounded-circle bg-white text-dark d-flex align-items-center justify-content-center'
-                                            style={{ width: 22, height: 22 }}
+                                            className='d-flex align-items-center gap-1 px-2 py-1 bg-white rounded-pill shadow-xs'
+                                            style={{ fontSize: '0.65rem' }}
                                         >
-                                            <Check size={14} color='#075E54' />
-                                        </div>
-                                        <div className='overflow-hidden text-truncate'>
-                                            <div className='fw-bold text-truncate'>{name || 'Your Business'}</div>
-                                            <small style={{ fontSize: '0.65rem', opacity: 0.8 }}>Official Business Account</small>
-                                        </div>
-                                    </div>
-
-                                    <div
-                                        className='p-2 text-start rounded bg-light mb-2'
-                                        style={{ fontSize: '0.72rem', backgroundColor: '#e2f7cb' }}
-                                    >
-                                        <div className='text-dark'>
-                                            {enableAutoResponse
-                                                ? autoResponseMessage
-                                                : `Welcome to ${name || 'our official business line'}! How can we assist you today?`}
-                                        </div>
-                                        <div className='text-muted text-end mt-1' style={{ fontSize: '0.6rem' }}>
-                                            12:00 PM ✓✓
+                                            <span className='text-muted'>🙂</span>
+                                            <span className='text-muted flex-fill'>Type a message</span>
+                                            <span className='text-muted'>📎</span>
+                                            <div
+                                                className='rounded-circle d-flex align-items-center justify-content-center text-white'
+                                                style={{ width: 18, height: 18, backgroundColor: '#00b074' }}
+                                            >
+                                                <Send size={9} />
+                                            </div>
                                         </div>
                                     </div>
-
-                                    <Badge color='light-success' pill style={{ fontSize: '0.7rem' }}>
-                                        Verified Cloud API
-                                    </Badge>
                                 </div>
+
+                                <Badge color='light-success' pill className='mt-2 px-2 py-50'>
+                                    <Check size={12} className='me-50 text-success' />
+                                    <span>Verified Cloud API</span>
+                                </Badge>
                             </Col>
                         </Row>
                     </div>

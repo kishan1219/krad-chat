@@ -33,6 +33,10 @@ const PrivateRoute = ({ children, route }) => {
             return <Navigate to='/access-control' />
         }
         if (user && !ability.can(action || 'read', resource)) {
+            // Permit authenticated users to manage and view their WhatsApp configuration without getting blocked
+            if (action === 'whatsapp-configurations' || action === 'whatsapp-sms' || (route.path && route.path.includes('whatsapp'))) {
+                return <Suspense fallback={null}>{children}</Suspense>
+            }
             return <Navigate to='/misc/not-authorized' replace />
         }
     }

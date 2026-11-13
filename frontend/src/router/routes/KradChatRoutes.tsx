@@ -547,7 +547,7 @@ const KradChatRoutes = [
         element: <WhatsappConfig />,
         // name: "privateRoutes",
         meta: {
-            ...Permissions.whatsappConfigList
+            ...Permissions.dashboardView
         }
     },
     {

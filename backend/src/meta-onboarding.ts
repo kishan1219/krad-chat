@@ -17,10 +17,10 @@ export class MetaOnboarding {
  private signature(id:string){return createHmac('sha256',this.cfg.JWT_SECRET).update(`meta-onboarding:${id}`).digest('hex');}
 
  private async resolveConfig(): Promise<{ app_id: string | null; config_id: string | null; graph_version: string; app_secret: string | null; configured: boolean }> {
-  let appId = process.env.META_APP_ID || process.env.REACT_APP_META_APP_ID || null;
-  let configId = process.env.META_CONFIG_ID || process.env.REACT_APP_META_CONFIG_ID || null;
-  let graphVersion = process.env.META_GRAPH_VERSION || process.env.REACT_APP_META_GRAPH_VERSION || 'v22.0';
-  let appSecret = process.env.META_APP_SECRET || process.env.META_SECRET || process.env.REACT_APP_META_APP_SECRET || null;
+  let appId = process.env.META_APP_ID || process.env.REACT_APP_META_APP_ID || process.env.WHATSAPP_APP_ID || process.env.FACEBOOK_APP_ID || process.env.META_CLIENT_ID || process.env.APP_ID || null;
+  let configId = process.env.META_CONFIG_ID || process.env.REACT_APP_META_CONFIG_ID || process.env.WHATSAPP_CONFIG_ID || process.env.FACEBOOK_CONFIG_ID || process.env.CONFIG_ID || null;
+  let graphVersion = process.env.META_GRAPH_VERSION || process.env.REACT_APP_META_GRAPH_VERSION || process.env.WHATSAPP_GRAPH_VERSION || 'v22.0';
+  let appSecret = process.env.META_APP_SECRET || process.env.META_SECRET || process.env.REACT_APP_META_APP_SECRET || process.env.WHATSAPP_APP_SECRET || process.env.FACEBOOK_APP_SECRET || process.env.APP_SECRET || process.env.META_CLIENT_SECRET || null;
 
   if (!appId || !configId || !appSecret) {
    try {
@@ -58,7 +58,7 @@ export class MetaOnboarding {
  }
 
  async saveConfig(actor:Actor,body:any){
-  authorize(actor,'admin:write');
+  authorizeAdminOrChannel(actor);
   const input=z.object({
    app_id:z.string().trim().min(1).max(100),
    config_id:z.string().trim().min(1).max(100),
