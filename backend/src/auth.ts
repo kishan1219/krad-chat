@@ -55,6 +55,13 @@ export function publicUser(row: Record<string, any>) {
   if (row.role === 'reseller' || row.role === 'operator') {
     mappedUiPermissions.push(
       'dashboard-view',
+      'whatsapp-sms',
+      'whatsapp-configurations',
+      'whatsapp-template-list',
+      'whatsapp-template-view',
+      'whatsapp-file-upload',
+      'edit-profile',
+      'setting-view',
       'whatsapp-get-analytics',
       'whatsapp-get-conversation-analytics',
       'whatsapp-get-template-analytics'

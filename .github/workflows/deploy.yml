@@ -77,6 +77,9 @@ jobs:
     name: Build & Deploy Frontend to Cloudflare
     needs: [test-and-verify, security-audit]
     runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     defaults:
       run:
         working-directory: ./frontend
@@ -101,9 +104,9 @@ jobs:
           DISABLE_ESLINT_PLUGIN: true
           GENERATE_SOURCEMAP: false
           NODE_OPTIONS: --max-old-space-size=4096
-          REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL || 'https://api.yourdomain.com/api/' }}
-          REACT_APP_ASSET_URL: ${{ secrets.REACT_APP_ASSET_URL || 'https://api.yourdomain.com/' }}
-          REACT_APP_WS_URL: ${{ secrets.REACT_APP_WS_URL || 'wss://api.yourdomain.com/ws' }}
+          REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL || 'https://krad-chat.onrender.com/api/' }}
+          REACT_APP_ASSET_URL: ${{ secrets.REACT_APP_ASSET_URL || 'https://krad-chat.onrender.com/' }}
+          REACT_APP_WS_URL: ${{ secrets.REACT_APP_WS_URL || 'wss://krad-chat.onrender.com/ws' }}
           REACT_APP_META_APP_ID: ${{ secrets.REACT_APP_META_APP_ID || '' }}
           REACT_APP_META_CONFIG_ID: ${{ secrets.REACT_APP_META_CONFIG_ID || '' }}
           REACT_APP_META_GRAPH_VERSION: ${{ secrets.REACT_APP_META_GRAPH_VERSION || 'v22.0' }}

@@ -1,12 +1,11 @@
 // @ts-nocheck
 import React from "react"
-import { Activity, UserPlus, Settings } from "react-feather"
+import { Activity, UserPlus, Settings, Smartphone } from "react-feather"
 import { Permissions } from "../../utility/Permissions"
 import AssessmentOutlined from '@mui/icons-material/AssessmentOutlined'
 import ChevronRightOutlined from '@mui/icons-material/ChevronRightOutlined'
 import CurrencyRupeeOutlined from '@mui/icons-material/CurrencyRupeeOutlined'
 import ManageAccountsOutlined from '@mui/icons-material/ManageAccountsOutlined'
-import NotificationsOutlined from '@mui/icons-material/NotificationsOutlined'
 import PermPhoneMsgIcon from '@mui/icons-material/PermPhoneMsg'
 import WhatsApp from '@mui/icons-material/WhatsApp'
 import SmartToyOutlined from '@mui/icons-material/SmartToyOutlined'
@@ -16,11 +15,8 @@ import SettingsSuggestOutlined from '@mui/icons-material/SettingsSuggestOutlined
 
 export default [
     // -------------------------------------------------------------------------
-    // 1. DASHBOARD (Always first as requested)
+    // 1. DASHBOARD (Always first)
     // -------------------------------------------------------------------------
-    {
-        header: "Overview"
-    },
     {
         id: 'home',
         title: 'Dashboard',
@@ -30,38 +26,33 @@ export default [
     },
 
     // -------------------------------------------------------------------------
-    // 2. USER MANAGEMENT (Admin [0] and Reseller [1] only)
+    // 2. USER MANAGEMENT (Admin [0] and Reseller [1] only - Second in hierarchy)
     // -------------------------------------------------------------------------
     {
-        header: "User Management",
-        userTypes: [0, 1]
-    },
-    {
-        id: 'user',
+        id: 'user-management-group',
         title: 'User Management',
         icon: <UserPlus size={18} />,
-        navLink: '/users-list',
         userTypes: [0, 1],
-        ...Permissions.userList
-    },
-    {
-        id: 'team-invitations',
-        title: 'Invitations',
-        icon: <UserPlus size={18} />,
-        navLink: '/team-invitations',
-        userTypes: [0],
-        ...Permissions.adminOperation
-    },
-    {
-        id: 'master',
-        title: 'Roles & Security',
-        icon: <ManageAccountsOutlined size={20} />,
-        userTypes: [0],
-        ...Permissions.adminOperation,
         children: [
             {
+                id: 'users-list-item',
+                title: 'User Accounts',
+                icon: <ChevronRightOutlined size={12} />,
+                navLink: '/users-list',
+                userTypes: [0, 1],
+                ...Permissions.userList
+            },
+            {
+                id: 'team-invitations',
+                title: 'Team Invitations',
+                icon: <ChevronRightOutlined size={12} />,
+                navLink: '/team-invitations',
+                userTypes: [0],
+                ...Permissions.adminOperation
+            },
+            {
                 id: 'role-list',
-                title: 'Role Management',
+                title: 'Role Permissions',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/role-list',
                 userTypes: [0],
@@ -69,387 +60,318 @@ export default [
             },
             {
                 id: 'login-user-log',
-                title: 'Login Audit Logs',
+                title: 'Audit Logs',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/login-user-log',
                 userTypes: [0],
                 ...Permissions.adminOperation
-            },
-            {
-                id: 'overview',
-                title: 'Admin Overview',
-                icon: <ChevronRightOutlined size={12} />,
-                navLink: '/overview',
-                userTypes: [0],
-                ...Permissions.adminOperation
-            },
-            {
-                id: 'user-route',
-                title: 'User Routing',
-                icon: <ChevronRightOutlined size={12} />,
-                navLink: '/get-user-route',
-                userTypes: [0],
-                ...Permissions.adminOperation
-            },
-            {
-                id: 'documentation',
-                title: 'API Documentation',
-                icon: <ChevronRightOutlined size={12} />,
-                navLink: '/api-documentation',
-                userTypes: [0],
-                ...Permissions.adminOperation
             }
         ]
     },
 
     // -------------------------------------------------------------------------
-    // 3. WHATSAPP CHATBOT (Simple keyword term for human interaction, with operations under it)
+    // 3. WHATSAPP CLOUD API SETUP (Top-level & prominent for Admin, Reseller & Client)
     // -------------------------------------------------------------------------
     {
-        header: "WhatsApp Chatbot"
+        id: 'whatsapp-connections-main',
+        title: 'Connect WhatsApp',
+        icon: <Smartphone size={18} />,
+        navLink: '/whatsapp-connections',
+        badge: 'light-success',
+        badgeText: 'Setup',
+        userTypes: [0, 1, 2],
+        ...Permissions.dashboardView
     },
+
+    // -------------------------------------------------------------------------
+    // 4. LIVE CHAT INBOX
+    // -------------------------------------------------------------------------
+    {
+        id: 'chat',
+        title: 'Live Chat',
+        icon: <WhatsApp size={18} />,
+        navLink: '/chat',
+        badge: 'light-success',
+        badgeText: 'Live',
+        userTypes: [0, 1, 2, 3]
+    },
+
+    // -------------------------------------------------------------------------
+    // 5. WHATSAPP CHATBOT (Simple keyword for human interaction + clear sub-operations)
+    // -------------------------------------------------------------------------
     {
         id: 'whatsapp-automation-suite',
         title: 'WhatsApp Chatbot',
-        icon: <SmartToyOutlined size={20} />,
-        ...Permissions.whatsappSmsList,
+        icon: <SmartToyOutlined size={18} />,
         children: [
-            {
-                id: 'chat',
-                title: 'Live Chat (Inbox)',
-                icon: <WhatsApp size={16} />,
-                navLink: '/chat',
-                badge: 'light-success',
-                badgeText: 'Live',
-                ...Permissions.userDdlList
-            },
             {
                 id: 'whatsapp-workflows',
                 title: 'Flow Builder',
                 icon: <ChevronRightOutlined size={12} />,
-                navLink: '/whatsapp-workflows',
-                ...Permissions.whatsappSmsList
-            },
-            {
-                id: 'whatsapp-drip-sequences',
-                title: 'Follow-up Sequences',
-                icon: <ChevronRightOutlined size={12} />,
-                navLink: '/whatsapp-drip-sequences',
-                ...Permissions.whatsappSmsList
+                navLink: '/whatsapp-workflows'
             },
             {
                 id: 'whatsapp-automation',
-                title: 'Auto-replies',
+                title: 'Auto Replies',
                 icon: <ChevronRightOutlined size={12} />,
-                navLink: '/whatsapp-automation',
-                ...Permissions.whatsappSmsList
+                navLink: '/whatsapp-automation'
+            },
+            {
+                id: 'whatsapp-drip-sequences',
+                title: 'Sequences',
+                icon: <ChevronRightOutlined size={12} />,
+                navLink: '/whatsapp-drip-sequences'
             },
             {
                 id: 'whatsapp-chatbots-self-webhook',
-                title: 'Webhook Triggers',
+                title: 'Webhooks',
                 icon: <ChevronRightOutlined size={12} />,
-                navLink: '/wa-chatbots-self-webhook',
-                ...Permissions.whatsappSmsList
+                navLink: '/wa-chatbots-self-webhook'
             }
         ]
     },
 
     // -------------------------------------------------------------------------
-    // 4. WHATSAPP MANAGEMENT
+    // 6. CAMPAIGNS & BROADCASTS
     // -------------------------------------------------------------------------
     {
-        header: "WhatsApp Management"
-    },
-    {
         id: 'whatsapp-campaigns',
-        title: 'WhatsApp Management',
-        icon: <SendOutlined size={20} />,
-        ...Permissions.whatsappSmsList,
+        title: 'Campaigns',
+        icon: <SendOutlined size={18} />,
         children: [
             {
                 id: 'send-whatsapp',
-                title: 'Send Direct Message',
+                title: 'Send Message',
                 icon: <ChevronRightOutlined size={12} />,
-                navLink: '/send-whatsapp',
-                ...Permissions.whatsappSmsList
-            },
-            {
-                id: 'whatsapp-connections-nav',
-                title: 'WhatsApp Cloud API',
-                icon: <ChevronRightOutlined size={12} />,
-                navLink: '/whatsapp-connections',
-                ...Permissions.whatsappSmsList
+                navLink: '/send-whatsapp'
             },
             {
                 id: 'whatsapp-broadcasts',
-                title: 'Bulk Broadcast Campaigns',
+                title: 'Broadcasts',
                 icon: <ChevronRightOutlined size={12} />,
-                navLink: '/whatsapp-broadcasts',
-                ...Permissions.whatsappSmsList
+                navLink: '/whatsapp-broadcasts'
             },
             {
                 id: 'whatsapp-message-template',
-                title: 'Approved Message Templates',
+                title: 'Templates',
                 icon: <ChevronRightOutlined size={12} />,
-                navLink: '/whatsapp-message-template',
-                ...Permissions.whatsappTemplateList
+                navLink: '/whatsapp-message-template'
             },
             {
                 id: 'whatsapp-media',
-                title: 'Media & File Assets',
+                title: 'Media Assets',
                 icon: <ChevronRightOutlined size={12} />,
-                navLink: '/whatsapp-media',
-                ...Permissions.whatsappTemplateList
+                navLink: '/whatsapp-media'
             }
         ]
     },
 
     // -------------------------------------------------------------------------
-    // 5. CONTACTS & AUDIENCE
+    // 7. CONTACTS & AUDIENCE
     // -------------------------------------------------------------------------
-    {
-        header: "Audience & Contacts"
-    },
     {
         id: 'phone-book',
         title: 'Contacts',
-        icon: <PermPhoneMsgIcon size={20} />,
+        icon: <PermPhoneMsgIcon size={18} />,
         children: [
             {
                 id: 'create-phone-book',
-                title: 'All Contacts',
+                title: 'Contact List',
                 icon: <ChevronRightOutlined size={12} />,
-                navLink: '/group',
-                ...Permissions.phoneList
+                navLink: '/group'
             },
             {
                 id: 'blacklist',
                 title: 'Blocked Numbers',
                 icon: <ChevronRightOutlined size={12} />,
-                navLink: '/blacklist',
-                ...Permissions.blacklist
+                navLink: '/blacklist'
             }
         ]
     },
 
     // -------------------------------------------------------------------------
-    // 6. STORE & ORDERS
+    // 8. CATALOG & ORDERS
     // -------------------------------------------------------------------------
-    {
-        header: "Catalog & Orders"
-    },
     {
         id: 'whatsapp-commerce',
         title: 'Catalog & Orders',
-        icon: <ShoppingCartOutlined size={20} />,
-        ...Permissions.whatsappSmsList,
+        icon: <ShoppingCartOutlined size={18} />,
         children: [
             {
                 id: 'whatsapp-catalog',
-                title: 'Product Catalog',
+                title: 'Products',
                 icon: <ChevronRightOutlined size={12} />,
-                navLink: '/whatsapp-catalog',
-                ...Permissions.whatsappSmsList
+                navLink: '/whatsapp-catalog'
             },
             {
                 id: 'whatsapp-orders',
-                title: 'Customer Orders',
+                title: 'Orders',
                 icon: <ChevronRightOutlined size={12} />,
-                navLink: '/whatsapp-orders',
-                ...Permissions.whatsappSmsList
+                navLink: '/whatsapp-orders'
             }
         ]
     },
 
     // -------------------------------------------------------------------------
-    // 7. ANALYTICS & REPORTS
+    // 9. REPORTS & ANALYTICS
     // -------------------------------------------------------------------------
-    {
-        header: "Analytics & Reports"
-    },
     {
         id: 'reports',
         title: 'Reports & Analytics',
-        icon: <AssessmentOutlined size={20} />,
+        icon: <AssessmentOutlined size={18} />,
         children: [
             {
                 id: 'whatsapp-analytics-report',
                 title: 'WhatsApp Analytics',
                 icon: <ChevronRightOutlined size={12} />,
-                navLink: '/wa-get-analytics-report',
-                ...Permissions.whatsappGetAnalyticsReport
-            },
-            {
-                id: 'whatsapp-conversation-report',
-                title: 'Conversation Metrics',
-                icon: <ChevronRightOutlined size={12} />,
-                navLink: '/wa-get-conversation-report',
-                ...Permissions.whatsappGetConversationAnalyticsReport
-            },
-            {
-                id: 'whatsapp-template-report',
-                title: 'Template Performance',
-                icon: <ChevronRightOutlined size={12} />,
-                navLink: '/wa-get-template-report',
-                ...Permissions.whatsappGetTemplateAnalyticsReport
-            },
-            {
-                id: 'whatsapp-summary-report',
-                title: 'Summary Reports',
-                icon: <ChevronRightOutlined size={12} />,
-                navLink: '/whatsapp-summary-report',
-                ...Permissions.whatsappSmsList
+                navLink: '/wa-get-analytics-report'
             },
             {
                 id: 'whatsapp-message-report',
                 title: 'Delivery Logs',
                 icon: <ChevronRightOutlined size={12} />,
-                navLink: '/whatsapp-message-report',
-                ...Permissions.whatsappSmsList
+                navLink: '/whatsapp-message-report'
+            },
+            {
+                id: 'whatsapp-conversation-report',
+                title: 'Conversation Metrics',
+                icon: <ChevronRightOutlined size={12} />,
+                navLink: '/wa-get-conversation-report'
+            },
+            {
+                id: 'whatsapp-template-report',
+                title: 'Template Performance',
+                icon: <ChevronRightOutlined size={12} />,
+                navLink: '/wa-get-template-report'
+            },
+            {
+                id: 'whatsapp-summary-report',
+                title: 'Summary Reports',
+                icon: <ChevronRightOutlined size={12} />,
+                navLink: '/whatsapp-summary-report'
             },
             {
                 id: 'campaign-report',
                 title: 'Campaign Analytics',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/campaign-report',
-                userTypes: [0],
-                ...Permissions.adminOperation
+                userTypes: [0]
             },
             {
                 id: 'consumption-report',
                 title: 'Credit Usage',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/consumption-report-by-view',
-                userTypes: [0],
-                ...Permissions.adminOperation
+                userTypes: [0]
             }
         ]
     },
 
     // -------------------------------------------------------------------------
-    // 8. SETTINGS & GATEWAYS (Super Admin strictly: userTypes: [0])
+    // 10. WALLET & BILLING
     // -------------------------------------------------------------------------
     {
-        header: "Settings & Gateways",
-        userTypes: [0],
-        ...Permissions.adminOperation
+        id: 'credit-request',
+        title: 'Wallet & Billing',
+        icon: <CurrencyRupeeOutlined size={18} />,
+        navLink: '/credit-request',
+        userTypes: [0, 1, 2, 3]
+    },
+
+    // -------------------------------------------------------------------------
+    // 11. ACCOUNT SETTINGS (For Reseller [1] and Client [2, 3])
+    // -------------------------------------------------------------------------
+    {
+        id: 'child-account-settings',
+        title: 'Account Settings',
+        icon: <Settings size={18} />,
+        navLink: '/app-settings',
+        userTypes: [1, 2, 3]
+    },
+
+    // -------------------------------------------------------------------------
+    // 12. SYSTEM ADMINISTRATION (Super Admin [0] ONLY)
+    // -------------------------------------------------------------------------
+    {
+        header: "Administration",
+        userTypes: [0]
     },
     {
-        id: 'whatsapp-channels-config',
-        title: 'Settings & Gateways',
-        icon: <SettingsSuggestOutlined size={20} />,
+        id: 'admin-system-settings',
+        title: 'System & Gateways',
+        icon: <SettingsSuggestOutlined size={18} />,
         userTypes: [0],
-        ...Permissions.adminOperation,
         children: [
             {
                 id: 'app-settings-page',
                 title: 'App Settings',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/app-settings',
-                userTypes: [0],
-                ...Permissions.adminOperation
-            },
-            {
-                id: 'whatsapp-connections',
-                title: 'Connect Phone Numbers',
-                icon: <ChevronRightOutlined size={12} />,
-                navLink: '/whatsapp-connections',
-                userTypes: [0],
-                ...Permissions.adminOperation
+                userTypes: [0]
             },
             {
                 id: 'whatsapp-message-configuration',
                 title: 'API Settings',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/whatsapp-message-configuration',
-                userTypes: [0],
-                ...Permissions.adminOperation
-            },
-            {
-                id: 'whatsapp-webhook-events',
-                title: 'Webhook Event Logs',
-                icon: <ChevronRightOutlined size={12} />,
-                navLink: '/whatsapp-webhook-events',
-                userTypes: [0],
-                ...Permissions.adminOperation
-            },
-            {
-                id: 'whatsapp-QR-report',
-                title: 'QR Code Links',
-                icon: <ChevronRightOutlined size={12} />,
-                navLink: '/wa-get-qr-list',
-                userTypes: [0],
-                ...Permissions.adminOperation
-            },
-            {
-                id: 'whatsapp-rate-card',
-                title: 'Message Pricing',
-                icon: <ChevronRightOutlined size={12} />,
-                navLink: '/administration/wa-rate-card',
-                userTypes: [0],
-                ...Permissions.adminOperation
+                userTypes: [0]
             },
             {
                 id: 'primary-route',
                 title: 'Primary Routes',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/primary-routes',
-                userTypes: [0],
-                ...Permissions.adminOperation
+                userTypes: [0]
             },
             {
                 id: 'secondary-route',
                 title: 'Secondary Routes',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/secondary-routes',
-                userTypes: [0],
-                ...Permissions.adminOperation
+                userTypes: [0]
+            },
+            {
+                id: 'whatsapp-rate-card',
+                title: 'Message Pricing',
+                icon: <ChevronRightOutlined size={12} />,
+                navLink: '/administration/wa-rate-card',
+                userTypes: [0]
+            },
+            {
+                id: 'whatsapp-QR-report',
+                title: 'QR Code Links',
+                icon: <ChevronRightOutlined size={12} />,
+                navLink: '/wa-get-qr-list',
+                userTypes: [0]
+            },
+            {
+                id: 'whatsapp-webhook-events',
+                title: 'Webhook Event Logs',
+                icon: <ChevronRightOutlined size={12} />,
+                navLink: '/whatsapp-webhook-events',
+                userTypes: [0]
             },
             {
                 id: 'dlr-list',
                 title: 'DLR Return Codes',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/dlr-list',
-                userTypes: [0],
-                ...Permissions.adminOperation
+                userTypes: [0]
             },
             {
                 id: 'get-kannel-status',
                 title: 'Gateway Status',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/get-current-kennel-status',
-                userTypes: [0],
-                ...Permissions.adminOperation
+                userTypes: [0]
+            },
+            {
+                id: 'documentation',
+                title: 'API Documentation',
+                icon: <ChevronRightOutlined size={12} />,
+                navLink: '/api-documentation',
+                userTypes: [0]
             }
         ]
-    },
-
-    // -------------------------------------------------------------------------
-    // 9. BILLING & ACCOUNT
-    // -------------------------------------------------------------------------
-    {
-        header: "Billing & Account"
-    },
-    {
-        id: 'credit-request',
-        title: 'Wallet & Billing',
-        icon: <CurrencyRupeeOutlined size={20} />,
-        navLink: '/credit-request',
-        ...Permissions.creditRequest
-    },
-    {
-        id: 'notification',
-        title: 'Notifications',
-        icon: <NotificationsOutlined size={20} />,
-        navLink: '/notification',
-        ...Permissions.creditRequest
-    },
-    {
-        id: 'child-account-settings',
-        title: 'Account Settings',
-        icon: <Settings size={18} />,
-        navLink: '/app-settings',
-        userTypes: [1, 2, 3],
-        ...Permissions.editProfile
     }
 ]

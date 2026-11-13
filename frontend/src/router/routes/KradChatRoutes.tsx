@@ -85,7 +85,7 @@ const KradChatRoutes = [
     { path: '/whatsapp-flows', element: <WorkflowBuilder />, meta: { ...Permissions.whatsappSmsList } },
     { path: '/whatsapp-drip-sequences', element: <DripSequences />, meta: { ...Permissions.whatsappSmsList } },
     { path: '/whatsapp-broadcasts', element: <SendWhatsapp />, meta: { ...Permissions.whatsappSmsList } },
-    { path: '/whatsapp-connections', element: <WhatsappConnections />, meta: { ...Permissions.whatsappSmsList } },
+    { path: '/whatsapp-connections', element: <WhatsappConnections />, meta: { ...Permissions.dashboardView } },
     { path: '/whatsapp-webhook-events', element: <WebhookEvents />, meta: { ...Permissions.whatsappConfigList } },
     { path: '/team-invitations', element: <TeamInvitations />, meta: { ...Permissions.adminOperation } },
     { path: '/accept-invitation', element: <TeamInvitations acceptance />, meta: { layout: 'blank', publicRoute: true } },
