@@ -146,41 +146,41 @@ export default [
     },
 
     // -------------------------------------------------------------------------
-    // 4. CAMPAIGNS & MESSAGES
+    // 4. WHATSAPP MANAGEMENT
     // -------------------------------------------------------------------------
     {
-        header: "Messages & Campaigns"
+        header: "WhatsApp Management"
     },
     {
         id: 'whatsapp-campaigns',
-        title: 'Messages & Campaigns',
+        title: 'WhatsApp Management',
         icon: <SendOutlined size={20} />,
         ...Permissions.whatsappSmsList,
         children: [
             {
                 id: 'send-whatsapp',
-                title: 'Send Message',
+                title: 'Send Direct Message',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/send-whatsapp',
                 ...Permissions.whatsappSmsList
             },
             {
                 id: 'whatsapp-broadcasts',
-                title: 'Broadcast Campaign',
+                title: 'Bulk Broadcast Campaigns',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/whatsapp-broadcasts',
                 ...Permissions.whatsappSmsList
             },
             {
                 id: 'whatsapp-message-template',
-                title: 'Message Templates',
+                title: 'Approved Message Templates',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/whatsapp-message-template',
                 ...Permissions.whatsappTemplateList
             },
             {
                 id: 'whatsapp-media',
-                title: 'Media Library',
+                title: 'Media & File Assets',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/whatsapp-media',
                 ...Permissions.whatsappTemplateList

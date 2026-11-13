@@ -55,7 +55,7 @@ export function createProductTour() {
     tour.addStep({
         id: 'create-templates',
         title: '📝 Step 2: Create WhatsApp Message Templates',
-        text: 'Under Messages & Campaigns > Message Templates, create Meta-approved WhatsApp templates with dynamic variables like {{1}} for customer names, rich header media (images/PDFs), and Quick Reply buttons.',
+        text: 'Under WhatsApp Management > Approved Message Templates, create Meta-approved WhatsApp templates with dynamic variables like {{1}} for customer names, rich header media (images/PDFs), and Quick Reply buttons.',
         attachTo: { element: '#whatsapp-campaigns', on: 'right' },
         buttons: [
             { text: 'Back', classes: backBtnClass, action: () => tour.back() },
@@ -67,7 +67,7 @@ export function createProductTour() {
     tour.addStep({
         id: 'send-broadcasts',
         title: '🚀 Step 3: Send Messages & Launch Campaigns',
-        text: 'Use "Send Message" for direct 1-to-1 outreach, or "Broadcast Campaign" to blast thousands of opt-in customers simultaneously with real-time delivery and read status tracking.',
+        text: 'Use "Send Direct Message" for 1-to-1 outreach, or "Bulk Broadcast Campaigns" to reach thousands of opt-in customers simultaneously with real-time delivery and read status tracking.',
         attachTo: { element: '#whatsapp-campaigns', on: 'right' },
         buttons: [
             { text: 'Back', classes: backBtnClass, action: () => tour.back() },
