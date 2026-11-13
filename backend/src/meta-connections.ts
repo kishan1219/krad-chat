@@ -16,7 +16,14 @@ export class MetaConnections {
  constructor(private db:Db,private cfg:Config,private providers:Providers){}
  private visible(row:any){const {token_encrypted,...safe}=row;return {...safe,credentials_configured:Boolean(token_encrypted)};}
  async list(actor:Actor){authorizeAdminOrChannel(actor);return (await this.db.query('SELECT * FROM meta_connections WHERE tenant_id=$1 ORDER BY id DESC',[actor.tenant_id])).rows.map(r=>this.visible(r));}
- async senders(actor:Actor){authorize(actor,'campaign:create');return (await this.db.query("SELECT id,name,phone_number_id,templates,quality_rating FROM meta_connections WHERE tenant_id=$1 AND status='connected' ORDER BY name",[actor.tenant_id])).rows.map(r=>({...r,templates:r.templates.filter((t:any)=>t.status==='APPROVED')}));}
+ async senders(actor:Actor){
+  authorize(actor,'campaign:create');
+  return (await this.db.query("SELECT id,name,phone_number_id,templates,quality_rating,messaging_limit_tier,verified_name,display_phone_number FROM meta_connections WHERE tenant_id=$1 AND status='connected' ORDER BY name",[actor.tenant_id])).rows.map(r=>({
+   ...r,
+   messaging_limit_tier: r.messaging_limit_tier || 'TIER_1K',
+   templates: (r.templates || []).filter((t:any)=>String(t.status).toUpperCase()==='APPROVED')
+  }));
+ }
  private async owned(actor:Actor,id:unknown){
   authorizeAdminOrChannel(actor);const row=(await this.db.query('SELECT * FROM meta_connections WHERE tenant_id=$1 AND id=$2',[actor.tenant_id,idSchema.parse(id)])).rows[0];
   if(!row)throw new ApiError(404,'WhatsApp connection not found.');return row;
@@ -54,12 +61,12 @@ export class MetaConnections {
   const input=z.object({name:z.string().trim().min(1).max(150),waba_id:metaId,phone_number_id:metaId,access_token:z.string().min(1).max(4096).optional()}).parse(body);
   const simulated=this.cfg.PROVIDER_MODE==='mock';
   if(simulated&&this.cfg.NODE_ENV==='production')throw new ApiError(403,'Simulation is disabled.');
-  let phone:any={id:input.phone_number_id,display_phone_number:'Local simulation',quality_rating:'UNKNOWN'};
+  let phone:any={id:input.phone_number_id,display_phone_number:'Local simulation',quality_rating:'UNKNOWN',messaging_limit_tier:'TIER_10K',verified_name:'Simulated Business',code_verification_status:'VERIFIED'};
   if(!simulated){
    if(!input.access_token)throw new ApiError(422,'A Meta access token is required.');
    let after:string|undefined;phone=undefined;
    for(let page=0;page<100;page++){
-    const info=await this.providers.meta(`${input.waba_id}/phone_numbers?fields=id,display_phone_number,verified_name,quality_rating&limit=100${after?`&after=${encodeURIComponent(after)}`:''}`,'GET',undefined,input.access_token);
+    const info=await this.providers.meta(`${input.waba_id}/phone_numbers?fields=id,display_phone_number,verified_name,quality_rating,code_verification_status,messaging_limit_tier&limit=100${after?`&after=${encodeURIComponent(after)}`:''}`,'GET',undefined,input.access_token);
     phone=info.data?.find((p:any)=>String(p.id)===input.phone_number_id);
     if(phone||!info.paging?.next)break;
     after=info.paging?.cursors?.after;if(!after||page===99)throw new ApiError(502,'Number verification exceeded pagination limits.');
@@ -73,8 +80,8 @@ export class MetaConnections {
    const existing=(await c.query('SELECT * FROM meta_connections WHERE phone_number_id=$1 FOR UPDATE',[input.phone_number_id])).rows[0];
    if(existing&&Number(existing.tenant_id)!==actor.tenant_id)throw new ApiError(409,'This number is already connected to another business.');
    const encrypted=encrypt(simulated?'local-simulation-no-live-token':input.access_token!,this.cfg.ENCRYPTION_KEY);
-   const row=(await c.query(`INSERT INTO meta_connections(tenant_id,phone_number_id,waba_id,name,display_phone_number,quality_rating,token_encrypted,simulated,created_by,last_sync_at)
-    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,now()) ON CONFLICT(phone_number_id) DO UPDATE SET waba_id=EXCLUDED.waba_id,name=EXCLUDED.name,display_phone_number=EXCLUDED.display_phone_number,quality_rating=EXCLUDED.quality_rating,token_encrypted=EXCLUDED.token_encrypted,simulated=EXCLUDED.simulated,status='connected',last_error=NULL,last_sync_at=now(),updated_at=now() WHERE meta_connections.tenant_id=EXCLUDED.tenant_id RETURNING *`,[actor.tenant_id,input.phone_number_id,input.waba_id,input.name,phone.display_phone_number,phone.quality_rating,encrypted,simulated,actor.id])).rows[0];
+   const row=(await c.query(`INSERT INTO meta_connections(tenant_id,phone_number_id,waba_id,name,display_phone_number,quality_rating,messaging_limit_tier,verified_name,code_verification_status,token_encrypted,simulated,created_by,last_sync_at)
+    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,now()) ON CONFLICT(phone_number_id) DO UPDATE SET waba_id=EXCLUDED.waba_id,name=EXCLUDED.name,display_phone_number=EXCLUDED.display_phone_number,quality_rating=EXCLUDED.quality_rating,messaging_limit_tier=EXCLUDED.messaging_limit_tier,verified_name=EXCLUDED.verified_name,code_verification_status=EXCLUDED.code_verification_status,token_encrypted=EXCLUDED.token_encrypted,simulated=EXCLUDED.simulated,status='connected',last_error=NULL,last_sync_at=now(),updated_at=now() WHERE meta_connections.tenant_id=EXCLUDED.tenant_id RETURNING *`,[actor.tenant_id,input.phone_number_id,input.waba_id,input.name,phone.display_phone_number,phone.quality_rating,phone.messaging_limit_tier||'TIER_1K',phone.verified_name||null,phone.code_verification_status||null,encrypted,simulated,actor.id])).rows[0];
    if(!row)throw new ApiError(409,'This number is already connected to another business.');
    await c.query("INSERT INTO audit_logs(tenant_id,user_id,action,target) VALUES($1,$2,'meta.connect',$3)",[actor.tenant_id,actor.id,String(row.id)]);
    return this.visible(row);
@@ -98,9 +105,9 @@ export class MetaConnections {
     if(!row.simulated){const result=await this.call(row,`${row.phone_number_id}/register`,'POST',{messaging_product:'whatsapp',pin});if(!result.success)throw new ApiError(502,'Meta did not confirm registration.');}
     await this.db.query('UPDATE meta_connections SET registered=true,last_error=NULL,updated_at=now() WHERE id=$1',[row.id]);
    }else if(action==='sync'){
-    let templates:any[]=[],phone:any={quality_rating:'UNKNOWN'};
+    let templates:any[]=[],phone:any={quality_rating:'UNKNOWN',messaging_limit_tier:'TIER_10K',verified_name:'Simulated Business',code_verification_status:'VERIFIED'};
     if(!row.simulated){
-     phone=await this.call(row,`${row.phone_number_id}?fields=id,quality_rating,display_phone_number`);
+     phone=await this.call(row,`${row.phone_number_id}?fields=id,quality_rating,display_phone_number,verified_name,code_verification_status,messaging_limit_tier`);
      let after:string|undefined;
      for(let page=0;page<100;page++){
       const result=await this.call(row,`${row.waba_id}/message_templates?limit=100${after?`&after=${encodeURIComponent(after)}`:''}`);
@@ -110,7 +117,7 @@ export class MetaConnections {
     }else templates=row.templates.length?row.templates:[{id:`mock-${row.id}`,name:'hello_world',language:'en_US',status:'APPROVED',category:'UTILITY',components:[]}];
     await this.db.transaction(async c=>{
      await c.query('UPDATE meta_connections SET templates=$3,updated_at=now() WHERE tenant_id=$1 AND waba_id=$2',[actor.tenant_id,row.waba_id,JSON.stringify(templates)]);
-     await c.query('UPDATE meta_connections SET quality_rating=$2,display_phone_number=COALESCE($3,display_phone_number),last_sync_at=now(),last_error=NULL,updated_at=now() WHERE id=$1',[row.id,phone.quality_rating||'UNKNOWN',phone.display_phone_number||null]);
+     await c.query('UPDATE meta_connections SET quality_rating=$2,display_phone_number=COALESCE($3,display_phone_number),messaging_limit_tier=COALESCE($4,messaging_limit_tier),verified_name=COALESCE($5,verified_name),code_verification_status=COALESCE($6,code_verification_status),last_sync_at=now(),last_error=NULL,updated_at=now() WHERE id=$1',[row.id,phone.quality_rating||'UNKNOWN',phone.display_phone_number||null,phone.messaging_limit_tier||null,phone.verified_name||null,phone.code_verification_status||null]);
     });
    }else throw new ApiError(404,'Unknown connection action.');
    await this.db.query('INSERT INTO audit_logs(tenant_id,user_id,action,target) VALUES($1,$2,$3,$4)',[actor.tenant_id,actor.id,`meta.${action}`,String(row.id)]);

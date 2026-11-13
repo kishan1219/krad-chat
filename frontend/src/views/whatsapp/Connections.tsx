@@ -25,11 +25,36 @@ import {
     Eye,
     Plus,
     AlertCircle,
-    Layers
+    Layers,
+    Info
 } from 'react-feather'
 import httpConfig from '../../utility/http/httpConfig'
 import EmbeddedSignup from './EmbeddedSignup'
 import TemplateEditor from './TemplateEditor'
+
+function formatTier(tier?: string) {
+    switch (tier) {
+        case 'TIER_50': return '50 msgs / 24 hrs (Trial)'
+        case 'TIER_250': return '250 msgs / 24 hrs'
+        case 'TIER_1K': return '1,000 msgs / 24 hrs (Tier 1)'
+        case 'TIER_10K': return '10,000 msgs / 24 hrs (Tier 2)'
+        case 'TIER_100K': return '100,000 msgs / 24 hrs (Tier 3)'
+        case 'TIER_UNLIMITED': return 'Unlimited'
+        default: return tier || '1,000 msgs / 24 hrs'
+    }
+}
+
+function getTierBadgeColor(tier?: string) {
+    switch (tier) {
+        case 'TIER_50': return 'light-warning'
+        case 'TIER_250': return 'light-info'
+        case 'TIER_1K': return 'light-primary'
+        case 'TIER_10K': return 'light-success'
+        case 'TIER_100K': return 'success'
+        case 'TIER_UNLIMITED': return 'primary'
+        default: return 'light-secondary'
+    }
+}
 
 export default function Connections() {
     const [connections, setConnections] = useState<any[]>([])
@@ -275,8 +300,9 @@ export default function Connections() {
                     <Table responsive hover className='mb-0 align-middle'>
                         <thead className='table-light'>
                             <tr>
-                                <th className='px-3 py-2'>Phone / Account</th>
+                                <th className='px-3 py-2'>Phone / Business</th>
                                 <th className='py-2'>Status</th>
+                                <th className='py-2'>Messaging Limit (Meta)</th>
                                 <th className='py-2'>Quality Rating</th>
                                 <th className='py-2'>Actions & Recovery</th>
                             </tr>
@@ -284,7 +310,7 @@ export default function Connections() {
                         <tbody>
                             {connections.length === 0 ? (
                                 <tr>
-                                    <td colSpan={4} className='text-center py-4 text-muted'>
+                                    <td colSpan={5} className='text-center py-4 text-muted'>
                                         No WhatsApp phone numbers connected yet. Use 1-Click Embedded Signup or Manual Credentials above to connect.
                                     </td>
                                 </tr>
@@ -292,7 +318,17 @@ export default function Connections() {
                                 connections.map(item => (
                                     <tr key={item.id}>
                                         <td className='px-3 py-3'>
-                                            <div className='fw-bolder text-dark'>{item.name}</div>
+                                            <div className='d-flex align-items-center gap-1'>
+                                                <span className='fw-bolder text-dark'>{item.verified_name || item.name}</span>
+                                                {item.code_verification_status === 'VERIFIED' && (
+                                                    <Badge color='light-success' pill className='px-1 py-0' style={{ fontSize: '0.65rem' }}>
+                                                        ✓ Verified
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                            {item.verified_name && item.name !== item.verified_name && (
+                                                <div className='text-muted small'>Label: {item.name}</div>
+                                            )}
                                             <div className='text-muted small'>{item.display_phone_number || 'No display number'}</div>
                                             <div className='text-muted small'>ID: <code>{item.phone_number_id}</code></div>
                                         </td>
@@ -314,6 +350,14 @@ export default function Connections() {
                                             </div>
                                             <div className='small text-muted'>
                                                 Registration: {item.registered ? <span className='text-success fw-semibold'>Confirmed</span> : <span className='text-warning'>Pending</span>}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <Badge color={getTierBadgeColor(item.messaging_limit_tier)} pill className='px-2 py-1'>
+                                                {formatTier(item.messaging_limit_tier)}
+                                            </Badge>
+                                            <div className='small text-muted mt-1'>
+                                                Meta Tier: <code>{item.messaging_limit_tier || 'TIER_1K'}</code>
                                             </div>
                                         </td>
                                         <td>
@@ -357,8 +401,10 @@ export default function Connections() {
                                                     color='light-info'
                                                     disabled={busy || item.status !== 'connected'}
                                                     onClick={() => void act(() => connectionAction(item.id, 'sync'))}
+                                                    title='Sync messaging limits and approved templates from Meta Cloud API'
                                                 >
-                                                    Sync Templates
+                                                    <RefreshCw size={13} className='me-1' />
+                                                    Sync Limits & Templates
                                                 </Button>
                                                 <Button
                                                     size='sm'
@@ -413,6 +459,54 @@ export default function Connections() {
                             )}
                         </tbody>
                     </Table>
+                </CardBody>
+            </Card>
+
+            {/* Meta Cloud API Messaging Tiers & Upgrade Guide */}
+            <Card className='border-0 shadow-sm rounded-2xl mb-3 bg-light-secondary'>
+                <CardBody className='p-3'>
+                    <div className='d-flex align-items-center gap-2 mb-2'>
+                        <Info size={18} className='text-primary' />
+                        <h6 className='fw-bolder mb-0 text-dark'>Understanding Meta WhatsApp Cloud API Messaging Limit Tiers</h6>
+                    </div>
+                    <p className='text-muted small mb-2'>
+                        Messaging limits determine how many unique customers (phone numbers) your business can initiate conversations with in a rolling 24-hour period. Limits do not apply to user-initiated responses.
+                    </p>
+                    <Row className='gy-2 small'>
+                        <Col md={4}>
+                            <div className='p-2 bg-white rounded border'>
+                                <div className='d-flex justify-content-between align-items-center mb-1'>
+                                    <span className='fw-bold text-dark'>Trial / Tier 50</span>
+                                    <Badge color='light-warning' pill>50 / 24h</Badge>
+                                </div>
+                                <div className='text-muted'>
+                                    Unverified business accounts or sandbox tests. Allowed up to 50 unique customer conversations per 24 hours.
+                                </div>
+                            </div>
+                        </Col>
+                        <Col md={4}>
+                            <div className='p-2 bg-white rounded border'>
+                                <div className='d-flex justify-content-between align-items-center mb-1'>
+                                    <span className='fw-bold text-dark'>Standard / Tier 1K</span>
+                                    <Badge color='light-primary' pill>1,000 / 24h</Badge>
+                                </div>
+                                <div className='text-muted'>
+                                    Official verified businesses. Send templates to up to 1,000 unique recipients in any rolling 24-hour window.
+                                </div>
+                            </div>
+                        </Col>
+                        <Col md={4}>
+                            <div className='p-2 bg-white rounded border'>
+                                <div className='d-flex justify-content-between align-items-center mb-1'>
+                                    <span className='fw-bold text-dark'>Tier 10K & Above</span>
+                                    <Badge color='light-success' pill>10K → 100K → ∞</Badge>
+                                </div>
+                                <div className='text-muted'>
+                                    Meta automatically upgrades your tier when phone quality is Medium/High and you send 50%+ of your tier limit over 7 days.
+                                </div>
+                            </div>
+                        </Col>
+                    </Row>
                 </CardBody>
             </Card>
 

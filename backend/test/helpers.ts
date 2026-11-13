@@ -33,6 +33,7 @@ export async function database() {
   await pg.exec(await readFile('migrations/020_enforce_database_rls_role.sql', 'utf8'));
   await pg.exec(await readFile('migrations/021_chat_media_support.sql', 'utf8'));
   await pg.exec(await readFile('migrations/022_user_profile_and_username.sql', 'utf8'));
+  await pg.exec(await readFile('migrations/023_platform_settings_and_meta_limits.sql', 'utf8'));
   const query = async (text: string, values: unknown[] = []) => {
     if (text.includes('pg_advisory_xact_lock')) return { rows: [], rowCount: 1 };
     const result = await pg.query(text, values);

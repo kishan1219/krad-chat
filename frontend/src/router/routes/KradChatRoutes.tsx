@@ -43,7 +43,8 @@ const ReportByTime = lazy(() => import('../../views/Report/ReportByTime'))
 const UserWiseCreditReport = lazy(() => import('../../views/AdminOperation/UserWiseCreditReport'))
 const DailyReport = lazy(() => import('../../views/AdminOperation/DailyReport'))
 const ConsumptionReportView = lazy(() => import('../../views/AdminOperation/ConsumptionReportView'))
-const SendWhatsapp = lazy(() => import('../../views/whatsapp/Broadcasts'))
+const SendWhatsapp = lazy(() => import('../../views/whatsapp/SendWhatsapp'))
+const BroadcastCampaigns = lazy(() => import('../../views/whatsapp/Broadcasts'))
 const WhatsappTemplate = lazy(() => import('../../views/whatsapp/MessageTemplate'))
 const WhatsappConfig = lazy(() => import('../../views/whatsapp/Connections'))
 const WhatsappReport = lazy(() => import('../../views/whatsapp/MessageReport'))
@@ -84,7 +85,7 @@ const KradChatRoutes = [
     { path: '/whatsapp-workflows', element: <WorkflowBuilder />, meta: { ...Permissions.whatsappSmsList } },
     { path: '/whatsapp-flows', element: <WorkflowBuilder />, meta: { ...Permissions.whatsappSmsList } },
     { path: '/whatsapp-drip-sequences', element: <DripSequences />, meta: { ...Permissions.whatsappSmsList } },
-    { path: '/whatsapp-broadcasts', element: <SendWhatsapp />, meta: { ...Permissions.whatsappSmsList } },
+    { path: '/whatsapp-broadcasts', element: <BroadcastCampaigns />, meta: { ...Permissions.whatsappSmsList } },
     { path: '/whatsapp-connections', element: <WhatsappConnections />, meta: { ...Permissions.dashboardView } },
     { path: '/whatsapp-webhook-events', element: <WebhookEvents />, meta: { ...Permissions.whatsappConfigList } },
     { path: '/team-invitations', element: <TeamInvitations />, meta: { ...Permissions.adminOperation } },
@@ -538,7 +539,7 @@ const KradChatRoutes = [
         element: <WhatsappTemplate />,
         // name: "privateRoutes",
         meta: {
-            ...Permissions.whatsappTemplateList
+            ...Permissions.dashboardView
         }
     },
     {
