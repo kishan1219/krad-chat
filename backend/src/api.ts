@@ -144,11 +144,12 @@ export class Api {
     private commerce: Commerce,
     private automation: Automation,
     private workflows: Workflows,
-    features?: Features
+    features?: Features,
+    notify?: (tenantId: number, payload: any) => void
   ) {
     this.operations = new Operations(db, cfg, resources);
     this.invitations = new Invitations(db, providers, cfg);
-    this.metaConnections = new MetaConnections(db, cfg, providers);
+    this.metaConnections = new MetaConnections(db, cfg, providers, notify);
     this.metaOnboarding = new MetaOnboarding(db, cfg, providers, this.metaConnections);
     this.broadcasts = new Broadcasts(db, campaigns);
     this.features = features || new Features(db);
@@ -430,9 +431,14 @@ export class Api {
       this.requireMethod(method, ['POST'], res);
       if (path === 'whatsapp/onboarding/begin') return this.metaOnboarding.begin(actor, body);
       if (path === 'whatsapp/onboarding/complete') return this.metaOnboarding.complete(actor, body);
+      if (path === 'whatsapp/onboarding/waba-numbers') return this.metaConnections.wabaNumbers(actor, body);
       throw new ApiError(404, 'Unknown onboarding action.');
     }
-    const connection = /^whatsapp\/connections\/(\d+)\/(subscribe|register|sync|disconnect)$/.exec(path);
+    if (path === 'whatsapp/connections/batch') {
+      this.requireMethod(method, ['POST'], res);
+      return this.metaConnections.batchConnect(actor, body);
+    }
+    const connection = /^whatsapp\/connections\/(\d+)\/(subscribe|register|sync|disconnect|request-code)$/.exec(path);
     if (connection) {
       this.requireMethod(method, ['POST'], res);
       return this.metaConnections.action(actor, connection[1], connection[2], body);

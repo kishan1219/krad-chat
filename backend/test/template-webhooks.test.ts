@@ -192,3 +192,109 @@ test('templateMessageSchema validates multi-card carousel message templates', ()
   assert.equal(validCarousel.components[1].cards[0].card_index, 0);
   assert.equal(validCarousel.components[1].cards[0].components[0].parameters[0].image.link, 'https://images.example.com/item1.png');
 });
+
+test('phone_number_quality_update webhook degrades quality rating from GREEN to YELLOW and alerts admin', async () => {
+  const { db, actor, close } = await database();
+  try {
+    const providers = new Providers(testConfig, db);
+    const connections = new MetaConnections(db, testConfig, providers);
+    const conn = await connections.connect(actor, { name: 'Support Line', waba_id: '300', phone_number_id: '301' });
+
+    // Set connection initial quality to GREEN
+    await db.query("UPDATE meta_connections SET quality_rating='GREEN' WHERE id=$1", [conn.id]);
+
+    const campaigns = new Campaigns(db, testConfig, providers);
+    const chat = new Chat(db, testConfig, providers, () => {}, campaigns);
+    const realtimeEvents: any[] = [];
+    const notify = (tenantId: number, event: any) => {
+      realtimeEvents.push({ tenantId, event });
+    };
+    const webhooks = new Webhooks(testConfig, campaigns, chat, new Billing(db, providers), db, providers, notify);
+
+    // Incoming degradation webhook
+    const body = {
+      entry: [{
+        id: '300',
+        changes: [{
+          field: 'phone_number_quality_update',
+          value: {
+            phone_number_id: '301',
+            event: 'DEGRADED',
+            quality_rating: 'YELLOW'
+          }
+        }]
+      }]
+    };
+
+    await webhooks.inbox.receive(body);
+    await webhooks.inbox.tick();
+
+    const updated = (await connections.list(actor)).find(c => c.id === conn.id);
+    assert.equal(updated.quality_rating, 'YELLOW');
+
+    const notifs = (await db.query("SELECT * FROM resources WHERE tenant_id=$1 AND kind='notification' ORDER BY id DESC", [actor.tenant_id])).rows;
+    assert.ok(notifs.length > 0);
+    assert.match(notifs[0].data.title, /Quality Rating Dropped to YELLOW/i);
+    assert.equal(notifs[0].data.type, 'meta_quality_degradation');
+    assert.equal(notifs[0].data.severity, 'warning');
+
+    const degradationEvent = realtimeEvents.find(e => e.event.type === 'meta_quality_degradation');
+    assert.ok(degradationEvent);
+    assert.equal(degradationEvent.event.data.quality, 'YELLOW');
+  } finally {
+    await close();
+  }
+});
+
+test('WABA Multi-Number Selector & Batch Connect API registers multiple phone numbers simultaneously', async () => {
+  const { db, actor, close } = await database();
+  try {
+    const providers = new Providers(testConfig, db);
+    const connections = new MetaConnections(db, testConfig, providers);
+
+    // 1. Query WABA phone numbers
+    const wabaResult = await connections.wabaNumbers(actor, { waba_id: '400' });
+    assert.equal(wabaResult.waba_id, '400');
+    assert.ok(wabaResult.numbers.length >= 2);
+
+    // 2. Batch connect selected numbers
+    const batchResult = await connections.batchConnect(actor, {
+      waba_id: '400',
+      numbers: [
+        { phone_number_id: '401', name: 'Support Hotline' },
+        { phone_number_id: '402', name: 'Sales Concierge' }
+      ]
+    });
+    assert.equal(batchResult.count, 2);
+    assert.equal(batchResult.connected.length, 2);
+
+    // 3. Verify in database
+    const connList = await connections.list(actor);
+    const p1 = connList.find(c => c.phone_number_id === '401');
+    const p2 = connList.find(c => c.phone_number_id === '402');
+    assert.ok(p1 && p2);
+    assert.equal(p1.name, 'Support Hotline');
+    assert.equal(p2.name, 'Sales Concierge');
+  } finally {
+    await close();
+  }
+});
+
+test('Embedded Co-existence OTP Request-Code verifies SMS and Voice methods', async () => {
+  const { db, actor, close } = await database();
+  try {
+    const providers = new Providers(testConfig, db);
+    const connections = new MetaConnections(db, testConfig, providers);
+    const conn = await connections.connect(actor, { name: 'SMB Migrated Number', waba_id: '500', phone_number_id: '501' });
+
+    const reqResult = await connections.action(actor, conn.id, 'request-code', { code_method: 'SMS', language: 'en_US' });
+    assert.equal(reqResult.success, true);
+    assert.equal(reqResult.method, 'SMS');
+
+    const voiceResult = await connections.action(actor, conn.id, 'request-code', { code_method: 'VOICE', language: 'en_US' });
+    assert.equal(voiceResult.success, true);
+    assert.equal(voiceResult.method, 'VOICE');
+  } finally {
+    await close();
+  }
+});

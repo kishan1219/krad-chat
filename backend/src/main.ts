@@ -141,7 +141,8 @@ export async function createApplication(options: { config?: ReturnType<typeof lo
     commerce,
     automation,
     workflows,
-    features
+    features,
+    notify
   );
 
   const app = await NestFactory.create(ApplicationModule, { bodyParser: false });

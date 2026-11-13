@@ -45,6 +45,9 @@ export class Webhooks {
             if (value.current_limit) {
               tier = String(value.current_limit);
             }
+            if (value.quality_rating) {
+              quality = String(value.quality_rating).toUpperCase();
+            }
 
             if (!connection.simulated) {
               try {
@@ -67,6 +70,12 @@ export class Webhooks {
             const previousTier = connection.messaging_limit_tier || 'TIER_1K';
             const isUpgraded = value.event === 'UPGRADED' || (previousTier !== tier && tier !== 'TIER_50');
 
+            const previousQuality = connection.quality_rating || 'UNKNOWN';
+            const isDegraded = (
+              (previousQuality === 'GREEN' || previousQuality === 'HIGH') &&
+              (quality === 'YELLOW' || quality === 'MEDIUM' || quality === 'RED' || quality === 'LOW')
+            ) || value.event === 'DEGRADED' || value.event === 'FLAGGED' || value.event === 'ON_PROBATION' || (previousQuality !== quality && (quality === 'YELLOW' || quality === 'RED'));
+
             await this.db.transaction(async c => {
               await c.query(
                 `UPDATE meta_connections 
@@ -74,6 +83,45 @@ export class Webhooks {
                  WHERE id=$1`,
                 [connection.id, quality, tier, verifiedName || null]
               );
+
+              // 1. Automatic Quality Rating Degradation Alert
+              if (isDegraded) {
+                const isCritical = quality === 'RED' || quality === 'LOW';
+                const degradationNotif = {
+                  title: isCritical
+                    ? `🚨 CRITICAL: WhatsApp Quality Rating Dropped to RED!`
+                    : `⚠️ WARNING: WhatsApp Quality Rating Dropped to YELLOW!`,
+                  message: `Meta has downgraded your WhatsApp Business phone number ${connection.display_phone_number || connection.phone_number_id} quality rating to ${quality}. To prevent daily message limits from being reduced or number suspension, pause low-engagement broadcasts and verify contact opt-in lists.`,
+                  phone_number_id: connection.phone_number_id,
+                  phone_number: connection.display_phone_number,
+                  previous_quality: previousQuality,
+                  current_quality: quality,
+                  quality,
+                  severity: isCritical ? 'critical' : 'warning',
+                  type: 'meta_quality_degradation',
+                  is_owner_alert: true,
+                  degraded_at: new Date().toISOString()
+                };
+
+                await c.query(
+                  `INSERT INTO resources(tenant_id, kind, data, created_by)
+                   VALUES($1, 'notification', $2, $3)`,
+                  [connection.tenant_id, JSON.stringify(degradationNotif), connection.created_by || 1]
+                );
+
+                await c.query(
+                  "INSERT INTO audit_logs(tenant_id, user_id, action, target) VALUES($1, $2, 'meta.quality.degraded.admin_alert', $3)",
+                  [connection.tenant_id, connection.created_by || 1, `${connection.phone_number_id}:${quality}`]
+                );
+
+                if (this.notify) {
+                  this.notify(connection.tenant_id, {
+                    command: 'notification',
+                    type: 'meta_quality_degradation',
+                    data: degradationNotif
+                  });
+                }
+              }
 
               if (isUpgraded || previousTier !== tier) {
                 const tierDesc = tier === 'TIER_UNLIMITED' ? 'Unlimited' : tier.replace('TIER_', '') + ' messages / 24h';
