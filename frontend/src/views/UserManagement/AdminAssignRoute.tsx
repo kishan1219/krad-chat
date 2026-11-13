@@ -124,8 +124,10 @@ export default function AdminAssignRoute({ edit = null, noView = false, modal = 
     }, [watch('user_id')])
 
     useEffect(() => {
-        listSecondary()
-    }, [])
+        if (open || modal) {
+            listSecondary()
+        }
+    }, [open, modal])
 
     const handleSave = (data) => {
 

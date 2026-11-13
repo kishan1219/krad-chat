@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React from "react"
-import { Activity, UserPlus } from "react-feather"
+import { Activity, UserPlus, Settings } from "react-feather"
 import { Permissions } from "../../utility/Permissions"
 import AssessmentOutlined from '@mui/icons-material/AssessmentOutlined'
 import ChevronRightOutlined from '@mui/icons-material/ChevronRightOutlined'
@@ -8,7 +8,6 @@ import CurrencyRupeeOutlined from '@mui/icons-material/CurrencyRupeeOutlined'
 import ManageAccountsOutlined from '@mui/icons-material/ManageAccountsOutlined'
 import NotificationsOutlined from '@mui/icons-material/NotificationsOutlined'
 import PermPhoneMsgIcon from '@mui/icons-material/PermPhoneMsg'
-import StorageOutlined from '@mui/icons-material/StorageOutlined'
 import WhatsApp from '@mui/icons-material/WhatsApp'
 import SmartToyOutlined from '@mui/icons-material/SmartToyOutlined'
 import SendOutlined from '@mui/icons-material/SendOutlined'
@@ -31,16 +30,18 @@ export default [
     },
 
     // -------------------------------------------------------------------------
-    // 2. USER MANAGEMENT (Second as requested)
+    // 2. USER MANAGEMENT (Admin [0] and Reseller [1] only)
     // -------------------------------------------------------------------------
     {
-        header: "User Management"
+        header: "User Management",
+        userTypes: [0, 1]
     },
     {
         id: 'user',
         title: 'User Management',
         icon: <UserPlus size={18} />,
         navLink: '/users-list',
+        userTypes: [0, 1],
         ...Permissions.userList
     },
     {
@@ -48,32 +49,38 @@ export default [
         title: 'Invitations',
         icon: <UserPlus size={18} />,
         navLink: '/team-invitations',
-        ...Permissions.userList
+        userTypes: [0],
+        ...Permissions.adminOperation
     },
     {
         id: 'master',
         title: 'Roles & Security',
         icon: <ManageAccountsOutlined size={20} />,
+        userTypes: [0],
+        ...Permissions.adminOperation,
         children: [
             {
                 id: 'role-list',
                 title: 'Role Management',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/role-list',
-                ...Permissions.roleList
+                userTypes: [0],
+                ...Permissions.adminOperation
             },
             {
                 id: 'login-user-log',
                 title: 'Login Audit Logs',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/login-user-log',
-                ...Permissions.viewLoginLog
+                userTypes: [0],
+                ...Permissions.adminOperation
             },
             {
                 id: 'overview',
                 title: 'Admin Overview',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/overview',
+                userTypes: [0],
                 ...Permissions.adminOperation
             },
             {
@@ -81,6 +88,7 @@ export default [
                 title: 'User Routing',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/get-user-route',
+                userTypes: [0],
                 ...Permissions.adminOperation
             },
             {
@@ -88,6 +96,7 @@ export default [
                 title: 'API Documentation',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/api-documentation',
+                userTypes: [0],
                 ...Permissions.adminOperation
             }
         ]
@@ -296,6 +305,7 @@ export default [
                 title: 'Campaign Analytics',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/campaign-report',
+                userTypes: [0],
                 ...Permissions.adminOperation
             },
             {
@@ -303,62 +313,73 @@ export default [
                 title: 'Credit Usage',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/consumption-report-by-view',
+                userTypes: [0],
                 ...Permissions.adminOperation
             }
         ]
     },
 
     // -------------------------------------------------------------------------
-    // 8. SETTINGS & GATEWAYS (Restored Super Admin settings & routes)
+    // 8. SETTINGS & GATEWAYS (Super Admin strictly: userTypes: [0])
     // -------------------------------------------------------------------------
     {
-        header: "Settings & Gateways"
+        header: "Settings & Gateways",
+        userTypes: [0],
+        ...Permissions.adminOperation
     },
     {
         id: 'whatsapp-channels-config',
         title: 'Settings & Gateways',
         icon: <SettingsSuggestOutlined size={20} />,
+        userTypes: [0],
+        ...Permissions.adminOperation,
         children: [
             {
                 id: 'app-settings-page',
                 title: 'App Settings',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/app-settings',
-                ...Permissions.editProfile
+                userTypes: [0],
+                ...Permissions.adminOperation
             },
             {
                 id: 'whatsapp-connections',
                 title: 'Connect Phone Numbers',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/whatsapp-connections',
-                ...Permissions.whatsappConfigList
+                userTypes: [0],
+                ...Permissions.adminOperation
             },
             {
                 id: 'whatsapp-message-configuration',
                 title: 'API Settings',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/whatsapp-message-configuration',
-                ...Permissions.whatsappConfigList
+                userTypes: [0],
+                ...Permissions.adminOperation
             },
             {
                 id: 'whatsapp-webhook-events',
                 title: 'Webhook Event Logs',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/whatsapp-webhook-events',
-                ...Permissions.whatsappConfigList
+                userTypes: [0],
+                ...Permissions.adminOperation
             },
             {
                 id: 'whatsapp-QR-report',
                 title: 'QR Code Links',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/wa-get-qr-list',
-                ...Permissions.whatsappListQRReport
+                userTypes: [0],
+                ...Permissions.adminOperation
             },
             {
                 id: 'whatsapp-rate-card',
                 title: 'Message Pricing',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/administration/wa-rate-card',
+                userTypes: [0],
                 ...Permissions.adminOperation
             },
             {
@@ -366,28 +387,32 @@ export default [
                 title: 'Primary Routes',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/primary-routes',
-                ...Permissions.primaryList
+                userTypes: [0],
+                ...Permissions.adminOperation
             },
             {
                 id: 'secondary-route',
                 title: 'Secondary Routes',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/secondary-routes',
-                ...Permissions.secondaryView
+                userTypes: [0],
+                ...Permissions.adminOperation
             },
             {
                 id: 'dlr-list',
                 title: 'DLR Return Codes',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/dlr-list',
-                ...Permissions.dlrList
+                userTypes: [0],
+                ...Permissions.adminOperation
             },
             {
                 id: 'get-kannel-status',
                 title: 'Gateway Status',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/get-current-kennel-status',
-                ...Permissions.currentKannelStatus
+                userTypes: [0],
+                ...Permissions.adminOperation
             }
         ]
     },
@@ -411,5 +436,13 @@ export default [
         icon: <NotificationsOutlined size={20} />,
         navLink: '/notification',
         ...Permissions.creditRequest
+    },
+    {
+        id: 'child-account-settings',
+        title: 'Account Settings',
+        icon: <Settings size={18} />,
+        navLink: '/app-settings',
+        userTypes: [1, 2, 3],
+        ...Permissions.editProfile
     }
 ]

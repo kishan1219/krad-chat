@@ -3,6 +3,7 @@
 // ** React Imports
 import { useContext } from 'react'
 import { AbilityContext } from '@src/utility/context/Can'
+import { getUserData } from '@src/utility/Utils'
 
 /**
  * Return which component to render based on it's data/context
@@ -83,30 +84,57 @@ export const removeChildren = (children, openGroup, currentActiveGroup) => {
   })
 }
 
-const checkForVisibleChild = (arr, ability) => {
+const isUserTypeAllowed = (item, userType) => {
+  if (!item || !Array.isArray(item.userTypes)) return true
+  if (userType === undefined || userType === null) return true
+  return item.userTypes.includes(Number(userType))
+}
+
+const checkForVisibleChild = (arr, ability, userType) => {
   return arr.some(i => {
+    if (!isUserTypeAllowed(i, userType)) return false
     if (i.children) {
-      return checkForVisibleChild(i.children, ability)
+      return checkForVisibleChild(i.children, ability, userType)
     } else {
-      return ability.can(i.action, i.resource)
+      if (i.action && i.resource) {
+        return ability.can(i.action, i.resource)
+      }
+      return true
     }
   })
 }
 
 export const canViewMenuGroup = item => {
   const ability = useContext(AbilityContext)
+  const userData = getUserData()
+  const userType = userData?.userType
+
+  if (!isUserTypeAllowed(item, userType)) {
+    return false
+  }
+
   // ! This same logic is used in canViewHorizontalNavMenuGroup and canViewHorizontalNavMenuHeaderGroup. So make sure to update logic in them as well
-  const hasAnyVisibleChild = item.children && checkForVisibleChild(item.children, ability)
+  const hasAnyVisibleChild = item.children && checkForVisibleChild(item.children, ability, userType)
 
   // ** If resource and action is defined in item => Return based on children visibility (Hide group if no child is visible)
   // ** Else check for ability using provided resource and action along with checking if has any visible child
   if (!(item.action && item.resource)) {
-    return hasAnyVisibleChild
+    return Boolean(hasAnyVisibleChild)
   }
-  return ability.can(item.action, item.resource) && hasAnyVisibleChild
+  return ability.can(item.action, item.resource) && Boolean(hasAnyVisibleChild)
 }
 
 export const canViewMenuItem = item => {
   const ability = useContext(AbilityContext)
-  return ability.can(item.action, item.resource)
+  const userData = getUserData()
+  const userType = userData?.userType
+
+  if (!isUserTypeAllowed(item, userType)) {
+    return false
+  }
+
+  if (item.action && item.resource) {
+    return ability.can(item.action, item.resource)
+  }
+  return true
 }

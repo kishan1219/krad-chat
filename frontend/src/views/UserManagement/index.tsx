@@ -512,7 +512,7 @@ const UserList = () => {
                         <AddUser Component={Button.Ripple} size="sm" color={"primary"} id="add" > <Plus size='14' /> Add User</AddUser>
                     </Show>
 
-                    <Show IF={Permissions?.userRouteSetting}>
+                    <Show IF={userLogin?.userType === 0 ? Permissions?.userRouteSetting : false}>
                         <AdminAssignRoute Component={Button.Ripple} size="sm" color={"primary"} outline ><Plus size='14' /> Assign Route  </AdminAssignRoute>
                         {/* <UserPriority Component={Button.Ripple} size="sm" color={"primary"} outline ><Compass size = "14" /> Change  Priority </UserPriority> */}
 

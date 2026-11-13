@@ -104,6 +104,10 @@ export const getHomeRouteForLoggedInUser = user => {
 }
 
 export const ErrorToast = (message, settings = {}, comp = null) => {
+    const cleanMsg = typeof message === 'string'
+        ? message.replace(/<\/?[^>]+(>|$)/g, ' ').replace(/\s+/g, ' ').trim()
+        : message
+
     return toast.custom(
         (t) => (
             <div
@@ -144,7 +148,7 @@ export const ErrorToast = (message, settings = {}, comp = null) => {
                     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
                         <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#991b1b', lineHeight: 1.2 }}>Notice</span>
                         <div style={{ fontSize: '0.84rem', color: '#4b5563', marginTop: '2px', wordBreak: 'break-word' }}>
-                            {comp ?? message}
+                            {comp ?? (cleanMsg || 'An unexpected error occurred. Please try again.')}
                         </div>
                     </div>
                 </div>
@@ -184,6 +188,10 @@ export const selectThemeColors = theme => ({
 })
 
 export const SuccessToast = (message, settings = {}, comp = null) => {
+    const cleanMsg = typeof message === 'string'
+        ? message.replace(/<\/?[^>]+(>|$)/g, ' ').replace(/\s+/g, ' ').trim()
+        : message
+
     return toast.custom(
         (t) => (
             <div
@@ -224,7 +232,7 @@ export const SuccessToast = (message, settings = {}, comp = null) => {
                     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
                         <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#065f46', lineHeight: 1.2 }}>Success</span>
                         <div style={{ fontSize: '0.84rem', color: '#4b5563', marginTop: '2px', wordBreak: 'break-word' }}>
-                            {comp ?? message}
+                            {comp ?? (cleanMsg || 'Operation completed successfully.')}
                         </div>
                     </div>
                 </div>

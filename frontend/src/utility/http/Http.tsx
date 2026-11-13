@@ -296,9 +296,10 @@ export default class HttpService {
         if (!data.error) {
             success(data)
             if (showSuccessToast && res.data?.message) {
-                // SuccessToast(res.data?.message)
-                const message = `<p class="mb-0">${res.data?.message}</p><p class="mb-0 fw-bolder">🕑In: ${formatDate(res.data?.intime, "DD-MM-YYYY hh:mm:ss A ")}</p><p class="mb-0 fw-bolder">🕑Out: ${formatDate(res.data?.outtime, "DD-MM-YYYY hh:mm:ss A ")}</p>`
-                MessageToast(message)
+                const cleanMsg = typeof res.data.message === 'string'
+                    ? res.data.message.replace(/<\/?[^>]+(>|$)/g, ' ').replace(/\s+/g, ' ').trim()
+                    : 'Operation completed successfully'
+                SuccessToast(cleanMsg)
             }
         } else {
             error({
@@ -306,7 +307,11 @@ export default class HttpService {
                 data: res.data
             })
             if (showErrorToast && res.data?.message) {
-                ErrorToast(res.data?.message)
+                const rawMsg = res.data.message
+                const cleanMsg = typeof rawMsg === 'string'
+                    ? rawMsg.replace(/<\/?[^>]+(>|$)/g, ' ').replace(/\s+/g, ' ').trim()
+                    : 'An error occurred. Please try again.'
+                ErrorToast(cleanMsg)
             }
         }
     }
@@ -320,7 +325,11 @@ export default class HttpService {
             ...e
         })
         if (showErrorToast && e?.response?.data?.message) {
-            ErrorToast(e?.response?.data?.message)
+            const rawMsg = e.response.data.message
+            const cleanMsg = typeof rawMsg === 'string'
+                ? rawMsg.replace(/<\/?[^>]+(>|$)/g, ' ').replace(/\s+/g, ' ').trim()
+                : 'An error occurred. Please try again.'
+            ErrorToast(cleanMsg)
         }
     }
 }

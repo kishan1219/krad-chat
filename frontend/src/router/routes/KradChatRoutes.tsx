@@ -87,7 +87,7 @@ const KradChatRoutes = [
     { path: '/whatsapp-broadcasts', element: <SendWhatsapp />, meta: { ...Permissions.whatsappSmsList } },
     { path: '/whatsapp-connections', element: <WhatsappConnections />, meta: { ...Permissions.whatsappConfigList } },
     { path: '/whatsapp-webhook-events', element: <WebhookEvents />, meta: { ...Permissions.whatsappConfigList } },
-    { path: '/team-invitations', element: <TeamInvitations />, meta: { ...Permissions.userList } },
+    { path: '/team-invitations', element: <TeamInvitations />, meta: { ...Permissions.adminOperation } },
     { path: '/accept-invitation', element: <TeamInvitations acceptance />, meta: { layout: 'blank', publicRoute: true } },
     { path: '/whatsapp-catalog', element: <WhatsAppWorkspace initialTab='Catalog' />, meta: { ...Permissions.whatsappSmsList } },
     { path: '/whatsapp-orders', element: <WhatsAppWorkspace initialTab='Orders' />, meta: { ...Permissions.whatsappSmsList } },
@@ -107,39 +107,25 @@ const KradChatRoutes = [
     // },
     {
         path: '/primary-routes',
-        // name: "primaryRoutes",
         element: <PrimaryRoute />,
         meta: {
-            ...Permissions.primaryList
+            ...Permissions.adminOperation
         }
-
     },
-    // {
-    //     path: '/primary-routes/view/:id',
-    //     element: <ViewPrimaryRoute />,
-    //     name: "privateRoutes",
-    //     meta: {
-    //         ...Permissions.privateView
-    //     }
-    // },
-
     ///////////////////////////////////   DLR   CODE /////////////////////////////
     {
         path: '/dlr-list',
         element: <DlrList />,
-        // name: "privateRoutes",
         meta: {
-            ...Permissions.dlrList
+            ...Permissions.adminOperation
         }
     },
-
     ///////////////////////////////////  Secondary List ///////////////////////////
     {
         path: '/secondary-routes',
         element: <SecondaryList />,
-        // name: "privateRoutes",
         meta: {
-            ...Permissions.secondaryView
+            ...Permissions.adminOperation
         }
     },
 

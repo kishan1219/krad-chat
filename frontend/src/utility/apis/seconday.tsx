@@ -13,7 +13,7 @@ export const loadSecondaryRoute = async ({ async = false, jsonData, loading, pag
         jsonData,
         loading,
         params: { page, per_page_record: perPage },
-        showErrorToast: true,
+        showErrorToast: false,
         // showSuccessToast: true,
         success: (e) => {
             dispatch(secondaryLoad(e?.data))
@@ -33,7 +33,7 @@ export const addSecondaryRoute = async ({ async = false, jsonData, loading, page
         path: ApiEndpoints.add_secondary_route,
         jsonData,
         loading,
-        showErrorToast: true,
+        showErrorToast: false,
         showSuccessToast: true,
         success: (e) => {
             dispatch(secondarySave([e?.data]))
@@ -53,7 +53,7 @@ export const editSecondaryRoute = async ({id, async = false, jsonData, loading, 
         path: ApiEndpoints.edit_secondary_route + id,
         jsonData,
         loading,
-        showErrorToast: true,
+        showErrorToast: false,
         showSuccessToast: true,
         success: (e) => {
             dispatch(secondaryUpdate(e?.data))
@@ -74,7 +74,7 @@ export const deleteSecondaryRoute = async ({id, async = false, jsonData, loading
         path: ApiEndpoints.delete_secondary_route + id,
         jsonData,
         loading,
-        showErrorToast: true,
+        showErrorToast: false,
         showSuccessToast: true,
         // success: (e) => {
         //     // dispatch(secondaryDelete(e?.data))
@@ -104,7 +104,7 @@ export const secondaryRouteAction = async ({ async = false, jsonData, loading, p
         path: ApiEndpoints.secondary_route_action,
         jsonData,
         loading,
-        showErrorToast: true,
+        showErrorToast: false,
         showSuccessToast: true,
         success: (e) => {
             dispatch(secondaryLoad(e?.data))
