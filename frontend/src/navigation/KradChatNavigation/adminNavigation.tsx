@@ -17,18 +17,16 @@ import SendOutlined from '@mui/icons-material/SendOutlined'
 import ShoppingCartOutlined from '@mui/icons-material/ShoppingCartOutlined'
 import SettingsSuggestOutlined from '@mui/icons-material/SettingsSuggestOutlined'
 
-const userData = JSON.parse(localStorage.getItem('kradChatData') || 'null')
-
 export default [
     // -------------------------------------------------------------------------
-    // 1. LIVE OPERATIONS
+    // 1. OPERATIONS
     // -------------------------------------------------------------------------
     {
-        header: "Live Operations"
+        header: "Operations"
     },
     {
         id: 'chat',
-        title: 'KRAD Live Chat',
+        title: 'Live Chat',
         icon: <WhatsApp size={20} />,
         navLink: '/chat',
         badge: 'light-success',
@@ -44,41 +42,41 @@ export default [
     },
 
     // -------------------------------------------------------------------------
-    // 2. WHATSAPP BUSINESS SUITE
+    // 2. WHATSAPP MESSAGING
     // -------------------------------------------------------------------------
     {
-        header: "WhatsApp Business Suite"
+        header: "WhatsApp Messaging"
     },
     {
         id: 'whatsapp-automation-suite',
-        title: 'Flows & Automation',
+        title: 'Chatbots & Flows',
         icon: <SmartToyOutlined size={20} />,
         ...Permissions.whatsappSmsList,
         children: [
             {
                 id: 'whatsapp-workflows',
-                title: 'Chatbot Flows',
+                title: 'Flow Builder',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/whatsapp-workflows',
                 ...Permissions.whatsappSmsList
             },
             {
                 id: 'whatsapp-drip-sequences',
-                title: 'Drip Sequences',
+                title: 'Follow-up Sequences',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/whatsapp-drip-sequences',
                 ...Permissions.whatsappSmsList
             },
             {
                 id: 'whatsapp-automation',
-                title: 'Chatbot Automation',
+                title: 'Quick Auto-replies',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/whatsapp-automation',
                 ...Permissions.whatsappSmsList
             },
             {
                 id: 'whatsapp-chatbots-self-webhook',
-                title: 'Chatbot Webhooks',
+                title: 'Webhook Triggers',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/wa-chatbots-self-webhook',
                 ...Permissions.whatsappSmsList
@@ -87,7 +85,7 @@ export default [
     },
     {
         id: 'whatsapp-campaigns',
-        title: 'Broadcast & Campaigns',
+        title: 'Messages & Campaigns',
         icon: <SendOutlined size={20} />,
         ...Permissions.whatsappSmsList,
         children: [
@@ -100,7 +98,7 @@ export default [
             },
             {
                 id: 'whatsapp-broadcasts',
-                title: 'Broadcasts & Consent',
+                title: 'Broadcast Campaign',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/whatsapp-broadcasts',
                 ...Permissions.whatsappSmsList
@@ -123,7 +121,7 @@ export default [
     },
     {
         id: 'whatsapp-commerce',
-        title: 'Commerce & Orders',
+        title: 'Catalog & Orders',
         icon: <ShoppingCartOutlined size={20} />,
         ...Permissions.whatsappSmsList,
         children: [
@@ -145,20 +143,20 @@ export default [
     },
     {
         id: 'whatsapp-channels-config',
-        title: 'Cloud API & Settings',
+        title: 'WhatsApp Settings',
         icon: <SettingsSuggestOutlined size={20} />,
         ...Permissions.whatsappConfigList,
         children: [
             {
                 id: 'whatsapp-connections',
-                title: 'Meta 1-Click & Numbers',
+                title: 'Connect Phone Numbers',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/whatsapp-connections',
                 ...Permissions.whatsappConfigList
             },
             {
                 id: 'whatsapp-message-configuration',
-                title: 'Cloud API Config',
+                title: 'API Settings',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/whatsapp-message-configuration',
                 ...Permissions.whatsappConfigList
@@ -172,14 +170,14 @@ export default [
             },
             {
                 id: 'whatsapp-QR-report',
-                title: 'QR Code Generator',
+                title: 'QR Code Links',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/wa-get-qr-list',
                 ...Permissions.whatsappListQRReport
             },
             {
                 id: 'whatsapp-rate-card',
-                title: 'WhatsApp Rate Card',
+                title: 'Message Pricing',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/administration/wa-rate-card',
                 ...Permissions.adminOperation
@@ -188,26 +186,26 @@ export default [
     },
 
     // -------------------------------------------------------------------------
-    // 3. AUDIENCE & CRM
+    // 3. AUDIENCE & CONTACTS
     // -------------------------------------------------------------------------
     {
         header: "Audience & Contacts"
     },
     {
         id: 'phone-book',
-        title: 'Contact Groups',
+        title: 'Contacts',
         icon: <PermPhoneMsgIcon size={20} />,
         children: [
             {
                 id: 'create-phone-book',
-                title: 'Phone Book',
+                title: 'All Contacts',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/group',
                 ...Permissions.phoneList
             },
             {
                 id: 'blacklist',
-                title: 'Suppression List',
+                title: 'Blocked Contacts',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/blacklist',
                 ...Permissions.blacklist
@@ -223,26 +221,26 @@ export default [
     },
     {
         id: 'user',
-        title: 'User Management',
+        title: 'Team Members',
         icon: <UserPlus size={18} />,
         navLink: '/users-list',
         ...Permissions.userList
     },
     {
         id: 'team-invitations',
-        title: 'Team Invitations',
+        title: 'Invitations',
         icon: <UserPlus size={18} />,
         navLink: '/team-invitations',
         ...Permissions.userList
     },
     {
         id: 'master',
-        title: 'System Access',
+        title: 'Roles & Security',
         icon: <ManageAccountsOutlined size={20} />,
         children: [
             {
                 id: 'role-list',
-                title: 'Roles & Permissions',
+                title: 'Role Management',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/role-list',
                 ...Permissions.roleList
@@ -286,7 +284,7 @@ export default [
     },
     {
         id: 'reports',
-        title: 'Analytics & Reports',
+        title: 'Reports & Analytics',
         icon: <AssessmentOutlined size={20} />,
         children: [
             {
@@ -333,7 +331,7 @@ export default [
             },
             {
                 id: 'consumption-report',
-                title: 'Credit Consumption',
+                title: 'Credit Usage',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/consumption-report-by-view',
                 ...Permissions.adminOperation
@@ -349,7 +347,7 @@ export default [
     },
     {
         id: 'credit-request',
-        title: 'Billing & Balances',
+        title: 'Wallet & Billing',
         icon: <CurrencyRupeeOutlined size={20} />,
         navLink: '/credit-request',
         ...Permissions.creditRequest

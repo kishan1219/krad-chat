@@ -17,14 +17,14 @@ export function createProductTour() {
         }
     })
 
-    // Step 1: Welcome Modal
+    // Step 1: Welcome Overview
     tour.addStep({
         id: 'welcome',
         title: '👋 Welcome to KRAD Chat!',
-        text: 'Your enterprise WhatsApp Business Cloud platform. Let’s take a quick 1-minute walkthrough to discover Live Chat, Visual Chatbot Flows, Automated Drips, and 1-Click Meta Onboarding.',
+        text: 'Your enterprise WhatsApp Business Cloud platform. This quick guided tour walks you through the essential client workflow: uploading contacts, creating WhatsApp templates, sending broadcast campaigns, and managing live customer chats.',
         buttons: [
             {
-                text: 'Skip Tour',
+                text: 'Skip Guide',
                 classes: backBtnClass,
                 action: () => {
                     localStorage.setItem('krad_tour_completed', 'true')
@@ -32,70 +32,94 @@ export function createProductTour() {
                 }
             },
             {
-                text: 'Start Tour 🚀',
+                text: 'Start Guide 🚀',
                 classes: nextBtnClass,
                 action: () => tour.next()
             }
         ]
     })
 
-    // Step 2: KRAD Live Chat
+    // Step 2: Uploading Contacts & Audience
     tour.addStep({
-        id: 'live-chat',
-        title: '💬 KRAD Live Chat Inbox',
-        text: 'Real-time two-way WhatsApp customer messaging. Send approved templates, upload rich media, view customer conversation details, and seamlessly switch between bot automation and human takeover.',
-        attachTo: { element: '#chat', on: 'right' },
+        id: 'upload-contacts',
+        title: '👥 Step 1: Upload & Organize Contacts',
+        text: 'Navigate to Contacts > All Contacts to import customer phone numbers via CSV/Excel or add them individually. You can group contacts by VIPs, leads, or purchase history to run targeted campaigns.',
+        attachTo: { element: '#phone-book', on: 'right' },
         buttons: [
             { text: 'Back', classes: backBtnClass, action: () => tour.back() },
-            { text: 'Next ➔', classes: nextBtnClass, action: () => tour.next() }
+            { text: 'Next: Templates ➔', classes: nextBtnClass, action: () => tour.next() }
         ]
     })
 
-    // Step 3: Chatbot Flows
+    // Step 3: Creating WhatsApp Templates
     tour.addStep({
-        id: 'chatbot-flows',
-        title: '🤖 Chatbot Flows & Visual Canvas',
-        text: 'Design multi-step WhatsApp chatbot conversational menus with interactive Quick Reply buttons, List Menus, Wait Delays, and Human Agent Handoff.',
-        attachTo: { element: '#whatsapp-automation-suite', on: 'right' },
-        buttons: [
-            { text: 'Back', classes: backBtnClass, action: () => tour.back() },
-            { text: 'Next ➔', classes: nextBtnClass, action: () => tour.next() }
-        ]
-    })
-
-    // Step 4: Broadcasts & Drip Sequences
-    tour.addStep({
-        id: 'drip-sequences',
-        title: '⏱️ Automated Drip Sequences',
-        text: 'Schedule multi-day automated WhatsApp follow-ups triggered by keywords or new contact signups (e.g. Day 0 Welcome, Day 1 Check-In, Day 3 Offer).',
+        id: 'create-templates',
+        title: '📝 Step 2: Create WhatsApp Message Templates',
+        text: 'Under Messages & Campaigns > Message Templates, create Meta-approved WhatsApp templates with dynamic variables like {{1}} for customer names, rich header media (images/PDFs), and Quick Reply buttons.',
         attachTo: { element: '#whatsapp-campaigns', on: 'right' },
         buttons: [
             { text: 'Back', classes: backBtnClass, action: () => tour.back() },
-            { text: 'Next ➔', classes: nextBtnClass, action: () => tour.next() }
+            { text: 'Next: Broadcasts ➔', classes: nextBtnClass, action: () => tour.next() }
         ]
     })
 
-    // Step 5: Meta Cloud API & Embedded Signup
+    // Step 4: Sending Messages & Broadcasts
     tour.addStep({
-        id: 'meta-signup',
-        title: '⚡ Meta 1-Click Embedded Signup',
-        text: 'Link your official WhatsApp Business numbers directly in 1 click using Facebook Login for Business with AES-256 encrypted access tokens.',
+        id: 'send-broadcasts',
+        title: '🚀 Step 3: Send Messages & Launch Campaigns',
+        text: 'Use "Send Message" for direct 1-to-1 outreach, or "Broadcast Campaign" to blast thousands of opt-in customers simultaneously with real-time delivery and read status tracking.',
+        attachTo: { element: '#whatsapp-campaigns', on: 'right' },
+        buttons: [
+            { text: 'Back', classes: backBtnClass, action: () => tour.back() },
+            { text: 'Next: Live Chat ➔', classes: nextBtnClass, action: () => tour.next() }
+        ]
+    })
+
+    // Step 5: Live Chat & Human Takeover
+    tour.addStep({
+        id: 'live-chat',
+        title: '💬 Step 4: Manage Inbound Live Chat',
+        text: 'When customers reply, their conversations appear in Live Chat. Your agents can respond in real-time within the 24-hour service window, share media files, send pre-approved templates, or take over from the automated chatbot.',
+        attachTo: { element: '#chat', on: 'right' },
+        buttons: [
+            { text: 'Back', classes: backBtnClass, action: () => tour.back() },
+            { text: 'Next: Chatbots ➔', classes: nextBtnClass, action: () => tour.next() }
+        ]
+    })
+
+    // Step 6: Chatbots & Visual Flow Builder
+    tour.addStep({
+        id: 'flow-builder',
+        title: '🤖 Step 5: Visual Chatbot Flow Builder',
+        text: 'Under Chatbots & Flows > Flow Builder, drag and drop interactive menus, buttons, and wait steps on an intuitive canvas to automate FAQs, order bookings, and lead qualification 24/7.',
+        attachTo: { element: '#whatsapp-automation-suite', on: 'right' },
+        buttons: [
+            { text: 'Back', classes: backBtnClass, action: () => tour.back() },
+            { text: 'Next: Numbers ➔', classes: nextBtnClass, action: () => tour.next() }
+        ]
+    })
+
+    // Step 7: Connecting WhatsApp Phone Numbers
+    tour.addStep({
+        id: 'whatsapp-setup',
+        title: '⚡ Step 6: Connect WhatsApp Phone Numbers',
+        text: 'Go to WhatsApp Settings > Connect Phone Numbers to link your official WhatsApp Business numbers in seconds with Meta 1-Click Embedded Signup.',
         attachTo: { element: '#whatsapp-channels-config', on: 'right' },
         buttons: [
             { text: 'Back', classes: backBtnClass, action: () => tour.back() },
-            { text: 'Next ➔', classes: nextBtnClass, action: () => tour.next() }
+            { text: 'Finish Guide 🎉', classes: nextBtnClass, action: () => tour.next() }
         ]
     })
 
-    // Step 6: Final Tour Step
+    // Step 8: Complete
     tour.addStep({
         id: 'finish',
-        title: '🎉 You are all set!',
-        text: 'You are ready to scale customer messaging with KRAD Chat. You can replay this tour anytime from the Help Guide icon in the top navbar.',
+        title: '🎉 You are ready to start!',
+        text: 'You have everything you need to begin sending messages, creating templates, and chatting with customers. Click the (?) Help Guide icon in the top navbar anytime to replay this walkthrough.',
         buttons: [
             { text: 'Back', classes: backBtnClass, action: () => tour.back() },
             {
-                text: 'Get Started 🚀',
+                text: 'Launch Platform 🚀',
                 classes: nextBtnClass,
                 action: () => {
                     localStorage.setItem('krad_tour_completed', 'true')
@@ -110,7 +134,6 @@ export function createProductTour() {
 
 export default function ProductTour() {
     useEffect(() => {
-        // Auto-launch once if first-time user
         const completed = localStorage.getItem('krad_tour_completed')
         if (!completed) {
             const timer = setTimeout(() => {

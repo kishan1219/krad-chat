@@ -89,10 +89,7 @@ const NotificationDropdown = () => {
     //     }, 10000)
 
     // }, [])
-    useEffect(() => {
-        readNotificationList()
 
-    }, [])
     // ** Notification Array
     const notificationsArray = [
         {

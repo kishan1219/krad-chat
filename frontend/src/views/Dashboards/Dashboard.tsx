@@ -123,36 +123,21 @@ const Dashboard = props => {
         })
     }
     useEffect(() => {
+        // Fetch dashboard data once on initial component mount
         preload()
-        if (viewDashboard) {
-            preload()
-        }
         if (loginUser?.userType === 0) {
             serverInfo()
         }
-    }, [filterData, viewDashboard])
+    }, [])
 
     useEffect(() => {
         if (refreshButton === true) {
             preload()
+            if (loginUser?.userType === 0) {
+                serverInfo()
+            }
         }
     }, [refreshButton])
-
-    useEffect(() => {
-        const refresher = setInterval(() => {
-            if (refresh) {
-                preload()
-                if (loginUser?.userType === 0) {
-                    serverInfo()
-                }
-            }
-        }, 30000)
-        log(refresh, "refresh")
-
-        return () => {
-            clearInterval(refresher)
-        }
-    }, [refresh])
 
     // log("dash", dashboards)
 

@@ -147,10 +147,6 @@ const UserList = () => {
         })
     }
 
-    useEffect(() => {
-        if (filterData !== null) setReload(true)
-    }, [filterData])
-
     const deleteTheUser = (row) => {
         deleteUser({
             id: row,
@@ -159,8 +155,6 @@ const UserList = () => {
         })
     }
 
-
-    // const credit = [<>{row?.}</>]
     useEffect(() => {
         preload(1)
     }, [filterData])
@@ -177,34 +171,28 @@ const UserList = () => {
     }
 
     const childLoginButton = (row) => {
-        const encoded = base64.encode(row?.uuid)
+        const targetId = row?.id || row?.uuid
         childLogin({
             jsonData: {
-                // ...userT,
-                account_uuid: encoded
+                account_uuid: targetId ? base64.encode(String(targetId)) : '',
+                user_id: row?.id
             },
             success: (data) => {
-                const p = data?.data?.permissions?.map(a => ({
+                const resData = data?.data || data
+                const p = resData?.permissions?.map(a => ({
                     action: a.name,
                     subject: "all"
                 })) ?? []
 
-                // user type === 0 or 3 to dikhana hai or is_visible_dlt_template_group === 1 to dikhana hai
-                // if (data?.data?.userType === 0 || data?.data?.userType === 3 || data?.data?.is_visible_dlt_template_group === 1) {
-                //     p.push({
-                //         action: "is-visible-dlt-template-group",
-                //         subject: 'all'
-                //     })
-                // }
                 const m = {
-                    ...data.data,
-                    // role: data.payload.roles,
+                    ...resData,
+                    parent_key: resData?.parent_key || String(userLogin?.id),
                     ability: p?.concat(extraPermissions)
                 }
 
                 dispatch(handleLogin(m))
-                if (data?.data?.permissions) ability.update(m?.ability)
-                refreshPage()
+                if (resData?.permissions) ability.update(m?.ability)
+                navigate('/admin-send-sms')
             }
         })
     }
@@ -348,16 +336,15 @@ const UserList = () => {
                             }
                             options={[
                                 {
-                                    IF: userLogin?.parent_key === null && userLogin?.id !== row?.id,
+                                    IF: (!userLogin?.parent_key || userLogin?.parent_key === null) && String(userLogin?.id) !== String(row?.id),
                                     icon: <Unlock size={14} />,
                                     onClick: () => {
                                         childLoginButton(row)
-
                                     },
                                     name: "Child Login"
                                 },
                                 {
-                                    IF: Permissions?.userChangePassword && userLogin?.id !== row?.id,
+                                    IF: Permissions?.userChangePassword && String(userLogin?.id) !== String(row?.id),
                                     icon: <Edit size={14} />,
                                     onClick: () => {
                                         setPasswordModal(true)
@@ -385,7 +372,7 @@ const UserList = () => {
                                     name: "Set Ratio"
                                 },
                                 {
-                                    IF: userLogin?.userType !== 3 && userLogin?.id !== row?.id,
+                                    IF: String(userLogin?.userType) !== "3" && String(userLogin?.id) !== String(row?.id),
                                     icon: <Edit size={14} />,
                                     onClick: () => {
                                         setEditModal(true)
@@ -393,33 +380,18 @@ const UserList = () => {
                                     },
                                     name: "Edit User"
                                 },
-                                // {
-                                //     IF: userLogin?.userType === 0,
-                                //     icon: <LanguageIcon size={14} />,
-                                //     onClick: () => {
-                                //         setWebModal(true)
-                                //         setEditData(row)
-                                //     },
-                                //     name: "Webhook URL"
-                                // },
-
-
                                 {
-                                    IF: userLogin?.userType !== 3 && userLogin?.id !== row?.id,
+                                    IF: String(userLogin?.userType) !== "3" && String(userLogin?.id) !== String(row?.id),
                                     noWrap: true,
                                     name: <ConfirmStop
                                         item={row}
-                                        // eventId={`delete-${row?.id}`}
-                                        title={`Delete  ${row?.name} ?`}
+                                        title={`Delete ${row?.name} ?`}
                                         color='text-warning'
                                         onClickYes={() => deleteTheUser(row?.id)}
-                                        // onSuccessEvent={(item) => { dispatch(userDelete(item?.id)); preload() }}
-                                        // onFailedEvent={((item) => { })}
                                         onSuccessEvent={(item) => { preload() }}
                                         onFailedEvent={((item) => { })}
                                         className="dropdown-item"
                                         id={`grid-delete-${row?.id}`}>
-
                                         <Trash size={15} /> <span className='ms-1 align-middle'>Delete</span>
                                     </ConfirmStop>
                                 }

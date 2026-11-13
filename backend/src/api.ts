@@ -612,6 +612,10 @@ export class Api {
       this.requireMethod(method, ['POST'], res);
       return this.users.update(actor, actor.id, body, true);
     }
+    if (path === 'child-login') {
+      this.requireMethod(method, ['POST'], res);
+      return this.handleChildLogin(actor, body);
+    }
     if (['users', 'users-for-ddl'].includes(path)) return this.users.list(actor, query, body);
     if (path === 'user' && method === 'POST') return this.users.create(actor, body);
     const userId = /^user\/(\d+)$/.exec(path)?.[1];
@@ -786,6 +790,84 @@ export class Api {
 
     // Fail closed with 501 for unmapped legacy endpoints
     throw new ApiError(501, 'This legacy operation is not implemented. See docs/API_COVERAGE.md for the supported contract.', { path, method });
+  }
+
+  /**
+   * Secure child account switching / masquerade for administrators and resellers.
+   */
+  private async handleChildLogin(actor: Actor, body: any) {
+    if (body.is_back_to_self_account === 1 || body.is_back_to_self_account === true || body.is_back_to_self_account === '1') {
+      let targetParentId: number | null = null;
+      if (body.account_uuid) {
+        try {
+          const decoded = Buffer.from(String(body.account_uuid), 'base64').toString('ascii');
+          const num = Number(decoded);
+          if (!isNaN(num) && num > 0) targetParentId = num;
+        } catch {
+          // not base64
+        }
+        if (!targetParentId) {
+          const num = Number(body.account_uuid);
+          if (!isNaN(num) && num > 0) targetParentId = num;
+        }
+      }
+      if (!targetParentId && (body.user_id || body.id)) {
+        targetParentId = Number(body.user_id || body.id);
+      }
+      if (!targetParentId) {
+        const actorRow = (await this.db.query('SELECT parent_user_id FROM users WHERE id=$1', [actor.id])).rows[0];
+        targetParentId = actorRow?.parent_user_id ? Number(actorRow.parent_user_id) : null;
+      }
+      if (!targetParentId) {
+        throw new ApiError(400, 'Parent account identifier is missing.');
+      }
+      const parentUser = (await this.db.query('SELECT u.*, t.status AS tenant_status, t.status_reason FROM users u JOIN tenants t ON t.id=u.tenant_id WHERE u.id=$1 AND u.active=true', [targetParentId])).rows[0];
+      if (!parentUser) throw new ApiError(404, 'Parent account not found.');
+      const sessionRes = await this.auth.issueSession(parentUser);
+      return {
+        ...sessionRes,
+        parent_key: null
+      };
+    }
+
+    if (!['admin', 'reseller'].includes(actor.role)) {
+      throw new ApiError(403, 'Only administrators and resellers can access child accounts.');
+    }
+
+    let targetChildId: number | null = null;
+    if (body.account_uuid) {
+      try {
+        const decoded = Buffer.from(String(body.account_uuid), 'base64').toString('ascii');
+        const num = Number(decoded);
+        if (!isNaN(num) && num > 0) targetChildId = num;
+      } catch {
+        // not base64
+      }
+      if (!targetChildId) {
+        const num = Number(body.account_uuid);
+        if (!isNaN(num) && num > 0) targetChildId = num;
+      }
+    }
+    if (!targetChildId && (body.user_id || body.id)) {
+      targetChildId = Number(body.user_id || body.id);
+    }
+    if (!targetChildId) {
+      throw new ApiError(400, 'Target account identifier is required.');
+    }
+
+    const childUser = (await this.db.query('SELECT u.*, t.status AS tenant_status, t.status_reason FROM users u JOIN tenants t ON t.id=u.tenant_id WHERE u.id=$1 AND u.tenant_id=$2 AND u.active=true', [targetChildId, actor.tenant_id])).rows[0];
+    if (!childUser) throw new ApiError(404, 'Child user account not found or inactive.');
+
+    if (actor.role === 'reseller' && Number(childUser.parent_user_id) !== actor.id) {
+      throw new ApiError(403, 'Cannot access child accounts belonging to other organizations.');
+    }
+
+    await this.db.query("INSERT INTO audit_logs(tenant_id,user_id,action,target) VALUES($1,$2,'masquerade',$3)", [actor.tenant_id, actor.id, String(targetChildId)]);
+    const sessionRes = await this.auth.issueSession(childUser);
+    return {
+      ...sessionRes,
+      parent_key: Buffer.from(String(actor.id)).toString('base64')
+    };
   }
 
   /**

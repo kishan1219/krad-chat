@@ -89,8 +89,8 @@ const BackToHome = () => {
   return (
    <>
    <Show IF = {isValid(userLogin?.parent_key)}>
-   <Badge color='danger' onClick={() => childLoginButton()} style= {{ cursor: "pointer"}}>
-    Back To Home
+   <Badge color='danger' onClick={() => childLoginButton()} style={{ cursor: "pointer", padding: "8px 12px", fontSize: "0.82rem" }} className="d-flex align-items-center gap-1 shadow-sm">
+    <span>↩ Return to Admin Account</span>
    </Badge>
    </Show>
    </>

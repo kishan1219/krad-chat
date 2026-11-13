@@ -16,11 +16,42 @@ export function authorize(actor: Actor, permission: string) {
 }
 export function publicUser(row: Record<string, any>) {
   const { password_hash, ...user } = row;
-  const uiPermissions:string[]=['user-ddl-list','edit-profile'];
-  if(row.permissions?.includes('chat:reply'))uiPermissions.push('whatsapp-sms','user-ddl-list','edit-profile');
-  if(row.permissions?.includes('admin:write'))uiPermissions.push('whatsapp-configurations');
-  return { ...user, id: Number(row.id), tenant_id: Number(row.tenant_id), userType: row.role === 'admin' ? 0 : 3,
-    permissions: [...new Set([...(row.permissions || []), ...uiPermissions,...(row.role === 'admin' ? frontendPermissions : [])])].map((name: string) => ({ name })), locktimeout: 30 };
+  const uiPermissions: string[] = ['user-ddl-list', 'edit-profile'];
+  if (row.permissions?.includes('chat:reply')) uiPermissions.push('whatsapp-sms', 'user-ddl-list', 'edit-profile');
+  if (row.permissions?.includes('admin:write')) uiPermissions.push('whatsapp-configurations');
+
+  let userType = 3;
+  if (row.role === 'admin') userType = 0;
+  else if (row.role === 'reseller') userType = 1;
+  else if (row.role === 'operator') userType = 2;
+
+  const username = row.user_name || (row.email ? row.email.split('@')[0] : '') || row.name || '';
+
+  return {
+    ...user,
+    id: Number(row.id),
+    tenant_id: Number(row.tenant_id),
+    userType,
+    username,
+    user_name: username,
+    mobile: row.mobile || '',
+    address: row.address || '',
+    city: row.city || '',
+    zipcode: row.zipcode || '',
+    company_name: row.company_name || '',
+    companyName: row.company_name || '',
+    website_url: row.website_url || '',
+    websiteUrl: row.website_url || '',
+    designation: row.designation || '',
+    authority_type: row.authority_type || 1,
+    authorityType: row.authority_type || 1,
+    locktimeout: row.locktimeout || 30,
+    allow_to_add_webhook: row.is_add_webhook ? 1 : 2,
+    allow_detail_report: row.is_detail_report ? 1 : 2,
+    is_visible_dlt_template_group: row.is_visible_dlt_template_group ? 1 : 2,
+    companyLogo: row.company_logo || '',
+    permissions: [...new Set([...(row.permissions || []), ...uiPermissions, ...(row.role === 'admin' ? frontendPermissions : [])])].map((name: string) => ({ name }))
+  };
 }
 export class Auth {
   constructor(private db: Db, private cfg: Config, private providers: Providers) {}
@@ -52,6 +83,9 @@ export class Auth {
     if (row.tenant_status !== 'active') throw new ApiError(403, `Organization is ${row.tenant_status}. Access suspended.`);
     return { id: Number(row.id), tenant_id: Number(row.tenant_id), role: row.role, permissions: row.permissions, session_id: row.session_id };
   }
+  async issueSession(user: Record<string, any>) {
+    return this.session(user);
+  }
   private async session(user: Record<string, any>) {
     const sid = randomUUID();
     await this.db.query("INSERT INTO sessions(id,user_id,expires_at) VALUES($1,$2,now()+interval '8 hours')", [sid, user.id]);
@@ -62,9 +96,23 @@ export class Auth {
   }
   async login(body: any) {
     if (body._hp_trap || body.honeypot) throw new ApiError(400, 'Automated request rejected.');
-    const input = z.object({ email: z.email(), password: z.string().min(1).max(128) }).parse({ ...body, email: body.email ?? body.username });
-    const user = (await this.db.query('SELECT u.*, t.status AS tenant_status, t.status_reason FROM users u JOIN tenants t ON t.id=u.tenant_id WHERE u.email=$1 AND u.active=true', [input.email.toLowerCase()])).rows[0];
-    // Constant-cost hash comparison also for an unknown email.
+    const rawIdentifier = String(body.email ?? body.username ?? body.user_name ?? '').trim();
+    if (!rawIdentifier) throw new ApiError(422, 'Email or username is required.');
+    const input = z.object({
+      identifier: z.string().min(1).max(200),
+      password: z.string().min(1).max(128)
+    }).parse({
+      identifier: rawIdentifier,
+      password: body.password
+    });
+    const user = (await this.db.query(`
+      SELECT u.*, t.status AS tenant_status, t.status_reason
+      FROM users u
+      JOIN tenants t ON t.id=u.tenant_id
+      WHERE (LOWER(u.email)=$1 OR LOWER(COALESCE(u.user_name, ''))=$1 OR LOWER(u.name)=$1)
+        AND u.active=true
+    `, [input.identifier.toLowerCase()])).rows[0];
+    // Constant-cost hash comparison also for an unknown email or username.
     const valid = await compare(input.password, user?.password_hash || '$2b$12$R9h/cIPz0gi.URNNX3kh2OPST9/PgBkqquzi.Ss7KIUgO2t0jWMUW');
     if (!user || !valid) throw new ApiError(401, 'Invalid credentials.');
     if (user.tenant_status !== 'active') throw new ApiError(403, `Organization is ${user.tenant_status}.${user.status_reason ? ' ' + user.status_reason : ''}`);

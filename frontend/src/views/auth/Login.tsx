@@ -188,10 +188,10 @@ const Login: React.FC = () => {
 
           {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} className='login-form' noValidate>
-            {/* Email Field */}
+            {/* Email or Username Field */}
             <div className='login-field'>
               <label htmlFor='login-email' className='login-label'>
-                Work Email Address
+                Email or Username
               </label>
               <div className='login-input-box'>
                 <span className='login-input-icon' aria-hidden='true'>
@@ -199,19 +199,14 @@ const Login: React.FC = () => {
                 </span>
                 <input
                   id='login-email'
-                  type='email'
-                  inputMode='email'
-                  autoComplete='email'
-                  placeholder='admin@example.com'
+                  type='text'
+                  autoComplete='username'
+                  placeholder='admin@platform.test or username'
                   className={`login-input ${errors.email ? 'has-error' : ''}`}
                   aria-invalid={errors.email ? 'true' : 'false'}
                   aria-describedby={errors.email ? 'email-error' : undefined}
                   {...register('email', {
-                    required: 'Email is required',
-                    pattern: {
-                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                      message: 'Enter a valid email address'
-                    }
+                    required: 'Email or username is required'
                   })}
                 />
               </div>
