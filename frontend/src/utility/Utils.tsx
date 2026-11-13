@@ -103,10 +103,42 @@ export const getHomeRouteForLoggedInUser = user => {
     }
 }
 
+export const sanitizeToastText = (raw: unknown): string => {
+    if (!raw) return ''
+    if (typeof raw !== 'string') {
+        if (typeof raw === 'object' && raw !== null && 'message' in raw) {
+            return sanitizeToastText((raw as any).message)
+        }
+        return String(raw)
+    }
+
+    let text = raw
+    // Decode escaped HTML entities if present
+    text = text
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&amp;/g, '&')
+
+    // Strip HTML tags completely
+    text = text.replace(/<\/?[^>]+(>|$)/g, ' ')
+
+    // Strip backend legacy timing stamps such as "In: 13-11-2026 12:19:23 PM Out: 13-11-2026 12:19:23 PM"
+    text = text.replace(/In:\s*\d{2}[-/]\d{2}[-/]\d{4}\s+[\d:APMapm\s]+Out:\s*\d{2}[-/]\d{2}[-/]\d{4}\s+[\d:APMapm\s]*/gi, ' ')
+    text = text.replace(/\b(In|Out):\s*\d{2}[-/]\d{2}[-/]\d{4}\s+[\d:APMapm\s]*/gi, ' ')
+
+    // Clean whitespace
+    text = text.replace(/\s+/g, ' ').trim()
+
+    // Deduplicate repeated tokens like "Success Success"
+    text = text.replace(/^Success\s+Success$/i, 'Success')
+
+    return text
+}
+
 export const ErrorToast = (message, settings = {}, comp = null) => {
-    const cleanMsg = typeof message === 'string'
-        ? message.replace(/<\/?[^>]+(>|$)/g, ' ').replace(/\s+/g, ' ').trim()
-        : message
+    const cleanMsg = sanitizeToastText(message) || 'An unexpected error occurred. Please try again.'
 
     return toast.custom(
         (t) => (
@@ -148,7 +180,7 @@ export const ErrorToast = (message, settings = {}, comp = null) => {
                     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
                         <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#991b1b', lineHeight: 1.2 }}>Notice</span>
                         <div style={{ fontSize: '0.84rem', color: '#4b5563', marginTop: '2px', wordBreak: 'break-word' }}>
-                            {comp ?? (cleanMsg || 'An unexpected error occurred. Please try again.')}
+                            {comp ?? cleanMsg}
                         </div>
                     </div>
                 </div>
@@ -188,9 +220,7 @@ export const selectThemeColors = theme => ({
 })
 
 export const SuccessToast = (message, settings = {}, comp = null) => {
-    const cleanMsg = typeof message === 'string'
-        ? message.replace(/<\/?[^>]+(>|$)/g, ' ').replace(/\s+/g, ' ').trim()
-        : message
+    const cleanMsg = sanitizeToastText(message) || 'Operation completed successfully.'
 
     return toast.custom(
         (t) => (
@@ -232,7 +262,7 @@ export const SuccessToast = (message, settings = {}, comp = null) => {
                     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
                         <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#065f46', lineHeight: 1.2 }}>Success</span>
                         <div style={{ fontSize: '0.84rem', color: '#4b5563', marginTop: '2px', wordBreak: 'break-word' }}>
-                            {comp ?? (cleanMsg || 'Operation completed successfully.')}
+                            {comp ?? cleanMsg}
                         </div>
                     </div>
                 </div>

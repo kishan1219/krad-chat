@@ -45,7 +45,8 @@ export default function EmbeddedSignup({ onConnected }: EmbeddedSignupProps) {
     }, [])
 
     async function api(path: string, method = 'POST', body?: any) {
-        const token = JSON.parse(localStorage.getItem('access_token') || 'null')
+        let token = localStorage.getItem('access_token') || ''
+        try { if (token.startsWith('"') || token.startsWith('{')) token = JSON.parse(token) } catch { /* ignore */ }
         const response = await fetch(`${httpConfig.baseUrl}whatsapp/onboarding/${path}`, {
             method,
             headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },

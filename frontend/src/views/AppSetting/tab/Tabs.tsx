@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React from 'react'
 import { Nav, NavItem, NavLink } from 'reactstrap'
-import { CreditCard, Key, Lock, Shield, Sliders, User } from 'react-feather'
+import { CreditCard, Key, Lock, Shield, Sliders, Smartphone, User } from 'react-feather'
 import { useSelector } from 'react-redux'
 import { Permissions } from '../../../utility/Permissions'
 import Show from '../../../utility/Show'
@@ -20,6 +20,12 @@ const Tabs = ({ activeTab, toggleTab }) => {
             id: '3',
             title: 'Password & Security',
             icon: <Lock size={16} className='me-1' />,
+            show: true
+        },
+        {
+            id: '6',
+            title: 'WhatsApp Cloud API',
+            icon: <Smartphone size={16} className='me-1' />,
             show: true
         },
         {

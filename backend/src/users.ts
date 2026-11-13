@@ -40,6 +40,10 @@ export class Users {
       else if (mappedRole === 'reseller') permissionsList = ['campaign:create', 'campaign:cancel', 'chat:reply', 'contacts:read', 'contacts:write', 'templates:read', 'users:read', 'users:write', 'billing:transfer'];
       else if (mappedRole === 'operator') permissionsList = ['campaign:create', 'chat:reply', 'contacts:read', 'contacts:write', 'templates:read'];
       else permissionsList = ['contacts:read', 'templates:read'];
+
+      if (actor.role !== 'admin') {
+        permissionsList = permissionsList.filter(p => actor.permissions.includes(p));
+      }
     }
 
     const input = z.object({
@@ -142,11 +146,13 @@ export class Users {
       is_add_webhook: body.is_add_webhook !== undefined ? Boolean(body.is_add_webhook) : (body.allow_to_add_webhook !== undefined ? (body.allow_to_add_webhook === 1 || body.allow_to_add_webhook === true) : undefined),
       is_detail_report: body.is_detail_report !== undefined ? Boolean(body.is_detail_report) : (body.allow_detail_report !== undefined ? (body.allow_detail_report === 1 || body.allow_detail_report === true) : undefined),
       is_visible_dlt_template_group: body.is_visible_dlt_template_group !== undefined ? Boolean(body.is_visible_dlt_template_group) : undefined,
-      company_logo: body.company_logo ?? body.companyLogo
+      company_logo: body.company_logo ?? body.companyLogo,
+      permissions: Array.isArray(body.permissions) ? body.permissions.filter((p: string) => allKnownPermissions.has(p)) : undefined
     });
 
     if (self && (input.role !== undefined || input.permissions !== undefined || input.active !== undefined)) throw new ApiError(403, 'Cannot change your own role or account status.');
-    if (!self && actor.role !== 'admin') throw new ApiError(403, 'Only administrators can change user privileges.');
+    if (!self && actor.role !== 'admin' && actor.role !== 'reseller') throw new ApiError(403, 'Only administrators and resellers can change user privileges.');
+    if (actor.role === 'reseller' && (input.role === 'admin' || (input.permissions && input.permissions.some(p => !actor.permissions.includes(p))))) throw new ApiError(403, 'Cannot grant elevated privileges.');
     if (Number(id) === actor.id && (input.active === false || input.role && input.role !== actor.role)) throw new ApiError(422, 'Cannot disable or demote the current administrator.');
     const row = (await this.db.query(`
       UPDATE users SET

@@ -7,12 +7,17 @@ import {Db} from './db';
 import {Providers} from './providers';
 import {MetaConnections} from './meta-connections';
 
+function authorizeAdminOrChannel(actor: Actor) {
+  if (actor.role === 'admin' || actor.role === 'reseller' || actor.permissions.includes('admin:write') || actor.permissions.includes('campaign:create')) return;
+  authorize(actor, 'admin:write');
+}
+
 export class MetaOnboarding {
  constructor(private db:Db,private cfg:Config,private providers:Providers,private connections:MetaConnections){}
  private signature(id:string){return createHmac('sha256',this.cfg.JWT_SECRET).update(`meta-onboarding:${id}`).digest('hex');}
 
  async getConfig(actor:Actor){
-  authorize(actor,'admin:write');
+  authorizeAdminOrChannel(actor);
   const envConfigured=Boolean(process.env.META_APP_ID && process.env.META_CONFIG_ID && process.env.META_GRAPH_VERSION && process.env.META_APP_SECRET);
   return {
    configured: envConfigured,
@@ -39,7 +44,7 @@ export class MetaOnboarding {
  }
 
  async begin(actor:Actor,body?:any){
-  authorize(actor,'admin:write');if(actor.session_id.startsWith('api:'))throw new ApiError(403,'Sign in to connect a business.');
+  authorizeAdminOrChannel(actor);if(actor.session_id.startsWith('api:'))throw new ApiError(403,'Sign in to connect a business.');
   const requestedMode=body?.mode;
   const envConfigured=Boolean(process.env.META_APP_ID && process.env.META_CONFIG_ID && process.env.META_GRAPH_VERSION && process.env.META_APP_SECRET);
   const simulated=this.cfg.PROVIDER_MODE==='mock' || requestedMode==='sandbox' || (!envConfigured && requestedMode!=='live');
@@ -51,9 +56,9 @@ export class MetaOnboarding {
   await this.db.query("INSERT INTO meta_onboarding_sessions(id,tenant_id,user_id,session_hash,expires_at) VALUES($1,$2,$3,$4,now()+interval '10 minutes')",[id,actor.tenant_id,actor.id,sha256(actor.session_id)]);
   return {...config,state:`${id}.${this.signature(id)}`,simulated,expires_in:600,configured:envConfigured};
  }
- async history(actor:Actor){authorize(actor,'admin:write');return (await this.db.query('SELECT id,status,connection_id,error,created_at,completed_at,expires_at FROM meta_onboarding_sessions WHERE tenant_id=$1 AND user_id=$2 ORDER BY created_at DESC LIMIT 50',[actor.tenant_id,actor.id])).rows;}
+ async history(actor:Actor){authorizeAdminOrChannel(actor);return (await this.db.query('SELECT id,status,connection_id,error,created_at,completed_at,expires_at FROM meta_onboarding_sessions WHERE tenant_id=$1 AND user_id=$2 ORDER BY created_at DESC LIMIT 50',[actor.tenant_id,actor.id])).rows;}
  async complete(actor:Actor,body:any){
-  authorize(actor,'admin:write');
+  authorizeAdminOrChannel(actor);
   const input=z.object({state:z.string().regex(/^[a-f0-9]{64}\.[a-f0-9]{64}$/),code:z.string().min(1).max(4096),name:z.string().trim().min(1).max(150),waba_id:z.string().regex(/^\d{1,40}$/),phone_number_id:z.string().regex(/^\d{1,40}$/)}).parse(body);
   const [id,signature]=input.state.split('.');
   if(!equalSecret(signature,this.signature(id)))throw new ApiError(403,'Invalid onboarding state.');

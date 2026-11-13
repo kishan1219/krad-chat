@@ -33,16 +33,17 @@ export class Operations {
       post(); authorize(actor, 'users:write');
       const rawIds = body.ids ?? body.user_ids ?? (body.id ? [body.id] : undefined);
       let rawAction = body.action;
-      if (!rawAction) {
-        if (body.status === 1 || body.status === '1' || body.status === true) rawAction = 'enable';
-        else if (body.status === 0 || body.status === '0' || body.status === false) rawAction = 'disable';
+      const statusValue = typeof body.status === 'object' && body.status !== null ? body.status.value : body.status;
+      if (!rawAction || (rawAction !== 'enable' && rawAction !== 'disable')) {
+        if (statusValue === 1 || statusValue === '1' || statusValue === true) rawAction = 'enable';
+        else if (statusValue === 0 || statusValue === '0' || statusValue === false) rawAction = 'disable';
       }
       const input = z.object({ ids: z.array(idSchema).min(1).max(100), action: z.enum(['enable','disable']) }).parse({ ids: rawIds, action: rawAction });
       if (input.ids.includes(actor.id)) throw new ApiError(422, 'Cannot change your own status in bulk.');
       for (const id of input.ids) await assertUserScope(this.db, actor, id);
       if (actor.role !== 'admin' && (await this.db.query("SELECT 1 FROM users WHERE id=ANY($1::bigint[]) AND role='admin'", [input.ids])).rowCount) throw new ApiError(403, 'Only administrators can manage administrator accounts.');
       await this.db.transaction(async c => {
-        await c.query('UPDATE users SET active=$1 WHERE tenant_id=$2 AND id=ANY($3::bigint[])', [input.action === 'enable', actor.tenant_id, input.ids]);
+        await c.query('UPDATE users SET active=$1 WHERE id=ANY($2::bigint[])', [input.action === 'enable', input.ids]);
         if (input.action === 'disable') await c.query('UPDATE sessions SET revoked_at=now() WHERE user_id=ANY($1::bigint[])', [input.ids]);
       });
       return result({ affected: input.ids.length });

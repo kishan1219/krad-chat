@@ -17,9 +17,15 @@ import CenteredModal from '../components/modal/CenteredModal'
 
 const PERMISSION_GROUPS = [
     {
+        category: "WhatsApp Cloud API & Connections",
+        items: [
+            { id: "admin:write", label: "Meta Cloud API & Embedded Signup", desc: "Embed and configure Meta WhatsApp Cloud API credentials, connect phone numbers & manage webhooks" }
+        ]
+    },
+    {
         category: "Live Chat & Inbox",
         items: [
-            { id: "chat:reply", label: "Live Chat Reply", desc: "Reply to inbound WhatsApp customer messages" }
+            { id: "chat:reply", label: "Live Chat Reply", desc: "Reply to inbound WhatsApp customer messages in live shared inbox" }
         ]
     },
     {
@@ -44,24 +50,28 @@ const PERMISSION_GROUPS = [
         ]
     },
     {
-        category: "Team & Administration",
+        category: "Team & User Management",
         items: [
             { id: "users:read", label: "View Users", desc: "View child accounts and team members" },
             { id: "users:write", label: "Manage Users", desc: "Create, edit, and delete child accounts" },
-            { id: "billing:transfer", label: "Transfer Credits", desc: "Allocate credits to managed accounts" },
-            { id: "admin:write", label: "System & Webhooks", desc: "Configure Cloud API, webhooks & security" }
+            { id: "billing:transfer", label: "Transfer Credits", desc: "Allocate credits to managed accounts" }
         ]
     }
 ]
 
 const DEFAULT_PERMISSIONS_BY_ROLE = {
     0: ['campaign:create', 'campaign:cancel', 'chat:reply', 'contacts:read', 'contacts:write', 'templates:read', 'templates:write', 'users:read', 'users:write', 'billing:transfer', 'admin:write'],
-    1: ['campaign:create', 'campaign:cancel', 'chat:reply', 'contacts:read', 'contacts:write', 'templates:read', 'users:read', 'users:write', 'billing:transfer'],
+    1: ['campaign:create', 'campaign:cancel', 'chat:reply', 'contacts:read', 'contacts:write', 'templates:read', 'users:read', 'users:write', 'billing:transfer', 'admin:write'],
     2: ['campaign:create', 'chat:reply', 'contacts:read', 'contacts:write', 'templates:read'],
     3: ['chat:reply', 'contacts:read', 'templates:read']
 }
 
 export const OPERATION_PROFILES = [
+    {
+        label: "✏️ Custom Granular Permissions (Selected Below)",
+        value: "custom",
+        permissions: []
+    },
     {
         label: "Live Chat Support Agent (Shared Team Inbox)",
         value: "chat_agent",
@@ -83,19 +93,19 @@ export const OPERATION_PROFILES = [
         permissions: ['templates:read', 'templates:write', 'contacts:read']
     },
     {
+        label: "WhatsApp Cloud API & Channel Operator",
+        value: "channel_operator",
+        permissions: ['chat:reply', 'contacts:read', 'templates:read', 'admin:write']
+    },
+    {
         label: "Reseller Partner Manager (Multi-Account & Billing)",
         value: "reseller",
-        permissions: ['campaign:create', 'campaign:cancel', 'chat:reply', 'contacts:read', 'contacts:write', 'templates:read', 'users:read', 'users:write', 'billing:transfer']
+        permissions: ['campaign:create', 'campaign:cancel', 'chat:reply', 'contacts:read', 'contacts:write', 'templates:read', 'users:read', 'users:write', 'billing:transfer', 'admin:write']
     },
     {
         label: "Full Administrator (All Capabilities)",
         value: "admin",
         permissions: ['campaign:create', 'campaign:cancel', 'chat:reply', 'contacts:read', 'contacts:write', 'templates:read', 'templates:write', 'users:read', 'users:write', 'billing:transfer', 'admin:write']
-    },
-    {
-        label: "Custom Configuration (Select Below)",
-        value: "custom",
-        permissions: []
     }
 ]
 
@@ -161,10 +171,28 @@ export default function AddUser({
     }
 
     const togglePermission = (permId: string) => {
-        setSelectedProfile("custom")
-        setSelectedPermissions(prev =>
-            prev.includes(permId) ? prev.filter(p => p !== permId) : [...prev, permId]
+        setSelectedPermissions(prev => {
+            const next = prev.includes(permId) ? prev.filter(p => p !== permId) : [...prev, permId]
+            const matched = OPERATION_PROFILES.find(p =>
+                p.value !== "custom" &&
+                p.permissions.length === next.length &&
+                p.permissions.every(x => next.includes(x))
+            )
+            setSelectedProfile(matched ? matched.value : "custom")
+            return next
+        })
+    }
+
+    const handleResetToRoleDefaults = () => {
+        const numericRole = Number(watch("userType") ?? 2)
+        const defaults = DEFAULT_PERMISSIONS_BY_ROLE[numericRole] || DEFAULT_PERMISSIONS_BY_ROLE[2]
+        setSelectedPermissions([...defaults])
+        const matched = OPERATION_PROFILES.find(p =>
+            p.value !== "custom" &&
+            p.permissions.length === defaults.length &&
+            p.permissions.every(x => defaults.includes(x))
         )
+        setSelectedProfile(matched ? matched.value : "custom")
     }
 
     const handleSelectAllPermissions = () => {
@@ -594,17 +622,25 @@ export default function AddUser({
                         </Row>
 
                         {/* Section 4: Operational Permissions Multi-Selector */}
-                        <div className='d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom'>
+                        <div className='d-flex flex-wrap align-items-center justify-content-between mb-2 pb-1 border-bottom gap-1'>
                             <div className='d-flex align-items-center'>
                                 <div className='avatar bg-light-info rounded me-1 p-50'>
                                     <Shield size={18} className='text-info' />
                                 </div>
                                 <div>
-                                    <h5 className='mb-0 fw-bolder text-dark'>Operation Permissions</h5>
-                                    <small className='text-muted'>Select operational profile dropdown or customize granular capabilities</small>
+                                    <div className='d-flex align-items-center gap-1'>
+                                        <h5 className='mb-0 fw-bolder text-dark'>Operation Permissions</h5>
+                                        <Badge color={selectedProfile === 'custom' ? 'light-warning' : 'light-primary'} pill>
+                                            {selectedPermissions.length} Active
+                                        </Badge>
+                                    </div>
+                                    <small className='text-muted'>Select an operational profile or click individual switches below to customize granular capabilities</small>
                                 </div>
                             </div>
                             <div className='d-flex gap-1'>
+                                <Button.Ripple size='sm' color='flat-success' onClick={handleResetToRoleDefaults} type='button'>
+                                    Reset to Role
+                                </Button.Ripple>
                                 <Button.Ripple size='sm' color='flat-primary' onClick={handleSelectAllPermissions} type='button'>
                                     Select All
                                 </Button.Ripple>
@@ -633,7 +669,7 @@ export default function AddUser({
                                     ))}
                                 </select>
                                 <small className='text-muted mt-25 d-block' style={{ fontSize: '0.78rem' }}>
-                                    Selecting a profile instantly assigns recommended operational capabilities. You can further refine individual switches below.
+                                    Selecting a profile instantly assigns recommended operational capabilities. You can freely toggle individual capability switches below at any time.
                                 </small>
                             </Col>
                         </Row>
@@ -649,31 +685,43 @@ export default function AddUser({
                                             const isChecked = selectedPermissions.includes(item.id)
                                             return (
                                                 <Col md="6" xs="12" key={item.id}>
-                                                    <div
-                                                        role='button'
-                                                        onClick={() => togglePermission(item.id)}
-                                                        className={`p-2 border rounded d-flex align-items-start justify-content-between transition-all ${isChecked ? 'border-primary bg-light-primary' : 'bg-white'}`}
-                                                        style={{ cursor: 'pointer', minHeight: '68px' }}
+                                                    <label
+                                                        htmlFor={`perm-switch-${item.id}`}
+                                                        className={`p-2 border rounded d-flex align-items-start justify-content-between transition-all ${
+                                                            isChecked ? 'border-primary bg-light-primary shadow-xs' : 'bg-white'
+                                                        }`}
+                                                        style={{
+                                                            cursor: 'pointer',
+                                                            minHeight: '72px',
+                                                            width: '100%',
+                                                            userSelect: 'none',
+                                                            marginBottom: 0
+                                                        }}
                                                     >
-                                                        <div className='pe-2'>
+                                                        <div className='pe-2 flex-grow-1'>
                                                             <div className='fw-bolder text-dark d-flex align-items-center gap-1' style={{ fontSize: '0.88rem' }}>
                                                                 <span>{item.label}</span>
-                                                                {isChecked && <Badge color='primary' pill style={{ fontSize: '0.65rem' }}>Active</Badge>}
+                                                                {isChecked ? (
+                                                                    <Badge color='primary' pill style={{ fontSize: '0.65rem' }}>Active</Badge>
+                                                                ) : (
+                                                                    <Badge color='light-secondary' pill style={{ fontSize: '0.65rem' }}>Disabled</Badge>
+                                                                )}
                                                             </div>
                                                             <small className='text-muted d-block mt-25' style={{ fontSize: '0.78rem' }}>
                                                                 {item.desc}
                                                             </small>
                                                         </div>
-                                                        <div className='form-check form-switch'>
+                                                        <div className='form-check form-switch ms-2' onClick={(e) => e.stopPropagation()}>
                                                             <input
+                                                                id={`perm-switch-${item.id}`}
                                                                 className='form-check-input'
                                                                 type='checkbox'
                                                                 checked={isChecked}
                                                                 onChange={() => togglePermission(item.id)}
-                                                                style={{ cursor: 'pointer' }}
+                                                                style={{ cursor: 'pointer', width: '2.4em', height: '1.25em' }}
                                                             />
                                                         </div>
-                                                    </div>
+                                                    </label>
                                                 </Col>
                                             )
                                         })}

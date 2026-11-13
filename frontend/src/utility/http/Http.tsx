@@ -3,7 +3,7 @@ import axios from 'axios'
 import { entryPoint, Events, WebAppVersion } from '../Const'
 import Emitter from '../Emitter'
 import { isValid, log } from '../helpers/common'
-import { ErrorToast, formatDate, MessageToast, SuccessToast } from '../Utils'
+import { ErrorToast, formatDate, MessageToast, SuccessToast, sanitizeToastText } from '../Utils'
 import defaultHttpConfig from './httpConfig'
 
 type HttpCallback = (...args: any[]) => void
@@ -296,9 +296,7 @@ export default class HttpService {
         if (!data.error) {
             success(data)
             if (showSuccessToast && res.data?.message) {
-                const cleanMsg = typeof res.data.message === 'string'
-                    ? res.data.message.replace(/<\/?[^>]+(>|$)/g, ' ').replace(/\s+/g, ' ').trim()
-                    : 'Operation completed successfully'
+                const cleanMsg = sanitizeToastText(res.data.message) || 'Operation completed successfully'
                 SuccessToast(cleanMsg)
             }
         } else {
@@ -307,10 +305,7 @@ export default class HttpService {
                 data: res.data
             })
             if (showErrorToast && res.data?.message) {
-                const rawMsg = res.data.message
-                const cleanMsg = typeof rawMsg === 'string'
-                    ? rawMsg.replace(/<\/?[^>]+(>|$)/g, ' ').replace(/\s+/g, ' ').trim()
-                    : 'An error occurred. Please try again.'
+                const cleanMsg = sanitizeToastText(res.data.message) || 'An error occurred. Please try again.'
                 ErrorToast(cleanMsg)
             }
         }
@@ -325,10 +320,7 @@ export default class HttpService {
             ...e
         })
         if (showErrorToast && e?.response?.data?.message) {
-            const rawMsg = e.response.data.message
-            const cleanMsg = typeof rawMsg === 'string'
-                ? rawMsg.replace(/<\/?[^>]+(>|$)/g, ' ').replace(/\s+/g, ' ').trim()
-                : 'An error occurred. Please try again.'
+            const cleanMsg = sanitizeToastText(e.response.data.message) || 'An error occurred. Please try again.'
             ErrorToast(cleanMsg)
         }
     }

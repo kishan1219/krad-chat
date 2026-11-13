@@ -10,7 +10,8 @@ export default function Connections() {
     const [pins, setPins] = useState<Record<string, string>>({}), [selected, setSelected] = useState<any>(null)
     const [mode, setMode] = useState(''), [error, setError] = useState(''), [notice, setNotice] = useState(''), [busy, setBusy] = useState(false)
     async function api(path: string, method = 'GET', body?: any) {
-        const token = JSON.parse(localStorage.getItem('access_token') || 'null')
+        let token = localStorage.getItem('access_token') || ''
+        try { if (token.startsWith('"') || token.startsWith('{')) token = JSON.parse(token) } catch { /* ignore */ }
         const response = await fetch(`${httpConfig.baseUrl}${path}`, { method, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) })
         const result = await response.json()
         if (!response.ok) throw new Error(result.message || 'Request failed')

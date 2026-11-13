@@ -25,10 +25,12 @@ export const userSlice = createSlice({
             state.viewuser = action?.payload
         },
         userSave: (state, action) => {
-            state.user.data = [
-                ...action?.payload,
-                ...state?.user?.data
-            ]
+            if (Array.isArray(action?.payload)) {
+                state.user.data = [
+                    ...action.payload,
+                    ...state?.user?.data
+                ]
+            }
         },
         userDelete: (state, action) => {
             const index = state.user.data.findIndex(x => x.id === action.payload)

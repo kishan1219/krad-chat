@@ -31,7 +31,7 @@ export const resources: Record<string, { singular: string; kind: string; admin?:
   'administration/user-wise-monthly-reports': { singular: 'administration/user-wise-monthly-report', kind: 'user_report', admin: true },
   'wa-charges': { singular: 'set-wa-charge', kind: 'wa_charge', admin: true },
 };
-export const permissions = ['contacts:write', 'campaign:create', 'campaign:cancel', 'chat:reply', 'users:write', 'billing:write', 'billing:transfer', 'resources:write', 'admin:write'];
+export const permissions = ['contacts:read', 'contacts:write', 'campaign:create', 'campaign:cancel', 'chat:reply', 'templates:read', 'templates:write', 'users:read', 'users:write', 'billing:write', 'billing:transfer', 'resources:write', 'admin:write'];
 export class Resources {
   constructor(private db: Db, private cfg: Config) {}
   private publicData(row: any) {
@@ -65,7 +65,12 @@ export class Resources {
       const isList = path === plural;
       const detail = path.startsWith(`${spec.singular}/`) ? path.slice(spec.singular.length + 1) : null;
       if (!singular && !isList && !detail) continue;
-      if (spec.admin) authorize(actor, 'admin:write');
+      if (spec.admin) {
+        const isRoutingLookup = isList && ['administration/secondary-routes', 'administration/primary-routes'].includes(plural);
+        if (!isRoutingLookup) {
+          authorize(actor, 'admin:write');
+        }
+      }
       if (isList && ['GET', 'POST'].includes(method)) return { handled: true, data: await this.list(actor, spec.kind, query, body) };
       if (detail && method === 'GET') return { handled: true, data: await this.get(actor, spec.kind, detail) };
       if (singular && method === 'POST') {

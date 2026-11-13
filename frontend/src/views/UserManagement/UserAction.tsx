@@ -24,7 +24,8 @@ const UserAction = ({ edit, handleReportChange, rowsSelected, preload }) => {
 
     const submitHandler = (data) => {
         if (handleReportChange) {
-            const action = data?.status === 1 || data?.status === '1' ? 'enable' : 'disable'
+            const rawStatus = typeof data?.status === 'object' && data?.status !== null ? data?.status?.value : data?.status
+            const action = (rawStatus === 1 || rawStatus === '1' || rawStatus === true) ? 'enable' : 'disable'
             userAction({
                 id: edit?.id,
                 jsonData: {

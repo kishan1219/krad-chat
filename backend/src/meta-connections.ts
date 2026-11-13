@@ -8,13 +8,17 @@ import { templateDefinition } from './template-definition';
 import { randomUUID } from 'node:crypto';
 
 const metaId=z.string().regex(/^\d{1,40}$/);
+function authorizeAdminOrChannel(actor: Actor) {
+  if (actor.role === 'admin' || actor.role === 'reseller' || actor.permissions.includes('admin:write') || actor.permissions.includes('campaign:create')) return;
+  authorize(actor, 'admin:write');
+}
 export class MetaConnections {
  constructor(private db:Db,private cfg:Config,private providers:Providers){}
  private visible(row:any){const {token_encrypted,...safe}=row;return {...safe,credentials_configured:Boolean(token_encrypted)};}
- async list(actor:Actor){authorize(actor,'admin:write');return (await this.db.query('SELECT * FROM meta_connections WHERE tenant_id=$1 ORDER BY id DESC',[actor.tenant_id])).rows.map(r=>this.visible(r));}
+ async list(actor:Actor){authorizeAdminOrChannel(actor);return (await this.db.query('SELECT * FROM meta_connections WHERE tenant_id=$1 ORDER BY id DESC',[actor.tenant_id])).rows.map(r=>this.visible(r));}
  async senders(actor:Actor){authorize(actor,'campaign:create');return (await this.db.query("SELECT id,name,phone_number_id,templates,quality_rating FROM meta_connections WHERE tenant_id=$1 AND status='connected' ORDER BY name",[actor.tenant_id])).rows.map(r=>({...r,templates:r.templates.filter((t:any)=>t.status==='APPROVED')}));}
  private async owned(actor:Actor,id:unknown){
-  authorize(actor,'admin:write');const row=(await this.db.query('SELECT * FROM meta_connections WHERE tenant_id=$1 AND id=$2',[actor.tenant_id,idSchema.parse(id)])).rows[0];
+  authorizeAdminOrChannel(actor);const row=(await this.db.query('SELECT * FROM meta_connections WHERE tenant_id=$1 AND id=$2',[actor.tenant_id,idSchema.parse(id)])).rows[0];
   if(!row)throw new ApiError(404,'WhatsApp connection not found.');return row;
  }
  private async call(row:any,path:string,method='GET',body?:unknown){
@@ -46,7 +50,7 @@ export class MetaConnections {
   });return {deleted:true};
  }
  async connect(actor:Actor,body:any){
-  authorize(actor,'admin:write');
+  authorizeAdminOrChannel(actor);
   const input=z.object({name:z.string().trim().min(1).max(150),waba_id:metaId,phone_number_id:metaId,access_token:z.string().min(1).max(4096).optional()}).parse(body);
   const simulated=this.cfg.PROVIDER_MODE==='mock';
   if(simulated&&this.cfg.NODE_ENV==='production')throw new ApiError(403,'Simulation is disabled.');

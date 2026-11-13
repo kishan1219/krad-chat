@@ -174,6 +174,13 @@ export default [
                 ...Permissions.whatsappSmsList
             },
             {
+                id: 'whatsapp-connections-nav',
+                title: 'WhatsApp Cloud API',
+                icon: <ChevronRightOutlined size={12} />,
+                navLink: '/whatsapp-connections',
+                ...Permissions.whatsappSmsList
+            },
+            {
                 id: 'whatsapp-broadcasts',
                 title: 'Bulk Broadcast Campaigns',
                 icon: <ChevronRightOutlined size={12} />,

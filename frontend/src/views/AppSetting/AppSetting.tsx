@@ -14,6 +14,7 @@ import Info from './tab/Info'
 import Password from './tab/Password'
 import Tabs from './tab/Tabs'
 import WhatsappAndSmsCharges from './tab/WhatsappAndSmsCharges'
+import WhatsAppCloudApi from './tab/WhatsAppCloudApi'
 
 // ** Styles
 import '@styles/react/libs/flatpickr/flatpickr.scss'
@@ -77,11 +78,9 @@ const AppSetting = () => {
                             </TabPane>
                         </Show>
 
-                        <Show IF={Permissions?.userAccessDocument}>
-                            <TabPane tabId='6'>
-                                <Document activeTab={activeTab} />
-                            </TabPane>
-                        </Show>
+                        <TabPane tabId='6'>
+                            <WhatsAppCloudApi activeTab={activeTab} />
+                        </TabPane>
 
                         <TabPane tabId='8'>
                             <WhatsappAndSmsCharges activeTab={activeTab} />
