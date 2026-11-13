@@ -1,4 +1,5 @@
 import React from 'react'
+import { Button } from 'reactstrap'
 
 interface StepPrerequisitesProps {
     onNext: () => void
@@ -7,65 +8,108 @@ interface StepPrerequisitesProps {
 
 export const StepPrerequisites: React.FC<StepPrerequisitesProps> = ({ onNext, onClose }) => {
     return (
-        <div className="space-y-6">
-            <div>
-                <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">
-                    Get started with WhatsApp's Business API
+        <div className="py-1">
+            <div className="mb-2">
+                <h3
+                    className="fw-bolder mb-1"
+                    style={{ color: '#5e5873', fontSize: '1.4rem', letterSpacing: '-0.2px' }}
+                >
+                    Get started with WhatsApp’s Business API
                 </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                <p className="text-muted" style={{ fontSize: '0.92rem', lineHeight: 1.6 }}>
                     WhatsApp is one of the most popular communication applications in the world.
                     WhatsApp is a Facebook company and requires a Facebook account and Facebook
                     Business Manager to set up.
                 </p>
             </div>
 
-            <div>
-                <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-3">
+            <div className="mb-2">
+                <h5 className="fw-bolder mb-1" style={{ color: '#22292f', fontSize: '1rem' }}>
                     What you will Need :-
-                </h4>
-                <ol className="list-decimal list-inside space-y-2 text-xs text-slate-700 dark:text-slate-300 leading-relaxed pl-1">
+                </h5>
+                <ol
+                    style={{
+                        paddingLeft: '1.25rem',
+                        color: '#6e6b7b',
+                        fontSize: '0.88rem',
+                        lineHeight: 1.85
+                    }}
+                >
                     <li>Access to Facebook Business Manager</li>
                     <li>A viable Phone Number for WhatsApp</li>
-                    <li>Your business's legal address and details</li>
+                    <li>Your business’s legal address and details</li>
                     <li>Verify your Facebook Business</li>
                     <li>Please ensure you have full access to the WhatsApp Business account</li>
                     <li>Please ensure the ID that is being used belongs to the business that you manage</li>
-                    <li>Please ensure the FB user ID has access to manage the WhatsApp account templates, phone numbers, generate QR code</li>
-                </ol>
-            </div>
-
-            <div>
-                <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-2">
-                    Create your WhatsApp Business Account
-                </h4>
-                <p className="text-xs text-slate-600 dark:text-slate-300 mb-2">
-                    To continue you need to access your Facebook business account, as well as:
-                </p>
-                <ol className="list-decimal list-inside space-y-2 text-xs text-slate-700 dark:text-slate-300 leading-relaxed pl-1">
-                    <li>Your company's legal name and address</li>
-                    <li>A display name and short description</li>
                     <li>
-                        A phone number you have access to, own by your business. Don't have one?{' '}
-                        <span className="text-orange-500 font-semibold cursor-pointer">Contact Support</span>
+                        Please ensure the FB user ID has access to manage the WhatsApp account templates,
+                        phone numbers, generate QR code
                     </li>
                 </ol>
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
-                <button
+            <div className="mb-2">
+                <h5 className="fw-bolder mb-1" style={{ color: '#22292f', fontSize: '1rem' }}>
+                    Create your WhatsApp Business Account
+                </h5>
+                <p className="text-muted mb-1" style={{ fontSize: '0.88rem' }}>
+                    To continue you need to access your Facebook business account, as well as.
+                </p>
+                <ol
+                    style={{
+                        paddingLeft: '1.25rem',
+                        color: '#6e6b7b',
+                        fontSize: '0.88rem',
+                        lineHeight: 1.85
+                    }}
+                >
+                    <li>Your company’s legal name and address</li>
+                    <li>A display name and short description</li>
+                    <li>
+                        A phone number you have access to, own by your business. Don’t have one?{' '}
+                        <a
+                            href="https://www.whatsapp.com/contact"
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{ color: '#ff8c21', textDecoration: 'none', fontWeight: 600 }}
+                        >
+                            Contact Support
+                        </a>
+                    </li>
+                </ol>
+            </div>
+
+            <div className="d-flex justify-content-end align-items-center gap-2 pt-2 border-top mt-3">
+                <Button
+                    color="secondary"
+                    outline
                     type="button"
                     onClick={onClose}
-                    className="px-5 py-2 text-xs font-medium rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    style={{
+                        borderRadius: '6px',
+                        padding: '0.6rem 1.75rem',
+                        fontWeight: 500,
+                        borderColor: '#b9b9c3',
+                        color: '#6e6b7b'
+                    }}
                 >
                     Close
-                </button>
-                <button
+                </Button>
+                <Button
                     type="button"
                     onClick={onNext}
-                    className="px-6 py-2 text-xs font-semibold rounded-xl bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white shadow-sm transition-all"
+                    style={{
+                        backgroundColor: '#ff8c21',
+                        borderColor: '#ff8c21',
+                        color: '#ffffff',
+                        borderRadius: '6px',
+                        padding: '0.6rem 2.25rem',
+                        fontWeight: 600,
+                        boxShadow: '0 2px 6px rgba(255,140,33,0.3)'
+                    }}
                 >
                     Next
-                </button>
+                </Button>
             </div>
         </div>
     )

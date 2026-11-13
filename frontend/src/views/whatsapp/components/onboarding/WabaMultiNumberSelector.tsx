@@ -1,5 +1,6 @@
 import React from 'react'
 import { Check, Smartphone } from 'react-feather'
+import { Card, CardBody, Button, Badge, Input } from 'reactstrap'
 import { MetaWabaPhoneNumber } from '../../../../services/whatsappService'
 
 interface WabaMultiNumberSelectorProps {
@@ -24,94 +25,128 @@ export const WabaMultiNumberSelector: React.FC<WabaMultiNumberSelectorProps> = (
     onBatchConnect
 }) => {
     return (
-        <div className="space-y-6">
-            <div>
-                <div className="flex items-center gap-2 mb-1">
-                    <Smartphone size={20} className="text-orange-500" />
-                    <h3 className="text-xl font-bold text-slate-800 dark:text-white">
+        <div className="py-1">
+            <div className="mb-2">
+                <div className="d-flex align-items-center gap-1 mb-50">
+                    <Smartphone size={20} style={{ color: '#ff8c21' }} />
+                    <h4 className="fw-bolder mb-0" style={{ color: '#5e5873' }}>
                         Multiple Phone Numbers Detected
-                    </h3>
+                    </h4>
                 </div>
-                <p className="text-xs text-slate-600 dark:text-slate-300">
+                <p className="text-muted mb-0" style={{ fontSize: '0.88rem' }}>
                     Your WhatsApp Business Account contains multiple registered phone lines.
                     Select the numbers you want to connect simultaneously to this workspace.
                 </p>
             </div>
 
-            <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+            <div style={{ maxHeight: '300px', overflowY: 'auto' }} className="pe-50 mb-2">
                 {numbers.map((num) => {
                     const isSelected = selectedIds.includes(num.id)
                     const label = numberLabels[num.id] ?? num.verified_name ?? ''
 
                     return (
-                        <div
+                        <Card
                             key={num.id}
                             onClick={() => onToggleSelection(num.id)}
-                            className={`p-4 rounded-xl border cursor-pointer transition-all ${
-                                isSelected
-                                    ? 'border-orange-500 bg-orange-50/50 dark:bg-orange-950/20 ring-1 ring-orange-500/50'
-                                    : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50'
-                            }`}
+                            className="mb-1 cursor-pointer transition-all"
+                            style={{
+                                border: isSelected ? '1.5px solid #ff8c21' : '1px solid #d8d6de',
+                                backgroundColor: isSelected ? '#fff8f2' : '#ffffff',
+                                borderRadius: '8px'
+                            }}
                         >
-                            <div className="flex items-start justify-between gap-3">
-                                <div className="flex items-start gap-3">
+                            <CardBody className="p-1 d-flex align-items-center justify-content-between">
+                                <div className="d-flex align-items-center gap-1">
                                     <div
-                                        className={`w-5 h-5 rounded-md flex items-center justify-center border mt-0.5 transition-colors ${
-                                            isSelected
-                                                ? 'bg-orange-500 border-orange-500 text-white'
-                                                : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'
-                                        }`}
+                                        className="d-flex align-items-center justify-content-center"
+                                        style={{
+                                            width: '22px',
+                                            height: '22px',
+                                            borderRadius: '4px',
+                                            border: isSelected ? 'none' : '1px solid #b9b9c3',
+                                            backgroundColor: isSelected ? '#ff8c21' : '#fff',
+                                            color: '#fff'
+                                        }}
                                     >
-                                        {isSelected && <Check size={12} />}
+                                        {isSelected && <Check size={14} />}
                                     </div>
                                     <div>
-                                        <div className="text-sm font-bold text-slate-800 dark:text-white font-mono">
+                                        <div className="fw-bolder" style={{ color: '#22292f', fontSize: '0.92rem' }}>
                                             {num.display_phone_number || num.id}
                                         </div>
-                                        <div className="text-xs text-slate-500 dark:text-slate-400">
-                                            Quality: <span className="font-semibold">{num.quality_rating || 'GREEN'}</span>
+                                        <div className="text-muted small">
+                                            <span>Rating: </span>
+                                            <Badge
+                                                color={
+                                                    num.quality_rating === 'GREEN'
+                                                        ? 'light-success'
+                                                        : num.quality_rating === 'YELLOW'
+                                                        ? 'light-warning'
+                                                        : 'light-danger'
+                                                }
+                                                pill
+                                            >
+                                                {num.quality_rating || 'GREEN'}
+                                            </Badge>
                                             {num.code_verification_status && (
-                                                <span> • {num.code_verification_status}</span>
+                                                <span className="ms-50">• {num.code_verification_status}</span>
                                             )}
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="text-right" onClick={(e) => e.stopPropagation()}>
-                                    <input
+                                <div onClick={(e) => e.stopPropagation()} style={{ minWidth: '180px' }}>
+                                    <Input
                                         type="text"
+                                        bsSize="sm"
                                         value={label}
                                         onChange={(e) => onUpdateLabel(num.id, e.target.value)}
                                         placeholder="Custom label / department..."
-                                        className="text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-orange-500"
+                                        style={{ borderRadius: '6px', fontSize: '0.82rem' }}
                                     />
                                 </div>
-                            </div>
-                        </div>
+                            </CardBody>
+                        </Card>
                     )
                 })}
             </div>
 
-            <div className="flex justify-between items-center pt-4 border-t border-slate-200 dark:border-slate-800">
-                <span className="text-xs text-slate-500 dark:text-slate-400">
+            <div className="d-flex justify-content-between align-items-center pt-2 border-top mt-3">
+                <span className="text-muted small">
                     {selectedIds.length} of {numbers.length} numbers selected
                 </span>
-                <div className="flex gap-3">
-                    <button
+                <div className="d-flex gap-2">
+                    <Button
+                        color="secondary"
+                        outline
                         type="button"
                         onClick={onBack}
-                        className="px-5 py-2 text-xs font-medium rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100"
+                        style={{
+                            borderRadius: '6px',
+                            padding: '0.6rem 1.75rem',
+                            fontWeight: 500,
+                            borderColor: '#b9b9c3',
+                            color: '#6e6b7b'
+                        }}
                     >
                         Back
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         type="button"
                         disabled={busy || selectedIds.length === 0}
                         onClick={onBatchConnect}
-                        className="px-6 py-2 text-xs font-semibold rounded-xl bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white shadow-sm disabled:opacity-50 transition-all"
+                        style={{
+                            backgroundColor: '#ff8c21',
+                            borderColor: '#ff8c21',
+                            color: '#ffffff',
+                            borderRadius: '6px',
+                            padding: '0.6rem 2.25rem',
+                            fontWeight: 600,
+                            boxShadow: '0 2px 6px rgba(255,140,33,0.3)'
+                        }}
                     >
                         {busy ? 'Connecting...' : `Connect ${selectedIds.length} Numbers`}
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

@@ -1,9 +1,13 @@
 import { PGlite } from '@electric-sql/pglite';
 import { readFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { Db } from '../src/db';
 import { Actor } from '../src/auth';
 import { Config } from '../src/config';
 import { hash } from 'bcryptjs';
+
+const migDir = existsSync('migrations') ? 'migrations' : join(__dirname, '../migrations');
 
 export const testConfig: Config = { NODE_ENV: 'test', PORT: 4000, DATABASE_URL: 'unused', DATABASE_SSL: false,
   JWT_SECRET: 'test-only-secret-at-least-48-characters-long-do-not-deploy', ENCRYPTION_KEY: '12'.repeat(32), PROVIDER_MODE: 'mock',
@@ -11,29 +15,30 @@ export const testConfig: Config = { NODE_ENV: 'test', PORT: 4000, DATABASE_URL: 
   MOCK_DELIVERY: true, SMS_UNIT_PRICE_PAISE: 25, WHATSAPP_UNIT_PRICE_PAISE: 100, VOICE_UNIT_PRICE_PAISE: 200 };
 export async function database() {
   const pg = new PGlite();
-  await pg.exec(await readFile('migrations/001_initial.sql', 'utf8'));
-  await pg.exec(await readFile('migrations/002_user_wallets.sql', 'utf8'));
-  await pg.exec(await readFile('migrations/003_api_keys_and_notifications.sql', 'utf8'));
-  await pg.exec(await readFile('migrations/004_whatsapp_commerce.sql', 'utf8'));
-  await pg.exec(await readFile('migrations/005_shopping_bot.sql', 'utf8'));
-  await pg.exec(await readFile('migrations/006_invitations.sql', 'utf8'));
-  await pg.exec(await readFile('migrations/007_immutable_records.sql', 'utf8'));
-  await pg.exec(await readFile('migrations/008_webhook_inbox.sql', 'utf8'));
-  await pg.exec(await readFile('migrations/009_workflows.sql', 'utf8'));
-  await pg.exec(await readFile('migrations/010_meta_connections.sql', 'utf8'));
-  await pg.exec(await readFile('migrations/011_inbox_controls.sql', 'utf8'));
-  await pg.exec(await readFile('migrations/012_meta_onboarding.sql', 'utf8'));
-  await pg.exec(await readFile('migrations/013_broadcast_controls.sql', 'utf8'));
-  await pg.exec(await readFile('migrations/014_commerce_options.sql', 'utf8'));
-  await pg.exec(await readFile('migrations/015_workflow_contact_trigger.sql', 'utf8'));
-  await pg.exec(await readFile('migrations/016_feature_flags.sql', 'utf8'));
-  await pg.exec(await readFile('migrations/017_organization_lifecycle.sql', 'utf8'));
-  await pg.exec(await readFile('migrations/018_plans_whitelabel_and_hierarchical_billing.sql', 'utf8'));
-  await pg.exec(await readFile('migrations/019_security_hardening_rls_and_indexes.sql', 'utf8'));
-  await pg.exec(await readFile('migrations/020_enforce_database_rls_role.sql', 'utf8'));
-  await pg.exec(await readFile('migrations/021_chat_media_support.sql', 'utf8'));
-  await pg.exec(await readFile('migrations/022_user_profile_and_username.sql', 'utf8'));
-  await pg.exec(await readFile('migrations/023_platform_settings_and_meta_limits.sql', 'utf8'));
+  await pg.exec(await readFile(join(migDir, '001_initial.sql'), 'utf8'));
+  await pg.exec(await readFile(join(migDir, '002_user_wallets.sql'), 'utf8'));
+  await pg.exec(await readFile(join(migDir, '003_api_keys_and_notifications.sql'), 'utf8'));
+  await pg.exec(await readFile(join(migDir, '004_whatsapp_commerce.sql'), 'utf8'));
+  await pg.exec(await readFile(join(migDir, '005_shopping_bot.sql'), 'utf8'));
+  await pg.exec(await readFile(join(migDir, '006_invitations.sql'), 'utf8'));
+  await pg.exec(await readFile(join(migDir, '007_immutable_records.sql'), 'utf8'));
+  await pg.exec(await readFile(join(migDir, '008_webhook_inbox.sql'), 'utf8'));
+  await pg.exec(await readFile(join(migDir, '009_workflows.sql'), 'utf8'));
+  await pg.exec(await readFile(join(migDir, '010_meta_connections.sql'), 'utf8'));
+  await pg.exec(await readFile(join(migDir, '011_inbox_controls.sql'), 'utf8'));
+  await pg.exec(await readFile(join(migDir, '012_meta_onboarding.sql'), 'utf8'));
+  await pg.exec(await readFile(join(migDir, '013_broadcast_controls.sql'), 'utf8'));
+  await pg.exec(await readFile(join(migDir, '014_commerce_options.sql'), 'utf8'));
+  await pg.exec(await readFile(join(migDir, '015_workflow_contact_trigger.sql'), 'utf8'));
+  await pg.exec(await readFile(join(migDir, '016_feature_flags.sql'), 'utf8'));
+  await pg.exec(await readFile(join(migDir, '017_organization_lifecycle.sql'), 'utf8'));
+  await pg.exec(await readFile(join(migDir, '018_plans_whitelabel_and_hierarchical_billing.sql'), 'utf8'));
+  await pg.exec(await readFile(join(migDir, '019_security_hardening_rls_and_indexes.sql'), 'utf8'));
+  await pg.exec(await readFile(join(migDir, '020_enforce_database_rls_role.sql'), 'utf8'));
+  await pg.exec(await readFile(join(migDir, '021_chat_media_support.sql'), 'utf8'));
+  await pg.exec(await readFile(join(migDir, '022_user_profile_and_username.sql'), 'utf8'));
+  await pg.exec(await readFile(join(migDir, '023_platform_settings_and_meta_limits.sql'), 'utf8'));
+  await pg.exec(await readFile(join(migDir, '024_waba_router_safeguards_and_incremental_sync.sql'), 'utf8'));
   const query = async (text: string, values: unknown[] = []) => {
     if (text.includes('pg_advisory_xact_lock')) return { rows: [], rowCount: 1 };
     const result = await pg.query(text, values);

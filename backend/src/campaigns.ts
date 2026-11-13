@@ -84,7 +84,9 @@ export class Campaigns {
         const eligible=Number((await c.query('SELECT count(*) FROM contact_consent WHERE tenant_id=$1 AND phone=ANY($2::text[]) AND opted_out=false AND opted_in_at IS NOT NULL',[actor.tenant_id,phones])).rows[0].count);
         if(eligible!==phones.length)throw new ApiError(422,'Every broadcast recipient needs recorded WhatsApp opt-in consent.');
         await c.query('INSERT INTO broadcast_policies(tenant_id) VALUES($1) ON CONFLICT DO NOTHING',[actor.tenant_id]);
-        requiresApproval=(await c.query('SELECT require_approval FROM broadcast_policies WHERE tenant_id=$1',[actor.tenant_id])).rows[0].require_approval;
+        const policyRow = (await c.query('SELECT require_approval, paused FROM broadcast_policies WHERE tenant_id=$1',[actor.tenant_id])).rows[0];
+        if (policyRow?.paused) throw new ApiError(409, 'Broadcasting is paused by automated safeguards. Override safeguard in WhatsApp Configuration to resume.');
+        requiresApproval = policyRow.require_approval;
       }
       if (!wallet || Number(wallet.balance) - Number(wallet.reserved) < cost) throw new ApiError(422, 'Insufficient available credits.');
       const campaign = (await c.query(`INSERT INTO campaigns(tenant_id,user_id,channel,name,payload,scheduled_at,idempotency_key,request_hash,total,cost)

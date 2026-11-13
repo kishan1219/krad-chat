@@ -311,3 +311,4 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
         handleBatchConnect
     }
 }
+

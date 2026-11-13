@@ -573,31 +573,31 @@ const Configuration = () => {
             <WhatsappPhoneNumberRegister Component={Button.Ripple} color={"secondary"} showModal={showRegisterModal} edit={registerUserId} preload={preload} setShowModal={() => setShowRegisterModal(false)} noView />
             <WhatsappEcommerce Component={Button.Ripple} color={"secondary"} showModal={ecommerceModal} edit={rowId} preload={preload} setShowModal={() => setEcommerceModal(false)} noView />
             <WhatsappCallingModal Component={Button.Ripple} color={"secondary"} showModal={callingModal} edit={rowId} preload={preload} setShowModal={() => setCallingModal(false)} noView />
-            <AddWhatsappConfigModal isOpen={modal} toggle={() => setModal(!modal)} onSuccess={() => preload()} />
+            <AddWhatsappConfigModal isOpen={modal} toggle={() => setModal(!modal)} onClose={() => setModal(false)} onSuccess={() => preload()} />
 
-            <Header icon={""} title={"Whatsapp Configuration"}>
+            <Header icon={""} title={<span style={{ color: '#ff8c21', fontWeight: 600 }}>Whatsapp Configuration</span>}>
                 <ButtonGroup>
 
                     <Show IF={Permissions?.whatsappConfigCreate || true}>
                         <Button.Ripple
                             size="sm"
                             color="primary"
-                            style={{ backgroundColor: '#00b074', borderColor: '#00b074' }}
+                            style={{ backgroundColor: '#ff8c21', borderColor: '#ff8c21', borderRadius: '6px', fontWeight: 600 }}
                             className="d-flex align-items-center gap-1 text-white shadow-sm"
                             onClick={() => setModal(true)}
                         >
                             <Plus size="14" />
-                            <span>Add WhatsApp</span>
+                            <span>Add Whatsapp</span>
                         </Button.Ripple>
                     </Show>
 
 
                     <UncontrolledTooltip target="reload">Refresh Data</UncontrolledTooltip>
                     <UncontrolledTooltip target="filteree">Filter</UncontrolledTooltip>
-                    <Button.Ripple size="sm" color="secondary" id="filteree" onClick={() => { setShowFilter(true) }}>
+                    <Button.Ripple size="sm" color="secondary" id="filteree" style={{ backgroundColor: '#5e5873', borderColor: '#5e5873', color: '#fff', borderRadius: '6px' }} onClick={() => { setShowFilter(true) }}>
                         <Sliders size="14" />
                     </Button.Ripple>
-                    <Button.Ripple size="sm" color="dark" id="reload" onClick={() => { setFilterData({}); setReload(true); setResetIt(new Date()); reset() }}>
+                    <Button.Ripple size="sm" color="dark" id="reload" style={{ backgroundColor: '#4b465c', borderColor: '#4b465c', color: '#fff', borderRadius: '6px' }} onClick={() => { setFilterData({}); setReload(true); setResetIt(new Date()); reset() }}>
                         <RefreshCcw size="14" />
                     </Button.Ripple>
                 </ButtonGroup>
@@ -626,8 +626,8 @@ const Configuration = () => {
                                     <>
                                         <LoadingButton
                                             loading={loading}
-                                            className="btn btn-primary"
-                                            color="primary"
+                                            className="btn"
+                                            style={{ backgroundColor: '#ff8c21', borderColor: '#ff8c21', color: '#fff' }}
                                             type="submit"
                                             size="sm"
                                         >

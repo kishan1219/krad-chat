@@ -53,7 +53,7 @@ export const buttonComponentSchema = z.object({
   type: z.literal('button'),
   sub_type: z.enum(['quick_reply', 'url', 'catalog']).optional(),
   index: z.union([z.string(), z.number()]),
-  parameters: z.array(z.record(z.any())).optional()
+  parameters: z.array(z.record(z.string(), z.any())).optional()
 });
 
 export const carouselCardComponentSchema = z.union([

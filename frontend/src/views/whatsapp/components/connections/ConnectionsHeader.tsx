@@ -1,5 +1,6 @@
 import React from 'react'
 import { Plus, Sliders, RefreshCw, Search } from 'react-feather'
+import { Button, Input } from 'reactstrap'
 
 interface ConnectionsHeaderProps {
     search: string
@@ -21,67 +22,99 @@ export function ConnectionsHeader({
     refreshing
 }: ConnectionsHeaderProps) {
     return (
-        <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="mb-2">
+            <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-1 mb-1">
                 <div>
-                    <h1 className="text-2xl font-bold text-orange-500 tracking-tight">
-                        WhatsApp Configuration
-                    </h1>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    <h2
+                        className="fw-bolder mb-25"
+                        style={{ color: '#ff8c21', fontSize: '1.65rem', letterSpacing: '-0.3px' }}
+                    >
+                        Whatsapp Configuration
+                    </h2>
+                    <p className="text-muted small mb-0">
                         Manage your connected phone numbers, Meta Embedded Signups, and messaging limit tiers.
                     </p>
                 </div>
 
-                <div className="flex items-center gap-2">
-                    <button
+                <div className="d-flex align-items-center gap-1">
+                    <Button
                         type="button"
                         onClick={onOpenAddModal}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-medium text-xs shadow-sm shadow-orange-500/20 transition-all"
+                        style={{
+                            backgroundColor: '#ff8c21',
+                            borderColor: '#ff8c21',
+                            color: '#ffffff',
+                            fontWeight: 600,
+                            borderRadius: '6px',
+                            padding: '0.55rem 1.25rem',
+                            fontSize: '0.88rem'
+                        }}
+                        className="d-inline-flex align-items-center gap-50 shadow-sm"
                     >
                         <Plus size={15} />
                         <span>Add Whatsapp</span>
-                    </button>
+                    </Button>
 
-                    <button
+                    <Button
                         type="button"
                         onClick={onToggleManual}
                         title="Toggle Manual Credentials Form"
-                        className={`p-2 rounded-xl border text-xs font-medium transition-all ${
-                            showManual
-                                ? 'bg-slate-700 text-white border-slate-700'
-                                : 'bg-slate-700 text-white border-slate-700 hover:bg-slate-800'
-                        }`}
+                        style={{
+                            backgroundColor: showManual ? '#283046' : '#5e5873',
+                            borderColor: showManual ? '#283046' : '#5e5873',
+                            color: '#ffffff',
+                            borderRadius: '6px',
+                            padding: '0.55rem 0.75rem'
+                        }}
                     >
                         <Sliders size={15} />
-                    </button>
+                    </Button>
 
-                    <button
+                    <Button
                         type="button"
                         onClick={onRefresh}
                         disabled={refreshing}
                         title="Refresh Connections"
-                        className="p-2 rounded-xl border bg-slate-700 text-white border-slate-700 hover:bg-slate-800 transition-all disabled:opacity-50"
+                        style={{
+                            backgroundColor: '#4b465c',
+                            borderColor: '#4b465c',
+                            color: '#ffffff',
+                            borderRadius: '6px',
+                            padding: '0.55rem 0.75rem'
+                        }}
                     >
                         <RefreshCw size={15} className={`${refreshing ? 'animate-spin' : ''}`} />
-                    </button>
+                    </Button>
                 </div>
             </div>
 
-            {/* Search Bar */}
-            <div className="flex justify-end">
-                <div className="relative w-full max-w-xs">
-                    <input
+            {/* Search Bar matching user screenshot */}
+            <div className="d-flex justify-content-end mt-1">
+                <div className="input-group" style={{ maxWidth: '320px' }}>
+                    <Input
                         type="text"
+                        bsSize="sm"
                         value={search}
                         onChange={(e) => onSearchChange(e.target.value)}
-                        placeholder="Search phone numbers or WABA..."
-                        className="w-full text-xs pl-3 pr-9 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                        placeholder="Search..."
+                        style={{
+                            borderRadius: '6px 0 0 6px',
+                            border: '1px solid #d8d6de',
+                            fontSize: '0.88rem',
+                            paddingLeft: '0.85rem'
+                        }}
                     />
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-1.5 pointer-events-none">
-                        <div className="p-1 rounded-lg bg-orange-500 text-white">
-                            <Search size={14} />
-                        </div>
-                    </div>
+                    <Button
+                        style={{
+                            backgroundColor: '#ff8c21',
+                            borderColor: '#ff8c21',
+                            color: '#fff',
+                            borderRadius: '0 6px 6px 0'
+                        }}
+                        size="sm"
+                    >
+                        <Search size={14} />
+                    </Button>
                 </div>
             </div>
         </div>

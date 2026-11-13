@@ -7,9 +7,13 @@ import { Providers } from './providers';
 import { Campaigns } from './campaigns';
 import { Automation } from './automation';
 import {templateMessageSchema} from './whatsapp-template';
+import { InboundRouter } from './inbound-router';
 
 export class Chat {
-  constructor(private db: Db, private cfg: Config, private providers: Providers, private notify: (tenant: number, event: any) => void, private campaigns?: Campaigns, private automation?: Automation) {}
+  private inboundRouter: InboundRouter;
+  constructor(private db: Db, private cfg: Config, private providers: Providers, private notify: (tenant: number, event: any) => void, private campaigns?: Campaigns, private automation?: Automation, router?: InboundRouter) {
+    this.inboundRouter = router || new InboundRouter(db);
+  }
   async get(actor:Actor,id:unknown){
     const row=(await this.db.query('SELECT * FROM conversations WHERE tenant_id=$1 AND id=$2',[actor.tenant_id,idSchema.parse(id)])).rows[0];
     if(!row)throw new ApiError(404,'Conversation not found.');return row;
@@ -66,7 +70,7 @@ export class Chat {
       if (!recent.rowCount) throw new ApiError(422, 'Use an approved template outside the customer service window.');
     }
     if(input.template&&!(await this.templates(actor,conversation.id)).some((t:any)=>t.name===input.template!.name&&t.language===input.template!.language.code))throw new ApiError(422,'Select an approved template synchronized for this sender.');
-    const displayed=input.message||`Template: ${input.template!.name}\n${input.template!.components?.flatMap(c=>c.parameters.map(p=>p.text)).join('\n')||''}`;
+    const displayed = input.message || `Template: ${input.template!.name}\n${input.template!.components?.flatMap(c => ('parameters' in c && Array.isArray((c as any).parameters)) ? (c as any).parameters.map((p: any) => p.text || p.image?.link || p.document?.link || '').filter(Boolean) : []).join('\n') || ''}`;
     const row = (await this.db.query("INSERT INTO chat_messages(tenant_id,conversation_id,direction,message,status) VALUES($1,$2,'out',$3,'sending') RETURNING *", [actor.tenant_id, conversation.id, displayed])).rows[0];
     try {
       if (!this.campaigns) throw new ApiError(503, 'Campaign worker not configured for chat billing.');
@@ -84,12 +88,35 @@ export class Chat {
   async incoming(tenant: number, phone: string, text: string, providerId: string, phoneNumberId = '', rawTimestamp?: unknown) {
     phone = normalizePhone(phone);
     const { timestamp, isSkewed } = normalizeProviderTimestamp(rawTimestamp);
+
+    let effectivePhoneId = phoneNumberId;
+    let routingTag: string | null = null;
+    try {
+      const routeRes = await this.inboundRouter.resolveRoute(tenant, phone, text, phoneNumberId);
+      if (routeRes.routed && routeRes.target_phone_number_id) {
+        effectivePhoneId = routeRes.target_phone_number_id;
+        routingTag = routeRes.department !== 'general' ? `department:${routeRes.department}` : `routed:${routeRes.rule_name}`;
+      }
+    } catch {
+      // Fallback gracefully to default line
+    }
+
     const row = await this.db.transaction(async c => {
       await c.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[`contact:${tenant}:${phone}`]);
-      const conversation = (await c.query('INSERT INTO conversations(tenant_id,phone,phone_number_id) VALUES($1,$2,$3) ON CONFLICT(tenant_id,phone,phone_number_id) DO UPDATE SET updated_at=now() RETURNING *', [tenant, phone, phoneNumberId])).rows[0];
+      const conversation = (await c.query(
+        `INSERT INTO conversations(tenant_id,phone,phone_number_id,labels)
+         VALUES($1,$2,$3,CASE WHEN $4::text IS NOT NULL THEN ARRAY[$4::text] ELSE '{}'::text[] END)
+         ON CONFLICT(tenant_id,phone,phone_number_id)
+         DO UPDATE SET updated_at=now(), labels=CASE WHEN $4::text IS NOT NULL AND NOT ($4::text = ANY(conversations.labels)) THEN array_append(conversations.labels,$4::text) ELSE conversations.labels END
+         RETURNING *`,
+        [tenant, phone, effectivePhoneId, routingTag]
+      )).rows[0];
       const incoming = (await c.query("INSERT INTO chat_messages(tenant_id,conversation_id,direction,message,provider_id,created_at) VALUES($1,$2,'in',$3,$4,$5) ON CONFLICT(provider_id) DO NOTHING RETURNING *", [tenant, conversation.id, text.slice(0, 10000), providerId, timestamp])).rows[0];
       if (incoming && isSkewed && rawTimestamp !== undefined && rawTimestamp !== null) {
         await c.query("INSERT INTO audit_logs(tenant_id,user_id,action,target) VALUES($1,NULL,'chat.timestamp_skew',$2)", [tenant, JSON.stringify({ message_id: incoming.id, raw_timestamp: String(rawTimestamp) })]);
+      }
+      if (incoming && routingTag) {
+        await c.query("INSERT INTO audit_logs(tenant_id,user_id,action,target) VALUES($1,NULL,'chat.inbound_router.dispatched',$2)", [tenant, JSON.stringify({ phone, routed_to: effectivePhoneId, tag: routingTag })]);
       }
       if (incoming && this.automation) await this.automation.enqueue(c, tenant, conversation, incoming);
       return incoming;

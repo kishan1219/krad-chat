@@ -1,5 +1,6 @@
 import React from 'react'
 import { AlertTriangle, X, ExternalLink } from 'react-feather'
+import { Alert, Badge, Button } from 'reactstrap'
 
 interface DegradationAlert {
     phoneNumber: string
@@ -17,65 +18,66 @@ export function QualityDegradationBanner({ alerts, onDismiss }: QualityDegradati
     if (!alerts || alerts.length === 0) return null
 
     return (
-        <div className="mb-6 rounded-2xl bg-amber-500/10 border border-amber-500/30 p-4 text-amber-900 dark:text-amber-200">
-            <div className="flex items-start justify-between">
-                <div className="flex items-start space-x-3">
-                    <div className="p-2 bg-amber-500/20 rounded-xl text-amber-600 dark:text-amber-400 mt-0.5">
+        <Alert
+            color="warning"
+            className="mb-2 p-1 position-relative shadow-sm"
+            style={{ borderRadius: '8px', border: '1px solid #ff9f43', backgroundColor: '#fff9e6' }}
+        >
+            <div className="d-flex align-items-start justify-content-between">
+                <div className="d-flex align-items-start gap-1">
+                    <div className="p-50 rounded" style={{ backgroundColor: '#ffebd8', color: '#ff9f43' }}>
                         <AlertTriangle size={20} />
                     </div>
                     <div>
-                        <h4 className="text-sm font-semibold flex items-center gap-2">
-                            <span>Phone Number Quality Rating Degraded</span>
-                            <span className="px-2 py-0.5 rounded-full text-xs font-bold uppercase bg-amber-500/20 text-amber-700 dark:text-amber-300">
-                                Meta Alert
+                        <div className="d-flex align-items-center gap-1 mb-25">
+                            <span className="fw-bolder" style={{ color: '#5e5873', fontSize: '0.92rem' }}>
+                                Phone Number Quality Rating Degraded
                             </span>
-                        </h4>
-                        <p className="text-xs text-amber-800 dark:text-amber-300/90 mt-1 max-w-2xl">
-                            Meta detected elevated customer block/report rates. Your messaging limit may be throttled
+                            <Badge color="warning" pill>
+                                Meta Alert
+                            </Badge>
+                        </div>
+                        <p className="small text-muted mb-50" style={{ maxWidth: '640px' }}>
+                            Meta detected elevated customer block/report rates. Your messaging limit tier may be throttled
                             if quality is not restored within 7 days.
                         </p>
-                        <div className="mt-2.5 flex flex-wrap gap-2">
+                        <div className="d-flex flex-wrap gap-1 mb-50">
                             {alerts.map((alert, idx) => (
-                                <div
+                                <Badge
                                     key={idx}
-                                    className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-xs bg-amber-500/20 border border-amber-500/30 font-medium"
+                                    color={alert.newQuality === 'RED' ? 'light-danger' : 'light-warning'}
+                                    className="p-50 font-monospace"
                                 >
-                                    <span>{alert.phoneNumber}</span>
-                                    <span className="text-slate-400 dark:text-slate-500 font-normal">→</span>
-                                    <span
-                                        className={`font-bold uppercase ${
-                                            alert.newQuality === 'RED'
-                                                ? 'text-rose-600 dark:text-rose-400'
-                                                : 'text-amber-600 dark:text-amber-400'
-                                        }`}
-                                    >
-                                        {alert.newQuality} Quality
-                                    </span>
-                                </div>
+                                    {alert.phoneNumber} → {alert.newQuality} Quality
+                                </Badge>
                             ))}
                         </div>
-                        <div className="mt-3 flex items-center gap-4 text-xs">
-                            <span className="text-amber-800 dark:text-amber-300/80 font-medium">Recommended actions:</span>
-                            <span className="text-amber-900/90 dark:text-amber-200">• Pause non-critical broadcasts</span>
-                            <span className="text-amber-900/90 dark:text-amber-200">• Ensure opt-in compliance</span>
+                        <div className="small text-muted d-flex flex-wrap align-items-center gap-1">
+                            <span className="fw-bold">Recommended:</span>
+                            <span>• Pause non-critical broadcasts</span>
+                            <span>• Ensure opt-in compliance</span>
                             <a
                                 href="https://business.facebook.com/wa/manage/phone-numbers/"
                                 target="_blank"
                                 rel="noreferrer"
-                                className="inline-flex items-center gap-1 font-semibold text-amber-700 dark:text-amber-300 hover:underline"
+                                style={{ color: '#ff8c21', fontWeight: 600 }}
+                                className="d-inline-flex align-items-center gap-25 ms-50"
                             >
                                 Open Meta Manager <ExternalLink size={12} />
                             </a>
                         </div>
                     </div>
                 </div>
-                <button
+
+                <Button
+                    color="link"
+                    size="sm"
+                    className="p-25 text-muted"
                     onClick={onDismiss}
-                    className="p-1 rounded-lg text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 transition-colors"
                 >
-                    <X size={16} />
-                </button>
+                    <X size={18} />
+                </Button>
             </div>
-        </div>
+        </Alert>
     )
 }

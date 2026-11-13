@@ -22,6 +22,7 @@ import { Invitations } from './invitations';
 import { Workflows } from './workflows';
 import { MetaConnections } from './meta-connections';
 import { MetaOnboarding } from './meta-onboarding';
+import { InboundRouter } from './inbound-router';
 import { Broadcasts } from './broadcasts';
 import { Features } from './features';
 import { Logger } from './logger';
@@ -121,6 +122,7 @@ export class Api {
   private invitations: Invitations;
   private metaConnections: MetaConnections;
   private metaOnboarding: MetaOnboarding;
+  private inboundRouter: InboundRouter;
   private broadcasts: Broadcasts;
   private features: Features;
   private organizations: Organizations;
@@ -151,6 +153,7 @@ export class Api {
     this.invitations = new Invitations(db, providers, cfg);
     this.metaConnections = new MetaConnections(db, cfg, providers, notify);
     this.metaOnboarding = new MetaOnboarding(db, cfg, providers, this.metaConnections);
+    this.inboundRouter = new InboundRouter(db);
     this.broadcasts = new Broadcasts(db, campaigns);
     this.features = features || new Features(db);
     this.organizations = new Organizations(db);
@@ -442,6 +445,60 @@ export class Api {
     if (connection) {
       this.requireMethod(method, ['POST'], res);
       return this.metaConnections.action(actor, connection[1], connection[2], body);
+    }
+    const chatSync = /^whatsapp\/connections\/(\d+)\/chat-history-sync$/.exec(path);
+    if (chatSync) {
+      this.requireMethod(method, ['POST'], res);
+      return this.metaConnections.chatHistorySync(actor, chatSync[1], body);
+    }
+    const qualityForecast = /^whatsapp\/connections\/(\d+)\/quality-forecast$/.exec(path);
+    if (qualityForecast) {
+      this.requireMethod(method, ['GET'], res);
+      return this.metaConnections.qualityForecast(actor, qualityForecast[1]);
+    }
+    if (path === 'whatsapp/multi-waba/dashboard') {
+      this.requireMethod(method, ['GET'], res);
+      return this.metaConnections.multiWabaDashboard(actor);
+    }
+
+    // Inbound Routing Rules
+    if (path === 'whatsapp/router/rules') {
+      if (method === 'GET') return this.inboundRouter.listRules(actor);
+      this.requireMethod(method, ['POST'], res);
+      return this.inboundRouter.createRule(actor, body);
+    }
+    const ruleAction = /^whatsapp\/router\/rules\/(\d+)$/.exec(path);
+    if (ruleAction) {
+      if (method === 'PUT' || method === 'PATCH') return this.inboundRouter.updateRule(actor, ruleAction[1], body);
+      this.requireMethod(method, ['DELETE'], res);
+      return this.inboundRouter.deleteRule(actor, ruleAction[1]);
+    }
+    if (path === 'whatsapp/router/simulate') {
+      this.requireMethod(method, ['POST'], res);
+      return this.inboundRouter.simulate(actor, body);
+    }
+
+    // Automated WhatsApp Disconnect Safeguards
+    if (path === 'whatsapp/safeguards/status') {
+      this.requireMethod(method, ['GET'], res);
+      return this.metaConnections.getSafeguardStatus(actor);
+    }
+    if (path === 'whatsapp/safeguards/override') {
+      this.requireMethod(method, ['POST'], res);
+      return this.metaConnections.overrideSafeguard(actor);
+    }
+
+    // Incremental Chat Sync & Scheduled Polling
+    const incSync = /^whatsapp\/connections\/(\d+)\/incremental-sync$/.exec(path);
+    if (incSync) {
+      this.requireMethod(method, ['POST'], res);
+      return this.metaConnections.incrementalChatSync(actor, incSync[1], body);
+    }
+    const syncSchedule = /^whatsapp\/connections\/(\d+)\/sync-schedule$/.exec(path);
+    if (syncSchedule) {
+      if (method === 'GET') return this.metaConnections.getSyncSchedule(actor, syncSchedule[1]);
+      this.requireMethod(method, ['POST', 'PUT'], res);
+      return this.metaConnections.updateSyncSchedule(actor, syncSchedule[1], body);
     }
     if (path === 'whatsapp/webhook-events') {
       this.requireMethod(method, ['GET'], res);

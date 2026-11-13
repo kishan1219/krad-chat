@@ -87,6 +87,149 @@ export interface RequestCodePayload {
     language?: string
 }
 
+export interface ChatHistorySyncPayload {
+    raw_text?: string
+    content_base64?: string
+    filename?: string
+}
+
+export interface ChatHistorySyncResult {
+    success: boolean
+    imported_count: number
+    conversations_count: number
+    contacts: string[]
+    message?: string
+}
+
+export interface QualityForecastResult {
+    connection_id: number
+    phone_number_id: string
+    display_phone_number?: string
+    current_quality: string
+    predicted_quality: string
+    block_rate_percentage: number
+    threshold_percentage: number
+    threshold_exceeded: boolean
+    risk_level: 'LOW' | 'MODERATE' | 'HIGH' | 'CRITICAL'
+    hours_to_downgrade: number | null
+    sample_size_24h: number
+    recommendations: string[]
+}
+
+export interface MultiWabaDashboardData {
+    total_wabas: number
+    total_phone_numbers: number
+    total_messages_7d: number
+    active_connections: number
+    quality_summary: {
+        green: number
+        yellow: number
+        red: number
+        unknown: number
+    }
+    wabas: Array<{
+        waba_id: string
+        name: string
+        phone_count: number
+        messaging_limit: string
+        quality_rating: string
+        status: string
+        phone_numbers: Array<{
+            id: number
+            phone_number_id: string
+            name: string
+            display_phone_number?: string
+            quality_rating?: string
+            messaging_limit_tier?: string
+            status: string
+        }>
+    }>
+    time_series: Array<{
+        date: string
+        sent: number
+        delivered: number
+        failed: number
+    }>
+}
+
+export interface WabaRoutingRule {
+    id: number
+    name: string
+    rule_type: 'geo' | 'department' | 'keyword' | 'fallback'
+    match_pattern: string
+    target_phone_number_id: string
+    target_waba_id: string
+    department: string
+    priority: number
+    active: boolean
+    created_at?: string
+    updated_at?: string
+}
+
+export interface CreateRoutingRulePayload {
+    name: string
+    rule_type: 'geo' | 'department' | 'keyword' | 'fallback'
+    match_pattern: string
+    target_phone_number_id: string
+    target_waba_id: string
+    department?: string
+    priority?: number
+    active?: boolean
+}
+
+export interface SimulateRouteResult {
+    routed: boolean
+    rule_id: number | null
+    rule_name: string
+    target_phone_number_id: string
+    target_waba_id: string
+    department: string
+    reason: string
+}
+
+export interface SafeguardStatusResult {
+    safeguard_active: boolean
+    broadcasts_paused: boolean
+    block_rate: number
+    threshold: number
+    affected_numbers: Array<{
+        id: number
+        phone_number_id: string
+        display_phone_number?: string
+        quality_rating?: string
+    }>
+    paused_campaigns_count: number
+}
+
+export interface IncrementalSyncPayload {
+    raw_text?: string
+    content_base64?: string
+    filename?: string
+    simulated_poll?: boolean
+}
+
+export interface IncrementalSyncResult {
+    success: boolean
+    incremental: boolean
+    imported_count: number
+    skipped_count: number
+    watermark: string
+    last_sync_at: string
+}
+
+export interface SyncScheduleResult {
+    id: number
+    phone_number_id: string
+    sync_schedule: {
+        poll_enabled: boolean
+        poll_interval_hours: number
+        last_poll_at: string | null
+    }
+    sync_watermark?: string | null
+    last_sync_at?: string | null
+    incremental_sync_count: number
+}
+
 function getAuthToken(): string {
     let token = localStorage.getItem('access_token') || localStorage.getItem('accessToken') || ''
     try {
@@ -219,10 +362,99 @@ export const whatsappService = {
         )
     },
 
+    async registerNumber(
+        id: string | number,
+        pin: string
+    ): Promise<{ success: boolean; registered?: boolean }> {
+        return requestApi<{ success: boolean; registered?: boolean }>(
+            `whatsapp/connections/${id}/register`,
+            {
+                method: 'POST',
+                body: JSON.stringify({ pin })
+            }
+        )
+    },
+
     async deleteTemplate(connectionId: string | number, templateId: string, name: string): Promise<void> {
         await requestApi(`whatsapp/connections/${connectionId}/templates/delete`, {
             method: 'POST',
             body: JSON.stringify({ id: templateId, name })
+        })
+    },
+
+    async syncChatHistory(id: string | number, payload: ChatHistorySyncPayload): Promise<ChatHistorySyncResult> {
+        return requestApi<ChatHistorySyncResult>(`whatsapp/connections/${id}/chat-history-sync`, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        })
+    },
+
+    async getQualityForecast(id: string | number): Promise<QualityForecastResult> {
+        return requestApi<QualityForecastResult>(`whatsapp/connections/${id}/quality-forecast`, {
+            method: 'GET'
+        })
+    },
+
+    async getMultiWabaDashboard(): Promise<MultiWabaDashboardData> {
+        return requestApi<MultiWabaDashboardData>('whatsapp/multi-waba/dashboard', {
+            method: 'GET'
+        })
+    },
+
+    async getRoutingRules(): Promise<WabaRoutingRule[]> {
+        return requestApi<WabaRoutingRule[]>('whatsapp/router/rules', { method: 'GET' })
+    },
+
+    async createRoutingRule(payload: CreateRoutingRulePayload): Promise<WabaRoutingRule> {
+        return requestApi<WabaRoutingRule>('whatsapp/router/rules', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        })
+    },
+
+    async updateRoutingRule(id: number | string, payload: Partial<CreateRoutingRulePayload>): Promise<WabaRoutingRule> {
+        return requestApi<WabaRoutingRule>(`whatsapp/router/rules/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(payload)
+        })
+    },
+
+    async deleteRoutingRule(id: number | string): Promise<{ deleted: boolean }> {
+        return requestApi<{ deleted: boolean }>(`whatsapp/router/rules/${id}`, { method: 'DELETE' })
+    },
+
+    async simulateRoute(phone: string, text: string): Promise<SimulateRouteResult> {
+        return requestApi<SimulateRouteResult>('whatsapp/router/simulate', {
+            method: 'POST',
+            body: JSON.stringify({ phone, text })
+        })
+    },
+
+    async getSafeguardStatus(): Promise<SafeguardStatusResult> {
+        return requestApi<SafeguardStatusResult>('whatsapp/safeguards/status', { method: 'GET' })
+    },
+
+    async overrideSafeguard(): Promise<{ success: boolean; message: string; resumed_count: number }> {
+        return requestApi<{ success: boolean; message: string; resumed_count: number }>('whatsapp/safeguards/override', {
+            method: 'POST'
+        })
+    },
+
+    async syncIncrementalChatHistory(id: string | number, payload: IncrementalSyncPayload): Promise<IncrementalSyncResult> {
+        return requestApi<IncrementalSyncResult>(`whatsapp/connections/${id}/incremental-sync`, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        })
+    },
+
+    async getSyncSchedule(id: string | number): Promise<SyncScheduleResult> {
+        return requestApi<SyncScheduleResult>(`whatsapp/connections/${id}/sync-schedule`, { method: 'GET' })
+    },
+
+    async updateSyncSchedule(id: string | number, payload: { poll_enabled: boolean; poll_interval_hours: number }): Promise<SyncScheduleResult> {
+        return requestApi<SyncScheduleResult>(`whatsapp/connections/${id}/sync-schedule`, {
+            method: 'POST',
+            body: JSON.stringify(payload)
         })
     }
 }

@@ -73,13 +73,13 @@ export default [
     // 3. WHATSAPP CLOUD API SETUP (Top-level & prominent for Admin, Reseller & Client)
     // -------------------------------------------------------------------------
     {
-        id: 'whatsapp-connections-main',
-        title: 'Connect WhatsApp',
+        id: 'whatsapp-configuration',
+        title: 'WhatsApp Configuration',
         icon: <Smartphone size={18} />,
         navLink: '/whatsapp-connections',
         badge: 'light-success',
         badgeText: 'Setup',
-        userTypes: [0, 1, 2],
+        userTypes: [0, 1, 2, 3],
         ...Permissions.dashboardView
     },
 
@@ -311,10 +311,10 @@ export default [
             },
             {
                 id: 'whatsapp-message-configuration',
-                title: 'API Settings',
+                title: 'WhatsApp Configuration',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/whatsapp-message-configuration',
-                userTypes: [0]
+                userTypes: [0, 1, 2, 3]
             },
             {
                 id: 'primary-route',

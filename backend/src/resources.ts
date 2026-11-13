@@ -11,7 +11,7 @@ export const resources: Record<string, { singular: string; kind: string; admin?:
   'dlt-templates': { singular: 'dlt-template', kind: 'dlt_template' },
   'dlt-template-groups': { singular: 'dlt-template-group', kind: 'template_group' },
   'manage-sender-ids': { singular: 'manage-sender-id', kind: 'sender_id' },
-  'wa-account-configurations': { singular: 'wa-account-configuration', kind: 'wa_account', admin: true },
+  'wa-account-configurations': { singular: 'wa-account-configuration', kind: 'wa_account' },
   'wa-templates': { singular: 'wa-template', kind: 'wa_template' },
   'wa-qrcodes': { singular: 'wa-qrcode', kind: 'wa_qrcode' },
   'wa-files': { singular: 'wa-file', kind: 'wa_media' },
@@ -94,6 +94,40 @@ export class Resources {
   async list(actor: Actor, kind: string, query: any, body: any = {}) {
     const p = pagination(query);
     const search = String(body.search ?? body.name ?? '').slice(0, 200);
+
+    // Support unified WhatsApp configuration list from meta_connections for legacy consumers
+    if (kind === 'wa_account') {
+      const mcTotal = Number((await this.db.query(
+        "SELECT count(*) FROM meta_connections WHERE tenant_id=$1 AND (display_phone_number ILIKE $2 OR verified_name ILIKE $2)",
+        [actor.tenant_id, `%${search}%`]
+      )).rows[0].count);
+
+      if (mcTotal > 0) {
+        const mcRows = (await this.db.query(
+          "SELECT * FROM meta_connections WHERE tenant_id=$1 AND (display_phone_number ILIKE $2 OR verified_name ILIKE $2) ORDER BY id DESC LIMIT $3 OFFSET $4",
+          [actor.tenant_id, `%${search}%`, p.perPage, p.offset]
+        )).rows;
+
+        const mapped = mcRows.map(r => ({
+          id: Number(r.id),
+          name: r.verified_name || r.display_phone_number,
+          verified_name: r.verified_name || 'Verified',
+          display_phone_number: r.display_phone_number,
+          display_phone_number_req: r.display_phone_number,
+          business_account_id: r.waba_id,
+          phone_number_id: r.phone_number_id,
+          code_verification_status: r.code_verification_status || 'VERIFIED',
+          quality_rating: r.quality_rating || 'GREEN',
+          messaging_limit_tier: r.messaging_limit_tier,
+          status: r.status === 'connected' ? 1 : 0,
+          created_at: r.created_at,
+          updated_at: r.updated_at
+        }));
+
+        return pageResult(mapped, mcTotal, p.page, p.perPage);
+      }
+    }
+
     const total = Number((await this.db.query("SELECT count(*) FROM resources WHERE tenant_id=$1 AND kind=$2 AND data::text ILIKE $3", [actor.tenant_id, kind, `%${search}%`])).rows[0].count);
     const rows = (await this.db.query("SELECT * FROM resources WHERE tenant_id=$1 AND kind=$2 AND data::text ILIKE $3 ORDER BY id DESC LIMIT $4 OFFSET $5", [actor.tenant_id, kind, `%${search}%`, p.perPage, p.offset])).rows.map(r => this.publicData(r));
     return pageResult(rows, total, p.page, p.perPage);

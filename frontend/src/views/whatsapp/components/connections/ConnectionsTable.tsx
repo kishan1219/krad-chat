@@ -18,6 +18,8 @@ interface ConnectionsTableProps {
     onToggleStatus: (conn: WhatsAppConnection) => void
     onDelete: (id: number) => void
     onOpenCoExistence: (conn: WhatsAppConnection) => void
+    onOpenForecast?: (conn: WhatsAppConnection) => void
+    onOpenIncrementalSync?: (conn: WhatsAppConnection) => void
     onOpenAddModal: () => void
 }
 
@@ -29,6 +31,8 @@ export function ConnectionsTable({
     onToggleStatus,
     onDelete,
     onOpenCoExistence,
+    onOpenForecast,
+    onOpenIncrementalSync,
     onOpenAddModal
 }: ConnectionsTableProps) {
     const filtered = connections.filter(c => {
@@ -158,6 +162,18 @@ export function ConnectionsTable({
 
                                     <td className="py-3.5 px-4 text-right">
                                         <div className="flex items-center justify-end gap-1">
+                                            {/* Health forecast */}
+                                            {onOpenForecast && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onOpenForecast(conn)}
+                                                    title="Proactive Quality Health Forecast"
+                                                    className="px-2 py-1 rounded-lg border border-orange-200 dark:border-orange-900/60 bg-orange-50/50 dark:bg-orange-950/20 hover:bg-orange-100 text-[11px] text-orange-600 dark:text-orange-400 font-medium transition-colors"
+                                                >
+                                                    Forecast
+                                                </button>
+                                            )}
+
                                             {/* Co-existence migrate button */}
                                             <button
                                                 type="button"
@@ -167,6 +183,18 @@ export function ConnectionsTable({
                                             >
                                                 Migrate App
                                             </button>
+
+                                            {/* Incremental sync button */}
+                                            {onOpenIncrementalSync && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onOpenIncrementalSync(conn)}
+                                                    title="Co-Existence Incremental Sync & Polling"
+                                                    className="px-2 py-1 rounded-lg border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium transition-colors"
+                                                >
+                                                    Sync Chats
+                                                </button>
+                                            )}
 
                                             {/* Sync status */}
                                             <button

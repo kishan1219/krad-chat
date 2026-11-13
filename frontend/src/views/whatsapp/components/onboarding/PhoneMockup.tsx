@@ -151,3 +151,4 @@ export const PhoneMockup: React.FC<PhoneMockupProps> = ({
         </div>
     )
 }
+

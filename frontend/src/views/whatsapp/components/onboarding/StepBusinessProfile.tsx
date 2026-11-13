@@ -1,4 +1,5 @@
 import React from 'react'
+import { Form, FormGroup, Label, Input, Button } from 'reactstrap'
 
 export const BUSINESS_CATEGORIES = [
     { value: 'OTHER', label: 'OTHER' },
@@ -50,29 +51,51 @@ export const StepBusinessProfile: React.FC<StepBusinessProfileProps> = ({
     }
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-                <label className="block text-sm font-bold text-slate-800 dark:text-white mb-1.5">
+        <Form onSubmit={handleSubmit} className="py-1">
+            <FormGroup className="mb-2">
+                <Label
+                    for="businessName"
+                    className="form-label fw-bolder mb-50"
+                    style={{ color: '#22292f', fontSize: '0.92rem' }}
+                >
                     Name
-                </label>
-                <input
+                </Label>
+                <Input
+                    id="businessName"
                     type="text"
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. Dr Syed Majid Ali"
-                    className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                    placeholder="Dr Syed Majid Ali"
+                    style={{
+                        borderRadius: '6px',
+                        border: '1px solid #d8d6de',
+                        padding: '0.65rem 0.9rem',
+                        fontSize: '0.9rem'
+                    }}
                 />
-            </div>
+            </FormGroup>
 
-            <div>
-                <label className="block text-sm font-bold text-slate-800 dark:text-white mb-1.5">
-                    Business Category <span className="text-rose-500">*</span>
-                </label>
-                <select
+            <FormGroup className="mb-2">
+                <Label
+                    for="businessCategory"
+                    className="form-label fw-bolder mb-50"
+                    style={{ color: '#22292f', fontSize: '0.92rem' }}
+                >
+                    Business Category <span style={{ color: '#ea5455' }}>*</span>
+                </Label>
+                <Input
+                    id="businessCategory"
+                    type="select"
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-orange-400 dark:border-orange-500/60 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                    style={{
+                        borderRadius: '6px',
+                        border: '1.5px solid #ff8c21',
+                        padding: '0.65rem 0.9rem',
+                        fontSize: '0.9rem',
+                        color: '#22292f'
+                    }}
                 >
                     <option value="" disabled>select</option>
                     {BUSINESS_CATEGORIES.map((cat) => (
@@ -80,53 +103,88 @@ export const StepBusinessProfile: React.FC<StepBusinessProfileProps> = ({
                             {cat.label}
                         </option>
                     ))}
-                </select>
-            </div>
+                </Input>
+            </FormGroup>
 
-            <div className="pt-1">
-                <label className="flex items-center gap-2 cursor-pointer">
-                    <input
+            <div className="pt-50 mb-2">
+                <div className="form-check d-flex align-items-center">
+                    <Input
                         type="checkbox"
+                        id="enableAutoResponseCheck"
                         checked={enableAutoResponse}
                         onChange={(e) => setEnableAutoResponse(e.target.checked)}
-                        className="w-4 h-4 rounded border-slate-300 text-orange-500 focus:ring-orange-400"
+                        style={{
+                            width: '18px',
+                            height: '18px',
+                            cursor: 'pointer',
+                            accentColor: '#ff8c21'
+                        }}
                     />
-                    <span className="text-sm font-bold text-slate-800 dark:text-white">
+                    <Label
+                        for="enableAutoResponseCheck"
+                        className="form-check-label fw-bolder ms-1"
+                        style={{ color: '#22292f', fontSize: '0.92rem', cursor: 'pointer' }}
+                    >
                         Enable Auto Response
-                    </span>
-                </label>
+                    </Label>
+                </div>
 
                 {enableAutoResponse && (
-                    <div className="mt-3 pl-6">
-                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
-                            Welcome Message:
-                        </label>
-                        <textarea
+                    <div className="mt-1 ms-2">
+                        <Label
+                            for="autoResponseMsg"
+                            className="form-label small text-muted mb-50"
+                        >
+                            Auto Response Message
+                        </Label>
+                        <Input
+                            id="autoResponseMsg"
+                            type="textarea"
                             rows={3}
                             value={autoResponseMessage}
                             onChange={(e) => setAutoResponseMessage(e.target.value)}
-                            placeholder="Enter the automated response for new customer conversations..."
-                            className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            placeholder="Type an instant reply message..."
+                            style={{
+                                borderRadius: '6px',
+                                border: '1px solid #d8d6de',
+                                fontSize: '0.88rem'
+                            }}
                         />
                     </div>
                 )}
             </div>
 
-            <div className="flex justify-end gap-3 pt-6 border-t border-slate-200 dark:border-slate-800">
-                <button
+            <div className="d-flex justify-content-end align-items-center gap-2 pt-2 border-top mt-3">
+                <Button
+                    color="secondary"
+                    outline
                     type="button"
                     onClick={onBack}
-                    className="px-5 py-2 text-xs font-medium rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    style={{
+                        borderRadius: '6px',
+                        padding: '0.6rem 1.75rem',
+                        fontWeight: 500,
+                        borderColor: '#b9b9c3',
+                        color: '#6e6b7b'
+                    }}
                 >
                     Back
-                </button>
-                <button
+                </Button>
+                <Button
                     type="submit"
-                    className="px-6 py-2 text-xs font-semibold rounded-xl bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white shadow-sm transition-all"
+                    style={{
+                        backgroundColor: '#ff8c21',
+                        borderColor: '#ff8c21',
+                        color: '#ffffff',
+                        borderRadius: '6px',
+                        padding: '0.6rem 2.25rem',
+                        fontWeight: 600,
+                        boxShadow: '0 2px 6px rgba(255,140,33,0.3)'
+                    }}
                 >
                     Continue
-                </button>
+                </Button>
             </div>
-        </form>
+        </Form>
     )
 }
