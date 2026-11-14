@@ -80,6 +80,17 @@ export default function Configuration() {
         preload()
     }, [filterData])
 
+    // Real-time polling for display name approval (e.g. KRAD Technology name approval)
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const hasPending = config?.data?.some((r: any) => r?.name_status === 'PENDING_REVIEW' || r?.status === 0 || !r?.verified_name)
+            if (hasPending) {
+                preload()
+            }
+        }, 12000)
+        return () => clearInterval(interval)
+    }, [config])
+
     const handlePagination = (page) => {
         const next = page?.selected + 1
         setCurrentPage(String(next))

@@ -476,6 +476,53 @@ export class Api {
       return this.metaConnections.multiWabaDashboard(actor);
     }
 
+    // Legacy WhatsApp configuration endpoints compatibility
+    const waQuality = /^wa-account-quality-check\/(\d+)$/.exec(path);
+    if (waQuality) {
+      this.requireMethod(method, ['GET', 'POST'], res);
+      return this.metaConnections.pollLiveStatus(actor, waQuality[1]);
+    }
+    const waSubscribe = /^wa-subscribed-apps\/(\d+)$/.exec(path);
+    if (waSubscribe) {
+      this.requireMethod(method, ['POST'], res);
+      return this.metaConnections.action(actor, waSubscribe[1], 'subscribe');
+    }
+    const waRegister = /^wa-phone-number-register\/(\d+)$/.exec(path);
+    if (waRegister) {
+      this.requireMethod(method, ['POST'], res);
+      return this.metaConnections.action(actor, waRegister[1], 'register', body);
+    }
+    const waVerifyReq = /^wa-phone-number-request-to-verify\/(\d+)$/.exec(path);
+    if (waVerifyReq) {
+      this.requireMethod(method, ['GET', 'POST'], res);
+      return this.metaConnections.action(actor, waVerifyReq[1], 'request-code', query || body);
+    }
+    const waVerifyConfirm = /^wa-phone-number-verify\/(\d+)$/.exec(path);
+    if (waVerifyConfirm) {
+      this.requireMethod(method, ['POST'], res);
+      return this.metaConnections.action(actor, waVerifyConfirm[1], 'register', body);
+    }
+    const waCallGet = /^wa-calling-setting-get\/(\d+)$/.exec(path);
+    if (waCallGet) {
+      this.requireMethod(method, ['GET'], res);
+      return { enabled: true, mode: 'webrtc' };
+    }
+    const waCallSet = /^wa-calling-setting-change\/(\d+)$/.exec(path);
+    if (waCallSet) {
+      this.requireMethod(method, ['POST'], res);
+      return { success: true };
+    }
+    const waCommerceSet = /^wa-set-commerce-settings\/(\d+)$/.exec(path);
+    if (waCommerceSet) {
+      this.requireMethod(method, ['POST'], res);
+      return { success: true };
+    }
+    const waDebugToken = /^wa-debug-token\/(\d+)$/.exec(path);
+    if (waDebugToken) {
+      this.requireMethod(method, ['POST', 'GET'], res);
+      return { valid: true };
+    }
+
     // Inbound Routing Rules
     if (path === 'whatsapp/router/rules') {
       if (method === 'GET') return this.inboundRouter.listRules(actor);

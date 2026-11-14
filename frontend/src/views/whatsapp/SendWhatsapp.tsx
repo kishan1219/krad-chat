@@ -883,8 +883,8 @@ console.log(mediaFilePath, 'mediaFilePath')
     const headerVariableType = getHeaderType(details?.header_text)
     const messageVariableType = getHeaderType(details?.message)
 
-    const urlVariable = details?.whats_app_template_buttons.filter(a => findVariables(a?.button_value)?.length > 0)
-    const couponVariable = details?.whats_app_template_buttons.filter(a => findName(a?.button_type)?.length > 0)
+    const urlVariable = details?.whats_app_template_buttons?.filter(a => findVariables(a?.button_value)?.length > 0) || []
+    const couponVariable = details?.whats_app_template_buttons?.filter(a => findName(a?.button_type)?.length > 0) || []
 
     return (
         <>

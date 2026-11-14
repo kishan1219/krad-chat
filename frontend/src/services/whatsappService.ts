@@ -72,8 +72,8 @@ export interface CompleteOnboardingPayload {
     state: string
     code: string
     name: string
-    waba_id: string
-    phone_number_id: string
+    waba_id?: string
+    phone_number_id?: string
 }
 
 export interface BatchConnectPayload {

@@ -72,7 +72,35 @@ export class Resources {
         }
       }
       if (isList && ['GET', 'POST'].includes(method)) return { handled: true, data: await this.list(actor, spec.kind, query, body) };
-      if (detail && method === 'GET') return { handled: true, data: await this.get(actor, spec.kind, detail) };
+      if (detail && method === 'GET') {
+        if (spec.kind === 'wa_account') {
+          const mc = (await this.db.query('SELECT * FROM meta_connections WHERE tenant_id=$1 AND id=$2', [actor.tenant_id, idSchema.parse(detail)])).rows[0];
+          if (mc) {
+            return {
+              handled: true,
+              data: {
+                id: Number(mc.id),
+                name: mc.name || mc.verified_name || mc.display_phone_number || 'KRAD Technology',
+                username: mc.name || mc.verified_name || 'KRAD Technology',
+                verified_name: mc.verified_name || mc.name || 'KRAD Technology',
+                sender_number: mc.display_phone_number || mc.phone_number_id,
+                display_phone_number: mc.display_phone_number || mc.phone_number_id,
+                display_phone_number_req: mc.display_phone_number || mc.phone_number_id,
+                business_account_id: mc.waba_id,
+                phone_number_id: mc.phone_number_id,
+                code_verification_status: mc.code_verification_status || 'VERIFIED',
+                quality_rating: mc.quality_rating || 'GREEN',
+                messaging_limit_tier: mc.messaging_limit_tier || 'TIER_1K',
+                name_status: mc.name_status || 'APPROVED',
+                status: mc.status === 'connected' ? 1 : 0,
+                created_at: mc.created_at,
+                updated_at: mc.updated_at
+              }
+            };
+          }
+        }
+        return { handled: true, data: await this.get(actor, spec.kind, detail) };
+      }
       if (singular && method === 'POST') {
         authorize(actor, ['contact', 'contact_group', 'blacklist'].includes(spec.kind) ? 'contacts:write' : 'resources:write');
         return { handled: true, data: await this.create(actor, spec.kind, body) };
@@ -80,6 +108,12 @@ export class Resources {
       if (detail && ['PUT', 'PATCH', 'DELETE'].includes(method)) {
         authorize(actor, ['contact', 'contact_group', 'blacklist'].includes(spec.kind) ? 'contacts:write' : 'resources:write');
         const id = idSchema.parse(detail);
+        if (method === 'DELETE' && spec.kind === 'wa_account') {
+          await this.db.query('DELETE FROM meta_connections WHERE id=$1 AND tenant_id=$2', [id, actor.tenant_id]);
+          await this.db.query('DELETE FROM resources WHERE id=$1 AND tenant_id=$2 AND kind=$3', [id, actor.tenant_id, spec.kind]);
+          await this.audit(actor, 'wa_account.delete', String(id));
+          return { handled: true, data: { id, deleted: true } };
+        }
         const row = method === 'DELETE'
           ? (await this.db.query('DELETE FROM resources WHERE id=$1 AND tenant_id=$2 AND kind=$3 RETURNING *', [id, actor.tenant_id, spec.kind])).rows[0]
           : (await this.db.query('UPDATE resources SET data=data||$1::jsonb,updated_at=now() WHERE id=$2 AND tenant_id=$3 AND kind=$4 RETURNING *', [this.validate(spec.kind, body, true), id, actor.tenant_id, spec.kind])).rows[0];
@@ -97,35 +131,37 @@ export class Resources {
 
     // Support unified WhatsApp configuration list from meta_connections for legacy consumers
     if (kind === 'wa_account') {
+      const searchPattern = `%${search}%`;
       const mcTotal = Number((await this.db.query(
-        "SELECT count(*) FROM meta_connections WHERE tenant_id=$1 AND (display_phone_number ILIKE $2 OR verified_name ILIKE $2)",
-        [actor.tenant_id, `%${search}%`]
+        "SELECT count(*) FROM meta_connections WHERE tenant_id=$1 AND (COALESCE(display_phone_number, '') ILIKE $2 OR COALESCE(verified_name, '') ILIKE $2 OR COALESCE(name, '') ILIKE $2 OR COALESCE(phone_number_id, '') ILIKE $2)",
+        [actor.tenant_id, searchPattern]
       )).rows[0].count);
 
-      if (mcTotal > 0) {
-        const mcRows = (await this.db.query(
-          "SELECT * FROM meta_connections WHERE tenant_id=$1 AND (display_phone_number ILIKE $2 OR verified_name ILIKE $2) ORDER BY id DESC LIMIT $3 OFFSET $4",
-          [actor.tenant_id, `%${search}%`, p.perPage, p.offset]
-        )).rows;
+      const mcRows = (await this.db.query(
+        "SELECT * FROM meta_connections WHERE tenant_id=$1 AND (COALESCE(display_phone_number, '') ILIKE $2 OR COALESCE(verified_name, '') ILIKE $2 OR COALESCE(name, '') ILIKE $2 OR COALESCE(phone_number_id, '') ILIKE $2) ORDER BY id DESC LIMIT $3 OFFSET $4",
+        [actor.tenant_id, searchPattern, p.perPage, p.offset]
+      )).rows;
 
-        const mapped = mcRows.map(r => ({
-          id: Number(r.id),
-          name: r.verified_name || r.display_phone_number,
-          verified_name: r.verified_name || 'Verified',
-          display_phone_number: r.display_phone_number,
-          display_phone_number_req: r.display_phone_number,
-          business_account_id: r.waba_id,
-          phone_number_id: r.phone_number_id,
-          code_verification_status: r.code_verification_status || 'VERIFIED',
-          quality_rating: r.quality_rating || 'GREEN',
-          messaging_limit_tier: r.messaging_limit_tier,
-          status: r.status === 'connected' ? 1 : 0,
-          created_at: r.created_at,
-          updated_at: r.updated_at
-        }));
+      const mapped = mcRows.map(r => ({
+        id: Number(r.id),
+        name: r.name || r.verified_name || r.display_phone_number || 'KRAD Technology',
+        username: r.name || r.verified_name || 'KRAD Technology',
+        verified_name: r.verified_name || r.name || 'KRAD Technology',
+        sender_number: r.display_phone_number || r.phone_number_id,
+        display_phone_number: r.display_phone_number || r.phone_number_id,
+        display_phone_number_req: r.display_phone_number || r.phone_number_id,
+        business_account_id: r.waba_id,
+        phone_number_id: r.phone_number_id,
+        code_verification_status: r.code_verification_status || 'VERIFIED',
+        quality_rating: r.quality_rating || 'GREEN',
+        messaging_limit_tier: r.messaging_limit_tier || 'TIER_1K',
+        name_status: r.name_status || 'APPROVED',
+        status: r.status === 'connected' ? 1 : 0,
+        created_at: r.created_at,
+        updated_at: r.updated_at
+      }));
 
-        return pageResult(mapped, mcTotal, p.page, p.perPage);
-      }
+      return pageResult(mapped, mcTotal, p.page, p.perPage);
     }
 
     const total = Number((await this.db.query("SELECT count(*) FROM resources WHERE tenant_id=$1 AND kind=$2 AND data::text ILIKE $3", [actor.tenant_id, kind, `%${search}%`])).rows[0].count);

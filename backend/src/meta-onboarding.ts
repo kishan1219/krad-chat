@@ -116,7 +116,13 @@ export class MetaOnboarding {
  async history(actor:Actor){authorizeAdminOrChannel(actor);return (await this.db.query('SELECT id,status,connection_id,error,created_at,completed_at,expires_at FROM meta_onboarding_sessions WHERE tenant_id=$1 AND user_id=$2 ORDER BY created_at DESC LIMIT 50',[actor.tenant_id,actor.id])).rows;}
  async complete(actor:Actor,body:any){
   authorizeAdminOrChannel(actor);
-  const input=z.object({state:z.string().regex(/^[a-f0-9]{64}\.[a-f0-9]{64}$/),code:z.string().min(1).max(4096),name:z.string().trim().min(1).max(150),waba_id:z.string().regex(/^\d{1,40}$/),phone_number_id:z.string().regex(/^\d{1,40}$/)}).parse(body);
+  const input=z.object({
+    state:z.string().regex(/^[a-f0-9]{64}\.[a-f0-9]{64}$/),
+    code:z.string().min(1).max(4096),
+    name:z.string().trim().min(1).max(150),
+    waba_id:z.string().regex(/^\d{1,40}$/).optional(),
+    phone_number_id:z.string().regex(/^\d{1,40}$/).optional()
+  }).parse(body);
   const [id,signature]=input.state.split('.');
   if(!equalSecret(signature,this.signature(id)))throw new ApiError(403,'Invalid onboarding state.');
   const claimed=await this.db.query("UPDATE meta_onboarding_sessions SET status='exchanging' WHERE id=$1 AND tenant_id=$2 AND user_id=$3 AND session_hash=$4 AND status='issued' AND expires_at>now() RETURNING id",[id,actor.tenant_id,actor.id,sha256(actor.session_id)]);
@@ -127,13 +133,35 @@ export class MetaOnboarding {
    if (!process.env.META_APP_ID && resolved.app_id) process.env.META_APP_ID = resolved.app_id;
    if (!process.env.META_GRAPH_VERSION && resolved.graph_version) process.env.META_GRAPH_VERSION = resolved.graph_version;
    const accessToken=await this.providers.exchangeMetaCode(input.code);
-   const connection=await this.connections.connect(actor,{name:input.name,waba_id:input.waba_id,phone_number_id:input.phone_number_id,access_token:accessToken});
+   let targetWaba = input.waba_id;
+   let targetPhone = input.phone_number_id;
+
+   if (!targetWaba || !targetPhone) {
+     try {
+       const detected = await this.connections.detectWaba(actor, { access_token: accessToken });
+       if (detected) {
+         targetWaba = targetWaba || detected.waba_id;
+         if (!targetPhone && detected.phone_numbers?.length) {
+           targetPhone = detected.phone_numbers[0].id;
+         }
+       }
+     } catch {
+       // detection fallback
+     }
+   }
+
+   if (!targetWaba || !targetPhone) {
+     throw new ApiError(422, 'Could not determine WABA or Phone Number ID. Please specify them manually.');
+   }
+
+   const connection=await this.connections.connect(actor,{name:input.name,waba_id:targetWaba,phone_number_id:targetPhone,access_token:accessToken});
    await this.db.query("UPDATE meta_onboarding_sessions SET status='completed',connection_id=$2,completed_at=now() WHERE id=$1",[id,connection.id]);
    await this.db.query("INSERT INTO audit_logs(tenant_id,user_id,action,target) VALUES($1,$2,'meta.onboarding.completed',$3)",[actor.tenant_id,actor.id,String(connection.id)]);
    return connection;
-  }catch{
-   await this.db.query("UPDATE meta_onboarding_sessions SET status='failed',error='Connection could not be verified. Start signup again or reconnect an existing number.',completed_at=now() WHERE id=$1",[id]);
-   throw new ApiError(422,'Meta onboarding failed. Start again or check the connection recovery screen.');
+  }catch(err){
+   const msg = (err && err.message) || 'Connection could not be verified. Start signup again or reconnect an existing number.';
+   await this.db.query("UPDATE meta_onboarding_sessions SET status='failed',error=$2,completed_at=now() WHERE id=$1",[id, msg.slice(0, 500)]);
+   throw (err && err.statusCode ? err : new ApiError(422, msg));
   }
  }
 }

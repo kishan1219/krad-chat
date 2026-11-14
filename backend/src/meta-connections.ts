@@ -71,7 +71,7 @@ export class MetaConnections {
     if(phone||!info.paging?.next)break;
     after=info.paging?.cursors?.after;if(!after||page===99)throw new ApiError(502,'Number verification exceeded pagination limits.');
    }
-   if(!phone)throw new ApiError(422,'Meta did not confirm that this number belongs to the authorized WABA.');
+    if(!phone)throw new ApiError(422,'Meta did not confirm that this number belongs to the authorized WABA.');
   }
   return this.db.transaction(async c=>{
    await c.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[`waba:${input.waba_id}`]);

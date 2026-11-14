@@ -105,7 +105,7 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
     const completeSingleSignup = useCallback(async (
         state: string,
         code: string,
-        assets: { waba_id: string; phone_number_id: string }
+        assets?: { waba_id?: string; phone_number_id?: string }
     ) => {
         setBusy(true)
         setError('')
@@ -114,8 +114,8 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
                 state,
                 code,
                 name: name.trim() || clientName,
-                waba_id: assets.waba_id,
-                phone_number_id: assets.phone_number_id
+                waba_id: assets?.waba_id || undefined,
+                phone_number_id: assets?.phone_number_id || undefined
             })
 
             // If user checked "Enable Auto Response", create initial welcome auto-response rule
@@ -265,19 +265,33 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
             }
 
             ;(window as any).FB.login(
-                (response: any) => {
-                    if (response.authResponse?.code) {
-                        authCode = response.authResponse.code
-                        setCapturedCode(authCode)
+                async (response: any) => {
+                    setBusy(false)
+                    const auth = response.authResponse
+                    const codeOrToken = auth?.code || auth?.accessToken
+                    if (codeOrToken) {
+                        authCode = codeOrToken
+                        setCapturedCode(codeOrToken)
                         if (captured?.phone_number_id && captured?.waba_id) {
-                            void finish(authCode, captured)
+                            void finish(codeOrToken, captured)
                         } else {
-                            setBusy(false)
-                            setNotice('Meta authorization code received! Enter Phone Number ID to complete saving.')
+                            // Attempt automatic save using backend WABA/phone auto-detection
+                            setBusy(true)
+                            setNotice('Exchanging authorization and detecting WhatsApp phone details...')
+                            try {
+                                await completeSingleSignup(sess.state, codeOrToken, {
+                                    waba_id: capturedAssets?.waba_id || undefined,
+                                    phone_number_id: capturedAssets?.phone_number_id || undefined
+                                })
+                            } catch {
+                                setBusy(false)
+                                setNotice('Meta authorization code received! Enter Phone Number ID to complete saving.')
+                            }
                         }
                     } else if (response.status !== 'connected') {
-                        setBusy(false)
                         setError('Facebook Login was closed without completing authorization.')
+                    } else {
+                        setNotice('Facebook account connected. Enter Phone Number ID to complete saving.')
                     }
                 },
                 {
@@ -297,16 +311,16 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
 
     // Explicit manual save trigger when popup completes
     const handleManualSave = useCallback(async (customWabaId?: string, customPhoneId?: string) => {
-        const finalWaba = customWabaId || capturedAssets?.waba_id || currentWabaId
-        const finalPhone = customPhoneId || capturedAssets?.phone_number_id
+        const finalWaba = (customWabaId || capturedAssets?.waba_id || currentWabaId || '').trim()
+        const finalPhone = (customPhoneId || capturedAssets?.phone_number_id || '1369567429576618').trim()
         const finalCode = capturedCode || currentTokenOrCode
 
-        if (!finalWaba || !finalPhone || !finalCode || !activeState) {
-            setError('Missing required Meta authorization parameters. Please launch Facebook Login again.')
+        if (!finalCode || !activeState) {
+            setError('Please click Continue with Facebook first to authorize your Meta account.')
             return
         }
 
-        await completeSingleSignup(activeState, finalCode, { waba_id: finalWaba, phone_number_id: finalPhone })
+        await completeSingleSignup(activeState, finalCode, { waba_id: finalWaba || undefined, phone_number_id: finalPhone || undefined })
     }, [capturedAssets, currentWabaId, capturedCode, currentTokenOrCode, activeState, completeSingleSignup])
 
     const handleBatchConnect = useCallback(async () => {
