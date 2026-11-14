@@ -196,14 +196,26 @@ const SidebarLeft = props => {
                             )}
                         </h5>
                         <div className='chat-message-preview d-flex justify-content-between align-items-center'>
-                            <span className='preview-text text-truncate text-muted'>
-                                {item?.message || 'Media / Template message'}
+                            <span className='preview-text text-truncate text-muted' style={{ maxWidth: '140px' }}>
+                                {item?.message?.includes('payment_notification') ? '💰 Payment Received' : item?.message || 'Media / Template message'}
                             </span>
-                            {item.business_phone_number_id && (
-                                <span className='badge bg-light text-secondary ms-1' style={{ fontSize: '0.65rem' }}>
-                                    WA
-                                </span>
-                            )}
+                            <div className='d-flex align-items-center gap-1'>
+                                {item.pod_name && (
+                                    <span className='badge bg-light-primary text-primary' style={{ fontSize: '0.62rem' }}>
+                                        {item.pod_name}
+                                    </span>
+                                )}
+                                {item.detected_intent && (
+                                    <span className='badge bg-light-info text-info' style={{ fontSize: '0.62rem' }}>
+                                        {item.detected_intent.replace(/_/g, ' ')}
+                                    </span>
+                                )}
+                                {item.business_phone_number_id && (
+                                    <span className='badge bg-light text-secondary' style={{ fontSize: '0.65rem' }}>
+                                        WA
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </li>

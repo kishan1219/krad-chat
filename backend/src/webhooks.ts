@@ -6,10 +6,12 @@ import { Config, requiredEnv } from './config';
 import { Billing } from './billing';
 import { Campaigns } from './campaigns';
 import { Chat } from './chat';
-import { customerMessageText } from './whatsapp-message';
+import { customerMessageText, extractPaymentInfo } from './whatsapp-message';
+import { PaymentProcessor } from './payments';
 
 export class Webhooks {
   readonly inbox: WebhookInbox;
+  private payments: PaymentProcessor;
   constructor(
     private cfg: Config,
     private campaigns: Campaigns,
@@ -20,6 +22,7 @@ export class Webhooks {
     private notify?: (tenant: number, event: any) => void
   ) {
     this.inbox = new WebhookInbox(db, body => this.processMeta(body));
+    this.payments = new PaymentProcessor(db);
   }
   private async processMeta(body:any) {
       for (const entry of body.entry || []) for (const change of entry.changes || []) {
@@ -187,7 +190,33 @@ export class Webhooks {
           const tenant = await this.chat.tenantForMeta(String(value.metadata?.phone_number_id));
           for (const message of value.messages) {
             const text = customerMessageText(message);
-            await this.chat.incoming(tenant, message.from, text, message.id, String(value.metadata.phone_number_id), message.timestamp);
+            const incoming = await this.chat.incoming(tenant, message.from, text, message.id, String(value.metadata.phone_number_id), message.timestamp);
+
+            const paymentInfo = extractPaymentInfo(message);
+            if (paymentInfo) {
+              const tx = await this.payments.recordTransaction(tenant, {
+                conversation_id: incoming?.conversation_id || null,
+                provider: 'meta_pay',
+                payment_type: paymentInfo.paymentType,
+                status: paymentInfo.status,
+                reference_id: paymentInfo.referenceId,
+                transaction_id: paymentInfo.transactionId,
+                amount_paise: paymentInfo.amountPaise,
+                currency: paymentInfo.currency,
+                customer_phone: message.from,
+                raw_payload: paymentInfo.raw
+              });
+              if (this.notify) {
+                this.notify(tenant, {
+                  command: 'payment_received',
+                  data: {
+                    ...tx,
+                    display_amount: (tx.amount_paise / 100).toFixed(2),
+                    phone: message.from
+                  }
+                });
+              }
+            }
           }
         }
         for (const item of value.statuses || []) {

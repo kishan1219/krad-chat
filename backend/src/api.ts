@@ -23,6 +23,8 @@ import { Workflows } from './workflows';
 import { MetaConnections } from './meta-connections';
 import { MetaOnboarding } from './meta-onboarding';
 import { InboundRouter } from './inbound-router';
+import { AgentPodsService } from './agent-pods';
+import { PaymentProcessor } from './payments';
 import { Broadcasts } from './broadcasts';
 import { Features } from './features';
 import { Logger } from './logger';
@@ -123,6 +125,8 @@ export class Api {
   private metaConnections: MetaConnections;
   private metaOnboarding: MetaOnboarding;
   private inboundRouter: InboundRouter;
+  private agentPods: AgentPodsService;
+  private payments: PaymentProcessor;
   private broadcasts: Broadcasts;
   private features: Features;
   private organizations: Organizations;
@@ -154,6 +158,8 @@ export class Api {
     this.metaConnections = new MetaConnections(db, cfg, providers, notify);
     this.metaOnboarding = new MetaOnboarding(db, cfg, providers, this.metaConnections);
     this.inboundRouter = new InboundRouter(db);
+    this.agentPods = new AgentPodsService(db);
+    this.payments = new PaymentProcessor(db, notify);
     this.broadcasts = new Broadcasts(db, campaigns);
     this.features = features || new Features(db);
     this.organizations = new Organizations(db);
@@ -437,9 +443,18 @@ export class Api {
       if (path === 'whatsapp/onboarding/waba-numbers') return this.metaConnections.wabaNumbers(actor, body);
       throw new ApiError(404, 'Unknown onboarding action.');
     }
+    if (path === 'whatsapp/detect-waba') {
+      this.requireMethod(method, ['POST'], res);
+      return this.metaConnections.detectWaba(actor, body);
+    }
     if (path === 'whatsapp/connections/batch') {
       this.requireMethod(method, ['POST'], res);
       return this.metaConnections.batchConnect(actor, body);
+    }
+    const liveProfile = /^whatsapp\/connections\/(\d+)\/live-profile$/.exec(path);
+    if (liveProfile) {
+      this.requireMethod(method, ['GET', 'POST'], res);
+      return this.metaConnections.pollLiveStatus(actor, liveProfile[1]);
     }
     const connection = /^whatsapp\/connections\/(\d+)\/(subscribe|register|sync|disconnect|request-code)$/.exec(path);
     if (connection) {
@@ -476,6 +491,62 @@ export class Api {
     if (path === 'whatsapp/router/simulate') {
       this.requireMethod(method, ['POST'], res);
       return this.inboundRouter.simulate(actor, body);
+    }
+    if (path === 'whatsapp/router/classify-intent') {
+      this.requireMethod(method, ['POST'], res);
+      return this.inboundRouter.classifyIntent(actor, body);
+    }
+
+    // Agent Pods
+    if (path === 'agent-pods') {
+      if (method === 'GET') return this.agentPods.listPods(actor);
+      this.requireMethod(method, ['POST'], res);
+      return this.agentPods.createPod(actor, body);
+    }
+    const podAction = /^agent-pods\/(\d+)$/.exec(path);
+    if (podAction) {
+      if (method === 'GET') return this.agentPods.getPod(actor, podAction[1]);
+      if (method === 'PUT' || method === 'PATCH') return this.agentPods.updatePod(actor, podAction[1], body);
+      this.requireMethod(method, ['DELETE'], res);
+      return this.agentPods.deletePod(actor, podAction[1]);
+    }
+
+    // Predictive Campaign Tier Headroom
+    if (path === 'whatsapp/campaigns/tier-headroom') {
+      this.requireMethod(method, ['POST'], res);
+      return this.campaigns.getTierHeadroom(actor, body);
+    }
+    if (path === 'whatsapp/campaigns/sibling-pool-headroom') {
+      this.requireMethod(method, ['POST'], res);
+      return this.campaigns.getSiblingPoolHeadroom(actor, body);
+    }
+
+    // Native WhatsApp Payments (Meta Pay & UPI) & Instant In-Chat Refunds
+    if (path === 'whatsapp/payments/transactions') {
+      this.requireMethod(method, ['GET'], res);
+      return this.payments.listTransactions(actor, query);
+    }
+    const paymentRefundAction = /^whatsapp\/payments\/transactions\/([^/]+)\/refund$/.exec(path);
+    if (paymentRefundAction) {
+      this.requireMethod(method, ['POST'], res);
+      return this.payments.issueRefund(actor, paymentRefundAction[1], body);
+    }
+    const paymentRefundsList = /^whatsapp\/payments\/transactions\/([^/]+)\/refunds$/.exec(path);
+    if (paymentRefundsList) {
+      this.requireMethod(method, ['GET'], res);
+      return this.payments.listRefunds(actor, paymentRefundsList[1]);
+    }
+    const paymentAction = /^whatsapp\/payments\/transactions\/(\d+)$/.exec(path);
+    if (paymentAction) {
+      this.requireMethod(method, ['GET'], res);
+      return this.payments.getTransaction(actor, paymentAction[1]);
+    }
+
+    // Predictive Tier Upgrade Countdown
+    const tierForecastAction = /^whatsapp\/connections\/(\d+)\/tier-forecast$/.exec(path);
+    if (tierForecastAction) {
+      this.requireMethod(method, ['GET'], res);
+      return this.metaConnections.tierUpgradeForecast(actor, tierForecastAction[1]);
     }
 
     // Automated WhatsApp Disconnect Safeguards

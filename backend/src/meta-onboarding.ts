@@ -59,23 +59,30 @@ export class MetaOnboarding {
 
  async saveConfig(actor:Actor,body:any){
   authorizeAdminOrChannel(actor);
+  const resolved = await this.resolveConfig();
   const input=z.object({
    app_id:z.string().trim().min(1).max(100),
    config_id:z.string().trim().min(1).max(100),
    graph_version:z.string().trim().min(1).max(20).default('v22.0'),
-   app_secret:z.string().trim().min(1).max(200)
+   app_secret:z.string().trim().max(200).optional()
   }).parse(body);
+
+  const effectiveSecret = input.app_secret || resolved.app_secret || process.env.META_APP_SECRET || '';
+  if (!effectiveSecret) {
+    throw new ApiError(400, 'Meta App Secret is required for live onboarding. Please enter your App Secret or set META_APP_SECRET on Render.');
+  }
+
   process.env.META_APP_ID=input.app_id;
   process.env.META_CONFIG_ID=input.config_id;
   process.env.META_GRAPH_VERSION=input.graph_version;
-  process.env.META_APP_SECRET=input.app_secret;
+  process.env.META_APP_SECRET=effectiveSecret;
 
   try {
    const items = [
     ['meta_app_id', input.app_id],
     ['meta_config_id', input.config_id],
     ['meta_graph_version', input.graph_version],
-    ['meta_app_secret', input.app_secret]
+    ['meta_app_secret', effectiveSecret]
    ];
    for (const [k, v] of items) {
     const encrypted = encrypt(v, this.cfg.ENCRYPTION_KEY);

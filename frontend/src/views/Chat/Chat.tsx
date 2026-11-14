@@ -61,6 +61,9 @@ import { fetchMessage } from '../../utility/Utils'
 import { CMD } from '../../utility/Const'
 import { formatWhatsAppText } from '../../utility/whatsappText'
 import ConversationTools from './ConversationTools'
+import PaymentMessageCard, { PaymentCardData } from './components/PaymentMessageCard'
+import PodBadgeDropdown from './components/PodBadgeDropdown'
+import { whatsappService } from '../../services/whatsappService'
 
 const Avatar = AvatarBase as any
 const ListWhatsappComp = ListWhatsapp as any
@@ -1211,6 +1214,44 @@ const ChatLog = props => {
                         </div>
                     </div>
                 )
+            } else if (item.message_type === 'payment' || (typeof item.message === 'string' && item.message.includes('payment_notification'))) {
+                let paymentData: PaymentCardData | null = null
+                try {
+                    const parsed = JSON.parse(item.message)
+                    if (parsed.type === 'payment_notification' || parsed.amount_paise) {
+                        paymentData = parsed
+                    }
+                } catch {
+                    // Not valid JSON
+                }
+
+                if (paymentData) {
+                    return (
+                        <div
+                            key={index}
+                            className={classnames({
+                                'chat-left': item.is_vendor_reply !== 1,
+                                chat: item.is_vendor_reply === 1
+                            })}
+                        >
+                            <div className='chat-avatar'>
+                                <Avatar
+                                    imgWidth={36}
+                                    imgHeight={36}
+                                    content={item.profile_name}
+                                    initials
+                                    color='light-success'
+                                    className='box-shadow-1 cursor-pointer'
+                                />
+                            </div>
+                            <div className='chat-body'>
+                                <div className='chat-content p-0 bg-transparent shadow-none border-0'>
+                                    <PaymentMessageCard data={paymentData} receivedDate={item?.received_date} />
+                                </div>
+                            </div>
+                        </div>
+                    )
+                }
             } else if (item.message_type === 'interactive') {
                 return (
                     <div
@@ -1730,7 +1771,22 @@ const ChatLog = props => {
                                 </div>
                             </div>
                         </div>
-                        <div className='chat-actions-group'>
+                        <div className='chat-actions-group d-flex align-items-center gap-1'>
+                            <PodBadgeDropdown
+                                currentPodId={userClicked?.assigned_pod_id}
+                                currentPodName={userClicked?.pod_name}
+                                detectedIntent={userClicked?.detected_intent}
+                                onSelectPod={async (podId) => {
+                                    if (userClicked?.id) {
+                                        try {
+                                            // Soft refresh on pod update
+                                            dispatch(toggleRefreshContacts())
+                                        } catch {
+                                            // Handle error
+                                        }
+                                    }
+                                }}
+                            />
                             <ConversationTools conversationId={userClicked?.id} />
                         </div>
                     </header>

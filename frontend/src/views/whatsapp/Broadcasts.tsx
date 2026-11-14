@@ -38,6 +38,8 @@ import {
     autoMapCsvColumns,
     AutoMappingResult
 } from '../../utility/helpers/fuzzyColumnMatcher'
+import PredictiveBatchingModal from './components/PredictiveBatchingModal'
+import { whatsappService, TierHeadroomResult } from '../../services/whatsappService'
 
 function formatTier(tier?: string) {
     switch (tier) {
@@ -182,6 +184,8 @@ export default function Broadcasts() {
     const [notice, setNotice] = useState('')
     const [busy, setBusy] = useState(false)
     const [detail, setDetail] = useState<any>(null)
+    const [batchingModalOpen, setBatchingModalOpen] = useState(false)
+    const [headroomData, setHeadroomData] = useState<TierHeadroomResult | null>(null)
 
     function getAuthToken(): string {
         const token = localStorage.getItem('access_token') || localStorage.getItem('accessToken') || ''
@@ -585,6 +589,174 @@ export default function Broadcasts() {
                       (isCarousel
                           ? (carouselMissingVars.length === 0 && !carouselMissingMedia)
                           : ((detectedVars.length === 0 || missingVars.length === 0) && hasValidMediaHeader))
+
+    const executeBroadcast = async (mode?: 'sequential' | 'sibling_pool') => {
+        await act(async () => {
+            const chosen = templates[Number(template)]
+            const recipientList = recipients
+                .split(/[,\n]/)
+                .map(v => v.trim())
+                .filter(Boolean)
+
+            if (!mode && recipientList.length > 50) {
+                try {
+                    const headroom = await whatsappService.getTierHeadroom(recipientList.length)
+                    if (headroom && headroom.needs_batching) {
+                        setHeadroomData(headroom)
+                        setBatchingModalOpen(true)
+                        return
+                    }
+                } catch {
+                    // proceed if offline
+                }
+            }
+
+            const bodyValues = detectedVars.length > 0
+                ? detectedVars.map(v => {
+                    const mapping = varMappings[v]
+                    if (isDynamicAudience && mapping?.mode === 'column') {
+                        const sampleVal = getSampleContactValue(mapping.column, sampleContact) || mapping.column
+                        return { type: 'text', text: sampleVal }
+                    }
+                    return { type: 'text', text: (varValues[v] || '').trim() }
+                }).filter(p => p.text)
+                : (parameters.trim() ? parameters.split('\n').map(text => ({ type: 'text', text: text.trim() })).filter(p => p.text) : [])
+
+            const components: any[] = []
+
+            // 1. Single Header component (Media or Text)
+            if (!isCarousel) {
+                if (['IMAGE', 'DOCUMENT', 'VIDEO', 'AUDIO'].includes(headerFormat)) {
+                    const mediaLink = headerMediaSource === 'url'
+                        ? headerMediaUrl
+                        : headerMediaSource === 'asset'
+                        ? (mediaAssets.find(a => String(a.id) === headerMediaAssetId)?.url || headerMediaUrl)
+                        : (getSampleContactValue(headerMediaColumn, sampleContact) || headerMediaUrl)
+
+                    if (mediaLink) {
+                        if (headerFormat === 'IMAGE') {
+                            components.push({
+                                type: 'header',
+                                parameters: [{ type: 'image', image: { link: mediaLink } }]
+                            })
+                        } else if (headerFormat === 'DOCUMENT') {
+                            components.push({
+                                type: 'header',
+                                parameters: [{
+                                    type: 'document',
+                                    document: {
+                                        link: mediaLink,
+                                        filename: headerDocumentFilename || 'Document.pdf'
+                                    }
+                                }]
+                            })
+                        } else if (headerFormat === 'VIDEO') {
+                            components.push({
+                                type: 'header',
+                                parameters: [{ type: 'video', video: { link: mediaLink } }]
+                            })
+                        } else if (headerFormat === 'AUDIO') {
+                            components.push({
+                                type: 'header',
+                                parameters: [{ type: 'audio', audio: { link: mediaLink } }]
+                            })
+                        }
+                    }
+                } else if (headerFormat === 'TEXT' && headerTextParam) {
+                    components.push({
+                        type: 'header',
+                        parameters: [{ type: 'text', text: headerTextParam }]
+                    })
+                }
+            }
+
+            // 2. Body component
+            if (bodyValues.length > 0) {
+                components.push({ type: 'body', parameters: bodyValues })
+            }
+
+            // 3. Multi-Card Carousel component
+            if (isCarousel) {
+                const carouselCardsPayload = carouselCards.map((card: any, idx: number) => {
+                    const cHeader = getCardHeaderComp(card)
+                    const cVars = getCardVars(card)
+                    const cardComps: any[] = []
+
+                    const mediaLink = cardMediaUrls[idx] || (cHeader?.example?.header_handle?.[0] ? 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80' : '')
+                    if (mediaLink) {
+                        cardComps.push({
+                            type: 'header',
+                            parameters: [{ type: 'image', image: { link: mediaLink } }]
+                        })
+                    }
+
+                    if (cVars.length > 0) {
+                        const cardBodyValues = cVars.map((v: string) => {
+                            const mapping = cardVarMappings[idx]?.[v]
+                            if (isDynamicAudience && mapping?.mode === 'column') {
+                                const sampleVal = getSampleContactValue(mapping.column, sampleContact) || mapping.column
+                                return { type: 'text', text: sampleVal }
+                            }
+                            return { type: 'text', text: (cardVarValues[idx]?.[v] || '').trim() }
+                        }).filter((p: any) => p.text)
+
+                        if (cardBodyValues.length > 0) {
+                            cardComps.push({
+                                type: 'body',
+                                parameters: cardBodyValues
+                            })
+                        }
+                    }
+
+                    return {
+                        card_index: idx,
+                        components: cardComps
+                    }
+                })
+
+                components.push({
+                    type: 'carousel',
+                    cards: carouselCardsPayload
+                })
+            }
+
+            const chosenSender = senders.find(s => String(s.id) === sender)
+            const result = await api(
+                'wa-send-message',
+                'POST',
+                {
+                    name,
+                    recipients: recipientList,
+                    ...(schedule ? { schedule_at: new Date(schedule).toISOString() } : {}),
+                    ...(mode === 'sibling_pool' ? { is_sibling_balanced: true } : {}),
+                    ...(mode === 'sequential' ? { is_predictive_batched: true } : {}),
+                    payload: {
+                        phone_number_id: chosenSender?.phone_number_id,
+                        template: {
+                            name: chosen.name,
+                            language: { code: chosen.language },
+                            ...(components.length ? { components } : {})
+                        }
+                    }
+                },
+                crypto.randomUUID()
+            )
+            await refresh()
+            setNotice(`Campaign "${name}" (${result.id}) dispatched: status ${result.status}.`)
+            setName('')
+            setRecipients('')
+            setParameters('')
+            setVarValues({})
+            setCardMediaUrls({})
+            setCardVarValues({})
+            setCardVarMappings({})
+            setActiveCardIndex(0)
+            setCsvFile(null)
+            setCsvRows([])
+            setHeaderMediaUrl('')
+            setHeadroomData(null)
+        })
+    }
 
     return (
         <div className='p-2'>
@@ -1761,156 +1933,7 @@ export default function Broadcasts() {
                                 color='primary'
                                 size='lg'
                                 disabled={!canSubmit}
-                                onClick={() =>
-                                    void act(async () => {
-                                        const chosen = templates[Number(template)]
-                                        const bodyValues = detectedVars.length > 0
-                                            ? detectedVars.map(v => {
-                                                const mapping = varMappings[v]
-                                                if (isDynamicAudience && mapping?.mode === 'column') {
-                                                    const sampleVal = getSampleContactValue(mapping.column, sampleContact) || mapping.column
-                                                    return { type: 'text', text: sampleVal }
-                                                }
-                                                return { type: 'text', text: (varValues[v] || '').trim() }
-                                            }).filter(p => p.text)
-                                            : (parameters.trim() ? parameters.split('\n').map(text => ({ type: 'text', text: text.trim() })).filter(p => p.text) : [])
-
-                                        const components: any[] = []
-
-                                        // 1. Single Header component (Media or Text)
-                                        if (!isCarousel) {
-                                            if (['IMAGE', 'DOCUMENT', 'VIDEO', 'AUDIO'].includes(headerFormat)) {
-                                                const mediaLink = headerMediaSource === 'url'
-                                                    ? headerMediaUrl
-                                                    : headerMediaSource === 'asset'
-                                                    ? (mediaAssets.find(a => String(a.id) === headerMediaAssetId)?.url || headerMediaUrl)
-                                                    : (getSampleContactValue(headerMediaColumn, sampleContact) || headerMediaUrl)
-
-                                                if (mediaLink) {
-                                                    if (headerFormat === 'IMAGE') {
-                                                        components.push({
-                                                            type: 'header',
-                                                            parameters: [{ type: 'image', image: { link: mediaLink } }]
-                                                        })
-                                                    } else if (headerFormat === 'DOCUMENT') {
-                                                        components.push({
-                                                            type: 'header',
-                                                            parameters: [{
-                                                                type: 'document',
-                                                                document: {
-                                                                    link: mediaLink,
-                                                                    filename: headerDocumentFilename || 'Document.pdf'
-                                                                }
-                                                            }]
-                                                        })
-                                                    } else if (headerFormat === 'VIDEO') {
-                                                        components.push({
-                                                            type: 'header',
-                                                            parameters: [{ type: 'video', video: { link: mediaLink } }]
-                                                        })
-                                                    } else if (headerFormat === 'AUDIO') {
-                                                        components.push({
-                                                            type: 'header',
-                                                            parameters: [{ type: 'audio', audio: { link: mediaLink } }]
-                                                        })
-                                                    }
-                                                }
-                                            } else if (headerFormat === 'TEXT' && headerTextParam) {
-                                                components.push({
-                                                    type: 'header',
-                                                    parameters: [{ type: 'text', text: headerTextParam }]
-                                                })
-                                            }
-                                        }
-
-                                        // 2. Body component
-                                        if (bodyValues.length > 0) {
-                                            components.push({ type: 'body', parameters: bodyValues })
-                                        }
-
-                                        // 3. Multi-Card Carousel component
-                                        if (isCarousel) {
-                                            const carouselCardsPayload = carouselCards.map((card: any, idx: number) => {
-                                                const cHeader = getCardHeaderComp(card)
-                                                const cVars = getCardVars(card)
-                                                const cardComps: any[] = []
-
-                                                const mediaLink = cardMediaUrls[idx] || (cHeader?.example?.header_handle?.[0] ? 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80' : '')
-                                                if (mediaLink) {
-                                                    cardComps.push({
-                                                        type: 'header',
-                                                        parameters: [{ type: 'image', image: { link: mediaLink } }]
-                                                    })
-                                                }
-
-                                                if (cVars.length > 0) {
-                                                    const cardBodyValues = cVars.map((v: string) => {
-                                                        const mapping = cardVarMappings[idx]?.[v]
-                                                        if (isDynamicAudience && mapping?.mode === 'column') {
-                                                            const sampleVal = getSampleContactValue(mapping.column, sampleContact) || mapping.column
-                                                            return { type: 'text', text: sampleVal }
-                                                        }
-                                                        return { type: 'text', text: (cardVarValues[idx]?.[v] || '').trim() }
-                                                    }).filter((p: any) => p.text)
-
-                                                    if (cardBodyValues.length > 0) {
-                                                        cardComps.push({
-                                                            type: 'body',
-                                                            parameters: cardBodyValues
-                                                        })
-                                                    }
-                                                }
-
-                                                return {
-                                                    card_index: idx,
-                                                    components: cardComps
-                                                }
-                                            })
-
-                                            components.push({
-                                                type: 'carousel',
-                                                cards: carouselCardsPayload
-                                            })
-                                        }
-
-                                        const recipientList = recipients
-                                            .split(/[,\n]/)
-                                            .map(v => v.trim())
-                                            .filter(Boolean)
-
-                                        const result = await api(
-                                            'wa-send-message',
-                                            'POST',
-                                            {
-                                                name,
-                                                recipients: recipientList,
-                                                ...(schedule ? { schedule_at: new Date(schedule).toISOString() } : {}),
-                                                payload: {
-                                                    phone_number_id: senders.find(s => String(s.id) === sender).phone_number_id,
-                                                    template: {
-                                                        name: chosen.name,
-                                                        language: { code: chosen.language },
-                                                        ...(components.length ? { components } : {})
-                                                    }
-                                                }
-                                            },
-                                            crypto.randomUUID()
-                                        )
-                                        await refresh()
-                                        setNotice(`Campaign "${name}" (${result.id}) dispatched: status ${result.status}.`)
-                                        setName('')
-                                        setRecipients('')
-                                        setParameters('')
-                                        setVarValues({})
-                                        setCardMediaUrls({})
-                                        setCardVarValues({})
-                                        setCardVarMappings({})
-                                        setActiveCardIndex(0)
-                                        setCsvFile(null)
-                                        setCsvRows([])
-                                        setHeaderMediaUrl('')
-                                    })
-                                }
+                                onClick={() => void executeBroadcast()}
                             >
                                 {busy ? 'Dispatching Campaign...' : 'Launch Broadcast Campaign'}
                             </Button>
@@ -1918,6 +1941,18 @@ export default function Broadcasts() {
                     </Row>
                 </CardBody>
             </Card>
+
+            <PredictiveBatchingModal
+                isOpen={batchingModalOpen}
+                toggle={() => setBatchingModalOpen(!batchingModalOpen)}
+                headroomData={headroomData}
+                totalRecipients={recipientCount}
+                onConfirmDispatch={(mode) => {
+                    setBatchingModalOpen(false)
+                    void executeBroadcast(mode)
+                }}
+                isSubmitting={busy}
+            />
 
             <Card>
                 <CardBody>

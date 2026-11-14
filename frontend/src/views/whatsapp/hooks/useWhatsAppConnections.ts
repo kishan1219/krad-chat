@@ -80,6 +80,32 @@ export function useWhatsAppConnections() {
         return () => window.removeEventListener('message', handleWsMessage)
     }, [fetchConnections])
 
+    // Real-Time Meta Display Name & Profile Status Polling
+    useEffect(() => {
+        const pendingConns = connections.filter(
+            c => (c.status === 'connected' || c.status === 'verified') && 
+                 (c.name_status === 'PENDING_REVIEW' || !c.verified_name || c.quality_rating === 'UNKNOWN')
+        )
+        if (pendingConns.length === 0) return
+
+        const interval = setInterval(async () => {
+            for (const conn of pendingConns) {
+                try {
+                    const profile = await whatsappService.pollLiveProfile(conn.id)
+                    if (profile.approved || profile.name_status === 'APPROVED') {
+                        SuccessToast(`🎉 Meta approved Display Name '${profile.verified_name || 'Krad Technology'}'! WhatsApp line is active.`)
+                        await fetchConnections()
+                        break
+                    }
+                } catch {
+                    // silent retry
+                }
+            }
+        }, 15000)
+
+        return () => clearInterval(interval)
+    }, [connections, fetchConnections])
+
     const handleSync = useCallback(async (id: number) => {
         setActionBusyId(id)
         try {

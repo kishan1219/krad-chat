@@ -25,6 +25,7 @@ export interface MetaWabaPhoneNumber {
     quality_rating?: string
     messaging_limit_tier?: string
     code_verification_status?: string
+    name_status?: string
 }
 
 export interface MetaConnection {
@@ -38,6 +39,8 @@ export interface MetaConnection {
     messaging_limit_tier?: string
     verified_name?: string
     code_verification_status?: string
+    name_status?: 'APPROVED' | 'AVAILABLE_WITHOUT_REVIEW' | 'PENDING_REVIEW' | 'DECLINED' | 'REJECTED' | string
+    last_name_status_check?: string
     status: 'connected' | 'disconnected' | 'verified' | string
     simulated?: boolean
     subscribed?: boolean
@@ -155,11 +158,14 @@ export interface MultiWabaDashboardData {
 export interface WabaRoutingRule {
     id: number
     name: string
-    rule_type: 'geo' | 'department' | 'keyword' | 'fallback'
+    rule_type: 'geo' | 'department' | 'keyword' | 'intent' | 'fallback'
     match_pattern: string
     target_phone_number_id: string
     target_waba_id: string
     department: string
+    target_pod_id?: number | null
+    confidence_threshold?: number
+    pod_name?: string
     priority: number
     active: boolean
     created_at?: string
@@ -168,13 +174,142 @@ export interface WabaRoutingRule {
 
 export interface CreateRoutingRulePayload {
     name: string
-    rule_type: 'geo' | 'department' | 'keyword' | 'fallback'
+    rule_type: 'geo' | 'department' | 'keyword' | 'intent' | 'fallback'
     match_pattern: string
     target_phone_number_id: string
     target_waba_id: string
     department?: string
+    target_pod_id?: number | null
+    confidence_threshold?: number
     priority?: number
     active?: boolean
+}
+
+export interface AgentPod {
+    id: number
+    tenant_id: number
+    name: string
+    department: string
+    skills: string[]
+    lead_user_id?: number | null
+    member_user_ids: number[]
+    max_active_chats: number
+    active: boolean
+    lead_name?: string
+    lead_email?: string
+    open_chats_count?: number
+    created_at?: string
+    updated_at?: string
+}
+
+export interface CreateAgentPodPayload {
+    name: string
+    department?: string
+    skills?: string[]
+    lead_user_id?: number | null
+    member_user_ids?: number[]
+    max_active_chats?: number
+    active?: boolean
+}
+
+export interface IntentClassificationResult {
+    intent: string
+    confidence: number
+    reasoning: string
+    suggested_pod: string
+    provider: string
+}
+
+export interface TierHeadroomResult {
+    tier: string
+    tier_limit: number
+    dispatched_today: number
+    safe_headroom: number
+    needs_batching: boolean
+    recommended_batches: Array<{
+        batchIndex: number
+        count: number
+        scheduledAt: string
+        delayHours: number
+    }>
+}
+
+export interface PaymentTransaction {
+    id: number
+    tenant_id: number
+    conversation_id?: number | null
+    provider: string
+    payment_type: 'upi' | 'meta_pay' | 'card' | 'netbanking'
+    status: 'success' | 'pending' | 'failed' | 'canceled'
+    reference_id: string
+    transaction_id: string
+    amount_paise: number
+    currency: string
+    customer_phone: string
+    refunded_amount_paise?: number
+    refund_status?: 'none' | 'partial' | 'full'
+    raw_payload?: Record<string, unknown>
+    created_at: string
+    updated_at: string
+}
+
+export interface PaymentRefund {
+    id: number
+    tenant_id: number
+    payment_transaction_id: number
+    refund_id: string
+    amount_paise: number
+    currency: string
+    reason?: string
+    status: 'initiated' | 'completed' | 'failed'
+    initiated_by?: number
+    initiated_by_name?: string
+    created_at: string
+}
+
+export interface IssueRefundPayload {
+    amount_paise: number
+    reason?: string
+}
+
+export interface TierUpgradeForecastResult {
+    connection_id: number
+    phone_number_id: string
+    display_phone_number?: string
+    current_tier: string
+    target_tier: string
+    quality_rating: string
+    green_streak_days: number
+    required_green_days: number
+    volume_7d: number
+    volume_target_7d: number
+    volume_progress_percent: number
+    estimated_days_remaining: number | null
+    status: 'on_track' | 'needs_volume' | 'at_risk_quality' | 'max_tier'
+    readiness_score: number
+    recommendations: string[]
+}
+
+export interface SiblingPoolHeadroomResult {
+    pool_enabled: boolean
+    line_count: number
+    total_pooled_headroom: number
+    lines: Array<{
+        id: number
+        name: string
+        phone_number_id: string
+        display_phone_number?: string
+        tier: string
+        tier_limit: number
+        safe_headroom: number
+        quality_rating: string
+    }>
+    allocated_batches: Array<{
+        phoneNumberId: string
+        displayPhoneNumber: string
+        count: number
+        percentage: number
+    }>
 }
 
 export interface SimulateRouteResult {
@@ -331,6 +466,36 @@ export const whatsappService = {
         })
     },
 
+    async detectWaba(accessToken: string): Promise<{
+        detected: boolean
+        waba_id: string
+        waba_name: string
+        currency: string
+        phone_numbers: MetaWabaPhoneNumber[]
+    }> {
+        return requestApi('whatsapp/detect-waba', {
+            method: 'POST',
+            body: JSON.stringify({ access_token: accessToken })
+        })
+    },
+
+    async pollLiveProfile(id: string | number): Promise<{
+        id: number
+        phone_number_id: string
+        display_phone_number: string
+        verified_name: string
+        quality_rating: string
+        code_verification_status: string
+        messaging_limit_tier: string
+        name_status: string
+        approved: boolean
+        last_sync_at: string
+    }> {
+        return requestApi(`whatsapp/connections/${id}/live-profile`, {
+            method: 'GET'
+        })
+    },
+
     async batchConnect(payload: BatchConnectPayload): Promise<{ connected: MetaConnection[]; count: number }> {
         return requestApi<{ connected: MetaConnection[]; count: number }>('whatsapp/connections/batch', {
             method: 'POST',
@@ -455,6 +620,95 @@ export const whatsappService = {
         return requestApi<SyncScheduleResult>(`whatsapp/connections/${id}/sync-schedule`, {
             method: 'POST',
             body: JSON.stringify(payload)
+        })
+    },
+
+    // Agent Pods
+    async getAgentPods(): Promise<AgentPod[]> {
+        return requestApi<AgentPod[]>('agent-pods', { method: 'GET' })
+    },
+
+    async createAgentPod(payload: CreateAgentPodPayload): Promise<AgentPod> {
+        return requestApi<AgentPod>('agent-pods', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        })
+    },
+
+    async updateAgentPod(id: number | string, payload: Partial<CreateAgentPodPayload>): Promise<AgentPod> {
+        return requestApi<AgentPod>(`agent-pods/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(payload)
+        })
+    },
+
+    async deleteAgentPod(id: number | string): Promise<{ deleted: boolean }> {
+        return requestApi<{ deleted: boolean }>(`agent-pods/${id}`, { method: 'DELETE' })
+    },
+
+    // AI Intent Classification
+    async classifyIntent(text: string): Promise<IntentClassificationResult> {
+        return requestApi<IntentClassificationResult>('whatsapp/router/classify-intent', {
+            method: 'POST',
+            body: JSON.stringify({ text })
+        })
+    },
+
+    // Predictive Campaign Tier Headroom
+    async getTierHeadroom(recipientCount: number, phoneNumberId?: string): Promise<TierHeadroomResult> {
+        return requestApi<TierHeadroomResult>('whatsapp/campaigns/tier-headroom', {
+            method: 'POST',
+            body: JSON.stringify({ recipient_count: recipientCount, phone_number_id: phoneNumberId })
+        })
+    },
+
+    // Native WhatsApp Payments (Meta Pay & UPI)
+    async getPaymentTransactions(conversationId?: number | string): Promise<{ data: PaymentTransaction[]; total: number }> {
+        const query = conversationId ? `?conversation_id=${conversationId}` : ''
+        return requestApi<{ data: PaymentTransaction[]; total: number }>(`whatsapp/payments/transactions${query}`, {
+            method: 'GET'
+        })
+    },
+
+    async getPaymentTransaction(id: number | string): Promise<PaymentTransaction> {
+        return requestApi<PaymentTransaction>(`whatsapp/payments/transactions/${id}`, {
+            method: 'GET'
+        })
+    },
+
+    // Instant In-Chat Payment Refunds
+    async issueRefund(transactionId: number | string, payload: IssueRefundPayload): Promise<{
+        success: boolean
+        refund: PaymentRefund
+        transaction: PaymentTransaction
+    }> {
+        return requestApi<{ success: boolean; refund: PaymentRefund; transaction: PaymentTransaction }>(
+            `whatsapp/payments/transactions/${transactionId}/refund`,
+            {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            }
+        )
+    },
+
+    async listRefunds(transactionId: number | string): Promise<PaymentRefund[]> {
+        return requestApi<PaymentRefund[]>(`whatsapp/payments/transactions/${transactionId}/refunds`, {
+            method: 'GET'
+        })
+    },
+
+    // Predictive Tier Upgrade Countdown
+    async getTierUpgradeForecast(connectionId: number | string): Promise<TierUpgradeForecastResult> {
+        return requestApi<TierUpgradeForecastResult>(`whatsapp/connections/${connectionId}/tier-forecast`, {
+            method: 'GET'
+        })
+    },
+
+    // Multi-WABA Sibling Load Balancing
+    async getSiblingPoolHeadroom(recipientCount: number): Promise<SiblingPoolHeadroomResult> {
+        return requestApi<SiblingPoolHeadroomResult>('whatsapp/campaigns/sibling-pool-headroom', {
+            method: 'POST',
+            body: JSON.stringify({ recipient_count: recipientCount })
         })
     }
 }

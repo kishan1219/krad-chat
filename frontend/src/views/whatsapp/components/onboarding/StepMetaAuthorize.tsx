@@ -85,8 +85,8 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
                     )}
                 </Col>
 
-                {/* Right phone mockup preview */}
-                <Col md="5" sm="12" className="text-center">
+                {/* Right phone mockup preview - Hidden on mobile phones to prioritize auth CTA */}
+                <Col md="5" className="d-none d-md-block text-center">
                     {!imgError && brandImgUrl ? (
                         <img
                             src={brandImgUrl}
@@ -115,12 +115,13 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
             </Row>
 
             {/* Footer Buttons */}
-            <div className="d-flex justify-content-end align-items-center gap-2 pt-2 border-top mt-3">
+            <div className="d-flex flex-column-reverse flex-sm-row justify-content-end align-items-stretch align-items-sm-center gap-2 pt-2 border-top mt-3">
                 <Button
                     color="secondary"
                     outline
                     type="button"
                     onClick={onBack}
+                    className="w-100 w-sm-auto"
                     style={{
                         borderRadius: '6px',
                         padding: '0.6rem 1.75rem',
@@ -135,13 +136,13 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
                     type="button"
                     disabled={busy}
                     onClick={onConnectLive}
+                    className="w-100 w-sm-auto fw-bold"
                     style={{
                         backgroundColor: '#ff8c21',
                         borderColor: '#ff8c21',
                         color: '#ffffff',
                         borderRadius: '6px',
                         padding: '0.6rem 2.25rem',
-                        fontWeight: 600,
                         boxShadow: '0 2px 6px rgba(255,140,33,0.3)'
                     }}
                 >

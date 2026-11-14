@@ -79,12 +79,13 @@ export const StepPrerequisites: React.FC<StepPrerequisitesProps> = ({ onNext, on
                 </ol>
             </div>
 
-            <div className="d-flex justify-content-end align-items-center gap-2 pt-2 border-top mt-3">
+            <div className="d-flex flex-column-reverse flex-sm-row justify-content-end align-items-stretch align-items-sm-center gap-2 pt-2 border-top mt-3">
                 <Button
                     color="secondary"
                     outline
                     type="button"
                     onClick={onClose}
+                    className="w-100 w-sm-auto"
                     style={{
                         borderRadius: '6px',
                         padding: '0.6rem 1.75rem',
@@ -98,6 +99,7 @@ export const StepPrerequisites: React.FC<StepPrerequisitesProps> = ({ onNext, on
                 <Button
                     type="button"
                     onClick={onNext}
+                    className="w-100 w-sm-auto"
                     style={{
                         backgroundColor: '#ff8c21',
                         borderColor: '#ff8c21',

@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Key } from 'react-feather'
+import { Key, Zap, CheckCircle } from 'react-feather'
 import { whatsappService, CreateConnectionPayload } from '../../../../services/whatsappService'
 import { SuccessToast, ErrorToast } from '../../../../utility/Utils'
 
@@ -15,7 +15,43 @@ export function ManualCredentialsCard({ onSuccess, onClose }: ManualCredentialsC
     const [displayNumber, setDisplayNumber] = useState('')
     const [token, setToken] = useState('')
     const [busy, setBusy] = useState(false)
+    const [detecting, setDetecting] = useState(false)
+    const [detectedInfo, setDetectedInfo] = useState<string | null>(null)
     const [error, setError] = useState('')
+
+    const handleAutoDetect = async () => {
+        if (!token.trim()) {
+            setError('Please paste your Meta System User Access Token first to auto-detect.')
+            return
+        }
+        setDetecting(true)
+        setError('')
+        setDetectedInfo(null)
+        try {
+            const res = await whatsappService.detectWaba(token.trim())
+            if (res.waba_id) {
+                setWabaId(res.waba_id)
+                if (!name && res.waba_name) {
+                    setName('Krad Technology')
+                }
+            }
+            if (res.phone_numbers && res.phone_numbers.length > 0) {
+                const p = res.phone_numbers[0]
+                setPhoneNumberId(p.id)
+                if (p.display_phone_number) setDisplayNumber(p.display_phone_number)
+                if (p.verified_name) setName(p.verified_name)
+                setDetectedInfo(`Found WABA ${res.waba_id} (${res.waba_name || 'Krad Technology'}) with number ${p.display_phone_number || p.id}`)
+            } else {
+                setDetectedInfo(`Found WABA ${res.waba_id} (${res.waba_name || 'Krad Technology'}). Enter your Phone Number ID below.`)
+            }
+            SuccessToast('Meta WABA details auto-detected successfully!')
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : 'Could not auto-detect WABA. Please enter IDs manually.'
+            setError(msg)
+        } finally {
+            setDetecting(false)
+        }
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -28,14 +64,14 @@ export function ManualCredentialsCard({ onSuccess, onClose }: ManualCredentialsC
         setError('')
         try {
             const payload: CreateConnectionPayload = {
-                name: name.trim() || 'WhatsApp Line',
+                name: name.trim() || 'Krad Technology',
                 waba_id: wabaId.trim(),
                 phone_number_id: phoneNumberId.trim(),
                 display_phone_number: displayNumber.trim() || undefined,
                 access_token: token.trim()
             }
             await whatsappService.createConnection(payload)
-            SuccessToast('WhatsApp manual connection established!')
+            SuccessToast('WhatsApp connection established with Krad Technology!')
             onSuccess()
             onClose()
         } catch (err: unknown) {
@@ -78,7 +114,38 @@ export function ManualCredentialsCard({ onSuccess, onClose }: ManualCredentialsC
                 </div>
             )}
 
+            {detectedInfo && (
+                <div className="mt-4 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/50 text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+                    <CheckCircle size={16} className="text-emerald-500 shrink-0" />
+                    <span>{detectedInfo}</span>
+                </div>
+            )}
+
             <form onSubmit={handleSubmit} className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
+                    <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-300">
+                            Meta Permanent Access Token *
+                        </label>
+                        <button
+                            type="button"
+                            onClick={handleAutoDetect}
+                            disabled={detecting || !token.trim()}
+                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-orange-600 hover:text-orange-700 disabled:opacity-40"
+                        >
+                            <Zap size={12} />
+                            <span>{detecting ? 'Auto-Detecting...' : 'Auto-Detect WABA & Numbers'}</span>
+                        </button>
+                    </div>
+                    <input
+                        type="password"
+                        required
+                        value={token}
+                        onChange={(e) => setToken(e.target.value)}
+                        placeholder="e.g. EAAG... (System User Permanent Token)"
+                        className="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                </div>
                 <div>
                     <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
                         Display Name
@@ -87,7 +154,7 @@ export function ManualCredentialsCard({ onSuccess, onClose }: ManualCredentialsC
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        placeholder="e.g. Sales Support"
+                        placeholder="e.g. Krad Technology"
                         className="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
                     />
                 </div>
@@ -99,7 +166,7 @@ export function ManualCredentialsCard({ onSuccess, onClose }: ManualCredentialsC
                         type="text"
                         value={displayNumber}
                         onChange={(e) => setDisplayNumber(e.target.value)}
-                        placeholder="e.g. +1 555 123 4567"
+                        placeholder="e.g. +91 98765 43210"
                         className="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
                     />
                 </div>
@@ -112,7 +179,7 @@ export function ManualCredentialsCard({ onSuccess, onClose }: ManualCredentialsC
                         required
                         value={wabaId}
                         onChange={(e) => setWabaId(e.target.value)}
-                        placeholder="e.g. 1099234827382"
+                        placeholder="e.g. 109876543210987"
                         className="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
                     />
                 </div>
@@ -126,19 +193,6 @@ export function ManualCredentialsCard({ onSuccess, onClose }: ManualCredentialsC
                         value={phoneNumberId}
                         onChange={(e) => setPhoneNumberId(e.target.value)}
                         placeholder="e.g. 105592837482"
-                        className="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
-                    />
-                </div>
-                <div className="sm:col-span-2">
-                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
-                        Meta Permanent Access Token *
-                    </label>
-                    <input
-                        type="password"
-                        required
-                        value={token}
-                        onChange={(e) => setToken(e.target.value)}
-                        placeholder="EAAB..."
                         className="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
                     />
                 </div>

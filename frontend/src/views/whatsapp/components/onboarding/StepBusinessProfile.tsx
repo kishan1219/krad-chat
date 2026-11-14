@@ -66,7 +66,7 @@ export const StepBusinessProfile: React.FC<StepBusinessProfileProps> = ({
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Dr Syed Majid Ali"
+                    placeholder="e.g. Krad Technology"
                     style={{
                         borderRadius: '6px',
                         border: '1px solid #d8d6de',
@@ -154,12 +154,13 @@ export const StepBusinessProfile: React.FC<StepBusinessProfileProps> = ({
                 )}
             </div>
 
-            <div className="d-flex justify-content-end align-items-center gap-2 pt-2 border-top mt-3">
+            <div className="d-flex flex-column-reverse flex-sm-row justify-content-end align-items-stretch align-items-sm-center gap-2 pt-2 border-top mt-3">
                 <Button
                     color="secondary"
                     outline
                     type="button"
                     onClick={onBack}
+                    className="w-100 w-sm-auto"
                     style={{
                         borderRadius: '6px',
                         padding: '0.6rem 1.75rem',
@@ -172,6 +173,7 @@ export const StepBusinessProfile: React.FC<StepBusinessProfileProps> = ({
                 </Button>
                 <Button
                     type="submit"
+                    className="w-100 w-sm-auto"
                     style={{
                         backgroundColor: '#ff8c21',
                         borderColor: '#ff8c21',

@@ -89,9 +89,23 @@ export class Campaigns {
         requiresApproval = policyRow.require_approval;
       }
       if (!wallet || Number(wallet.balance) - Number(wallet.reserved) < cost) throw new ApiError(422, 'Insufficient available credits.');
-      const campaign = (await c.query(`INSERT INTO campaigns(tenant_id,user_id,channel,name,payload,scheduled_at,idempotency_key,request_hash,total,cost)
-        VALUES($1,$2,$3,$4,$5,COALESCE($6::timestamptz,now()),$7,$8,$9,$10) RETURNING *`,
-        [actor.tenant_id, billedUser, channel, input.name, { ...input.payload, message: input.message }, input.schedule_at || null, key, requestHash, phones.length, cost])).rows[0];
+      const isSiblingBalanced = Boolean(body.is_sibling_balanced || body.load_balance_siblings);
+      const siblingPoolId = body.sibling_pool_id ? idSchema.parse(body.sibling_pool_id) : null;
+      const allocatedPhoneIds = Array.isArray(body.allocated_phone_number_ids) ? body.allocated_phone_number_ids : [];
+
+      const campaign = (await c.query(`INSERT INTO campaigns(
+        tenant_id,user_id,channel,name,payload,scheduled_at,idempotency_key,request_hash,total,cost,
+        is_predictive_batched,parent_campaign_id,batch_index,total_batches,
+        is_sibling_balanced,sibling_pool_id,allocated_phone_number_ids
+      )
+      VALUES($1,$2,$3,$4,$5,COALESCE($6::timestamptz,now()),$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
+      [
+        actor.tenant_id, billedUser, channel, input.name, { ...input.payload, message: input.message },
+        input.schedule_at || null, key, requestHash, phones.length, cost,
+        Boolean(body.is_predictive_batched), body.parent_campaign_id || null,
+        Number(body.batch_index || 1), Number(body.total_batches || 1),
+        isSiblingBalanced, siblingPoolId, allocatedPhoneIds
+      ])).rows[0];
       if(requiresApproval){await c.query("UPDATE campaigns SET status='pending_approval' WHERE id=$1",[campaign.id]);campaign.status='pending_approval';}
       await c.query(`INSERT INTO messages(campaign_id,tenant_id,recipient,channel,cost,markup_cost,parent_user_id,next_attempt_at,user_id)
         SELECT $1,$2,phone,$3,$4,$5,$6,COALESCE($8::timestamptz,now()),$7 FROM unnest($9::text[]) AS phone`,
@@ -258,6 +272,164 @@ export class Campaigns {
     await this.refresh(row.campaign_id);
     return { reconciled: true };
   }
+  async analyzeTierHeadroom(tenantId: number, phoneNumberId?: string, recipientCount: number = 0) {
+    const metaConn = (await this.db.query(
+      "SELECT phone_number_id, messaging_limit_tier FROM meta_connections WHERE tenant_id=$1 AND status='connected' AND ($2::text IS NULL OR phone_number_id=$2) LIMIT 1",
+      [tenantId, phoneNumberId || null]
+    )).rows[0];
+
+    const tier = metaConn?.messaging_limit_tier || 'TIER_1K';
+    const tierLimits: Record<string, number> = {
+      TIER_50: 50,
+      TIER_250: 250,
+      TIER_1K: 1000,
+      TIER_10K: 10000,
+      TIER_100K: 100000,
+      TIER_UNLIMITED: 10000000
+    };
+
+    const tierLimit = tierLimits[tier] || 1000;
+    const usageRow = (await this.db.query(
+      "SELECT dispatches FROM broadcast_daily_usage WHERE tenant_id=$1 AND day=(now() AT TIME ZONE 'UTC')::date",
+      [tenantId]
+    )).rows[0];
+    const dispatchedToday = Number(usageRow?.dispatches || 0);
+
+    // 10% buffer reserved for 1-on-1 customer service conversations
+    const safeLimit = Math.floor(tierLimit * 0.90);
+    const safeHeadroom = Math.max(0, safeLimit - dispatchedToday);
+
+    const needsBatching = recipientCount > safeHeadroom && isFinite(tierLimit) && tier !== 'TIER_UNLIMITED';
+    const recommendedBatches: Array<{ batchIndex: number; count: number; scheduledAt: string; delayHours: number }> = [];
+
+    if (needsBatching && recipientCount > 0) {
+      let remaining = recipientCount;
+      let batchIdx = 1;
+      let hoursOffset = 0;
+
+      // Batch 1: up to safe headroom today (or at least 1)
+      const firstBatchSize = Math.min(remaining, Math.max(1, safeHeadroom));
+      recommendedBatches.push({
+        batchIndex: batchIdx++,
+        count: firstBatchSize,
+        scheduledAt: new Date().toISOString(),
+        delayHours: 0
+      });
+      remaining -= firstBatchSize;
+
+      while (remaining > 0) {
+        hoursOffset += 24;
+        const batchSize = Math.min(remaining, safeLimit);
+        const scheduled = new Date(Date.now() + hoursOffset * 60 * 60 * 1000);
+        recommendedBatches.push({
+          batchIndex: batchIdx++,
+          count: batchSize,
+          scheduledAt: scheduled.toISOString(),
+          delayHours: hoursOffset
+        });
+        remaining -= batchSize;
+      }
+    }
+
+    return {
+      tier,
+      tier_limit: tierLimit,
+      dispatched_today: dispatchedToday,
+      safe_headroom: safeHeadroom,
+      needs_batching: needsBatching,
+      recommended_batches: recommendedBatches
+    };
+  }
+
+  async getTierHeadroom(actor: Actor, body: unknown) {
+    const input = z.object({
+      phone_number_id: z.string().optional(),
+      recipient_count: z.number().int().min(0).default(0)
+    }).parse(body || {});
+    return this.analyzeTierHeadroom(actor.tenant_id, input.phone_number_id, input.recipient_count);
+  }
+
+  async analyzeSiblingPoolHeadroom(tenantId: number, recipientCount: number = 0) {
+    const lines = (await this.db.query(
+      `SELECT id, name, phone_number_id, display_phone_number, messaging_limit_tier, quality_rating
+       FROM meta_connections
+       WHERE tenant_id = $1 AND status = 'connected' AND quality_rating != 'RED'
+       ORDER BY id ASC`,
+      [tenantId]
+    )).rows;
+
+    const tierLimits: Record<string, number> = {
+      TIER_50: 50,
+      TIER_250: 250,
+      TIER_1K: 1000,
+      TIER_10K: 10000,
+      TIER_100K: 100000,
+      TIER_UNLIMITED: 10000000
+    };
+
+    const usageRow = (await this.db.query(
+      "SELECT dispatches FROM broadcast_daily_usage WHERE tenant_id=$1 AND day=(now() AT TIME ZONE 'UTC')::date",
+      [tenantId]
+    )).rows[0];
+    const totalDispatches = Number(usageRow?.dispatches || 0);
+
+    const linesWithHeadroom = lines.map((l: any) => {
+      const tier = l.messaging_limit_tier || 'TIER_1K';
+      const limit = tierLimits[tier] || 1000;
+      const assignedUsage = Math.floor(totalDispatches / Math.max(1, lines.length));
+      const safeLimit = Math.floor(limit * 0.90);
+      const safeHeadroom = Math.max(0, safeLimit - assignedUsage);
+      return {
+        id: l.id,
+        name: l.name,
+        phone_number_id: l.phone_number_id,
+        display_phone_number: l.display_phone_number || l.phone_number_id,
+        tier,
+        tier_limit: limit,
+        safe_headroom: safeHeadroom,
+        quality_rating: l.quality_rating || 'GREEN'
+      };
+    });
+
+    const totalPooledHeadroom = linesWithHeadroom.reduce((sum: number, l: any) => sum + l.safe_headroom, 0);
+    const allocatedBatches: Array<{
+      phoneNumberId: string;
+      displayPhoneNumber: string;
+      count: number;
+      percentage: number;
+    }> = [];
+
+    if (recipientCount > 0 && linesWithHeadroom.length > 0) {
+      const countPerLine = Math.floor(recipientCount / linesWithHeadroom.length);
+      const remainder = recipientCount % linesWithHeadroom.length;
+
+      linesWithHeadroom.forEach((line: any, idx: number) => {
+        const lineCount = countPerLine + (idx === 0 ? remainder : 0);
+        allocatedBatches.push({
+          phoneNumberId: line.phone_number_id,
+          displayPhoneNumber: line.display_phone_number,
+          count: lineCount,
+          percentage: Math.round((lineCount / recipientCount) * 100)
+        });
+      });
+    }
+
+    return {
+      pool_enabled: linesWithHeadroom.length > 1,
+      line_count: linesWithHeadroom.length,
+      total_pooled_headroom: totalPooledHeadroom,
+      lines: linesWithHeadroom,
+      allocated_batches: allocatedBatches
+    };
+  }
+
+  async getSiblingPoolHeadroom(actor: Actor, body: unknown) {
+    const input = z.object({
+      recipient_count: z.number().int().min(0).default(0)
+    }).parse(body || {});
+    return this.analyzeSiblingPoolHeadroom(actor.tenant_id, input.recipient_count);
+  }
+
   async resend(actor: Actor, campaignId: unknown, key: string, messageId?: unknown) {
     const original = await this.get(actor, campaignId);
     const rows = (await this.db.query("SELECT recipient FROM messages WHERE campaign_id=$1 AND tenant_id=$2 AND status IN ('failed','cancelled') AND ($3::bigint IS NULL OR id=$3)", [original.id, actor.tenant_id, messageId === undefined ? null : idSchema.parse(messageId)])).rows;
