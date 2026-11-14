@@ -171,10 +171,10 @@ export default function ViewConfigInModal({ edit = null, noView = false, modal =
                             </Col>
                             <Col md="6">
                                 <p className='mb-0 text-dark fw-bolder'>
-                                    Marketing Messages Lite API Status
+                                    Official Business Account (OBA)
                                 </p>
                                 <p className='mb-0 fw-bold text-secondary'>
-                                    {editData?.marketing_messages_lite_api_status ?? 'N/A'}
+                                    {editData?.oba_status ?? 'Standard Account'}
                                 </p>
                             </Col>
 
