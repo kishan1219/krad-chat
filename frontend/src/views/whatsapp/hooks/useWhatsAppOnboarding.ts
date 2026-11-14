@@ -232,33 +232,38 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
                 }
             }
 
-            // PostMessage listener supporting all Facebook origins
+            // PostMessage listener supporting all Facebook origins and flexible payload formats
             const messageHandler = (event: MessageEvent) => {
                 const origin = event.origin || ''
                 if (!origin.endsWith('facebook.com') && !origin.includes('facebook.com')) return
                 try {
                     const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data
                     if (data?.type === 'WA_EMBEDDED_SIGNUP') {
-                        if (data.event === 'FINISH') {
-                            const raw = data.data || data
-                            const wabaId = String(raw.waba_id || raw.wabaId || '')
-                            const phoneId = String(
-                                raw.phone_number_id ||
-                                raw.phoneNumberId ||
-                                raw.phone_numbers?.[0]?.id ||
-                                raw.phone_numbers?.[0] ||
-                                raw.phone_number_ids?.[0] ||
-                                ''
-                            )
-                            if (wabaId || phoneId) {
-                                captured = { waba_id: wabaId, phone_number_id: phoneId }
-                                setCapturedAssets(captured)
-                                if (authCode) {
-                                    clearTimeout(safetyTimer)
-                                    void finish(authCode, captured)
-                                }
+                        const raw = data.data || data
+                        const wabaId = String(
+                            raw.waba_id ||
+                            raw.wabaId ||
+                            raw.target_id ||
+                            raw.waba?.id ||
+                            ''
+                        )
+                        const phoneId = String(
+                            raw.phone_number_id ||
+                            raw.phoneNumberId ||
+                            raw.phone_numbers?.[0]?.id ||
+                            raw.phone_numbers?.[0] ||
+                            raw.phone_number_ids?.[0] ||
+                            raw.phoneId ||
+                            ''
+                        )
+                        if (wabaId || phoneId) {
+                            captured = { waba_id: wabaId, phone_number_id: phoneId }
+                            setCapturedAssets(captured)
+                            if (authCode) {
+                                clearTimeout(safetyTimer)
+                                void finish(authCode, captured)
                             }
-                        } else if (data.event === 'CANCEL') {
+                        } else if (String(data.event).toUpperCase() === 'CANCEL') {
                             clearTimeout(safetyTimer)
                             setBusy(false)
                             setError('Onboarding was cancelled in Facebook.')
@@ -287,15 +292,16 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
                     if (codeOrToken) {
                         authCode = codeOrToken
                         setCapturedCode(codeOrToken)
+                        setBusy(false) // Ready for manual save or auto-finish on popup close
                         if (captured?.waba_id || captured?.phone_number_id) {
                             void finish(codeOrToken, captured)
                         } else {
-                            // Wait briefly for the user to click Finish in Meta's dialog, then finalize
+                            // If Meta's postMessage arrives after FB.login callback, finalize automatically
                             setTimeout(() => {
-                                if (authCode && !isFinalizing) {
-                                    void finish(authCode, captured || capturedAssets || undefined)
+                                if (authCode && !isFinalizing && (captured?.waba_id || captured?.phone_number_id)) {
+                                    void finish(authCode, captured)
                                 }
-                            }, 2000)
+                            }, 4000)
                         }
                     } else if (response?.status !== 'connected') {
                         setBusy(false)
@@ -345,12 +351,14 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
             }
 
             let stateToUse = activeState
-            try {
-                const sess = await whatsappService.beginOnboarding('live')
-                stateToUse = sess.state
-                setActiveState(sess.state)
-            } catch {
-                // keep stateToUse
+            if (!stateToUse) {
+                try {
+                    const sess = await whatsappService.beginOnboarding('live')
+                    stateToUse = sess.state
+                    setActiveState(sess.state)
+                } catch {
+                    // keep stateToUse
+                }
             }
 
             const codeToUse = finalToken || capturedCode || currentTokenOrCode || 'meta_direct_onboarding_token'

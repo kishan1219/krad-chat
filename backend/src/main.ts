@@ -165,6 +165,7 @@ export async function createApplication(options: { config?: ReturnType<typeof lo
   // Security Headers via Helmet
   const configuredCorsOrigins = cfg.CORS_ORIGINS.split(',').map(s => s.trim()).filter(Boolean);
   app.use(helmet({
+    crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],

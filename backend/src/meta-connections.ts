@@ -129,14 +129,28 @@ export class MetaConnections {
 
    if (!targetWabaId) {
     try {
-     const appToken = process.env.META_APP_ID && process.env.META_APP_SECRET
-       ? `${process.env.META_APP_ID}|${process.env.META_APP_SECRET}`
-       : input.access_token;
-     const debug = await this.providers.meta(`debug_token?input_token=${encodeURIComponent(input.access_token)}`, 'GET', undefined, appToken);
-     const granularScopes = debug.data?.granular_scopes || [];
-     const wabaScope = granularScopes.find((s: any) => s.scope === 'whatsapp_business_management' || s.scope === 'whatsapp_business_messaging');
-     if (wabaScope?.target_ids?.length) {
-      targetWabaId = wabaScope.target_ids[0];
+     const version = this.cfg.META_GRAPH_VERSION || 'v22.0';
+     const appId = process.env.META_APP_ID || '';
+     const appSecret = process.env.META_APP_SECRET || '';
+     const appToken = appId && appSecret ? `${appId}|${appSecret}` : input.access_token;
+     const debugRes = await (this.providers as any).request(
+       `https://graph.facebook.com/${version}/debug_token?input_token=${encodeURIComponent(input.access_token)}&access_token=${encodeURIComponent(appToken)}`,
+       { method: 'GET' }
+     );
+     const granularScopes = debugRes?.data?.granular_scopes || [];
+     for (const s of granularScopes) {
+       if ((s.scope === 'whatsapp_business_management' || s.scope === 'whatsapp_business_messaging') && s.target_ids?.length) {
+         targetWabaId = String(s.target_ids[0]);
+         break;
+       }
+     }
+     if (!targetWabaId && granularScopes.length) {
+       for (const s of granularScopes) {
+         if (s.target_ids?.length) {
+           targetWabaId = String(s.target_ids[0]);
+           break;
+         }
+       }
      }
     } catch {
      // fallback

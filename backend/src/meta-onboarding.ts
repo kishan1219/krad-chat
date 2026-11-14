@@ -170,12 +170,46 @@ export class MetaOnboarding {
        if (detected) {
          targetWaba = targetWaba || detected.waba_id;
          if (!targetPhone && detected.phone_numbers?.length) {
-           targetPhone = detected.phone_numbers[0].id;
+           targetPhone = String(detected.phone_numbers[0].id);
          }
        }
      } catch {
        // detection fallback
      }
+   }
+
+   if (!targetWaba || !targetPhone) {
+     try {
+       const version = process.env.META_GRAPH_VERSION || resolved.graph_version || 'v22.0';
+       const appId = process.env.META_APP_ID || resolved.app_id || '';
+       const appSecret = process.env.META_APP_SECRET || resolved.app_secret || '';
+       const appToken = appId && appSecret ? `${appId}|${appSecret}` : accessToken;
+       const debugRes: any = await (this.providers as any).request(
+         `https://graph.facebook.com/${version}/debug_token?input_token=${encodeURIComponent(accessToken)}&access_token=${encodeURIComponent(appToken)}`,
+         { method: 'GET' }
+       );
+       const granularScopes = debugRes?.data?.granular_scopes || [];
+       for (const s of granularScopes) {
+         if (s.target_ids?.length) {
+           targetWaba = targetWaba || String(s.target_ids[0]);
+           break;
+         }
+       }
+     } catch {}
+   }
+
+   if (targetWaba && !targetPhone) {
+     try {
+       const phoneList: any = await this.providers.meta(
+         `${targetWaba}/phone_numbers?fields=id,display_phone_number,verified_name&limit=20`,
+         'GET',
+         undefined,
+         accessToken
+       );
+       if (phoneList?.data?.length) {
+         targetPhone = String(phoneList.data[0].id);
+       }
+     } catch {}
    }
 
    if (!targetWaba || !targetPhone) {
