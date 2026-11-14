@@ -225,10 +225,11 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
                             return
                         }
                     }
+                    await completeSingleSignup(sess.state, codeToUse, assetsToUse || undefined)
                 } catch {
-                    // Fallback to single connect
+                    isFinalizing = false
+                    setBusy(false)
                 }
-                await completeSingleSignup(sess.state, codeToUse, assetsToUse || undefined)
             }
 
             // PostMessage listener supporting all Facebook origins
@@ -286,8 +287,16 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
                     if (codeOrToken) {
                         authCode = codeOrToken
                         setCapturedCode(codeOrToken)
-                        // Trigger finish and complete onboarding automatically
-                        void finish(codeOrToken, captured || capturedAssets || undefined)
+                        if (captured?.waba_id || captured?.phone_number_id) {
+                            void finish(codeOrToken, captured)
+                        } else {
+                            // Wait briefly for the user to click Finish in Meta's dialog, then finalize
+                            setTimeout(() => {
+                                if (authCode && !isFinalizing) {
+                                    void finish(authCode, captured || capturedAssets || undefined)
+                                }
+                            }, 2000)
+                        }
                     } else if (response?.status !== 'connected') {
                         setBusy(false)
                         setError('Facebook Login was closed without completing authorization.')
