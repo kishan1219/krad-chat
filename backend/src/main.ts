@@ -9,6 +9,7 @@ import { resolve } from 'node:path';
 import { existsSync } from 'node:fs';
 import { ZodError } from 'zod';
 import { ApiError, isOriginAllowed } from './common';
+import { ProviderFailure } from './providers';
 import { loadConfig } from './config';
 import { Db } from './db';
 import { migrate } from './migrate';
@@ -281,6 +282,7 @@ export async function createApplication(options: { config?: ReturnType<typeof lo
   // Centralized Error Handling Middleware
   app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
     const status = err instanceof ApiError ? err.status
+      : err instanceof ProviderFailure ? 400
       : err instanceof ZodError ? 422
       : err?.code === '23505' ? 409
       : err?.code === '22P02' ? 422
@@ -289,6 +291,7 @@ export async function createApplication(options: { config?: ReturnType<typeof lo
       : 500;
 
     const message = err instanceof ApiError ? err.message
+      : err instanceof ProviderFailure ? err.message
       : err instanceof ZodError ? 'Validation failed.'
       : status === 409 ? 'Record already exists.'
       : status === 422 ? 'Invalid input.'

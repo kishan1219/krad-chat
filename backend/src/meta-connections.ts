@@ -65,11 +65,17 @@ export class MetaConnections {
   if(!simulated){
    if(!input.access_token)throw new ApiError(422,'A Meta access token is required.');
    let after:string|undefined;phone=undefined;
-   for(let page=0;page<100;page++){
-    const info=await this.providers.meta(`${input.waba_id}/phone_numbers?fields=id,display_phone_number,verified_name,quality_rating,code_verification_status,messaging_limit_tier,name_status&limit=100${after?`&after=${encodeURIComponent(after)}`:''}`,'GET',undefined,input.access_token);
-    phone=info.data?.find((p:any)=>String(p.id)===input.phone_number_id);
-    if(phone||!info.paging?.next)break;
-    after=info.paging?.cursors?.after;if(!after||page===99)throw new ApiError(502,'Number verification exceeded pagination limits.');
+   try {
+     for(let page=0;page<100;page++){
+      const info=await this.providers.meta(`${input.waba_id}/phone_numbers?fields=id,display_phone_number,verified_name,quality_rating,code_verification_status,messaging_limit_tier,name_status&limit=100${after?`&after=${encodeURIComponent(after)}`:''}`,'GET',undefined,input.access_token);
+      phone=info.data?.find((p:any)=>String(p.id)===input.phone_number_id);
+      if(phone||!info.paging?.next)break;
+      after=info.paging?.cursors?.after;if(!after||page===99)throw new ApiError(502,'Number verification exceeded pagination limits.');
+     }
+   } catch (metaErr: any) {
+     if (metaErr instanceof ApiError) throw metaErr;
+     const detail = metaErr?.message || 'Meta verification failed';
+     throw new ApiError(400, `Meta API error: ${detail}. Please check your Access Token, WABA ID, and Phone Number ID.`);
    }
     if(!phone)throw new ApiError(422,'Meta did not confirm that this number belongs to the authorized WABA.');
   }

@@ -316,8 +316,13 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
         const finalPhone = (customPhoneId || capturedAssets?.phone_number_id || '').trim()
         const finalToken = (customToken || '').trim()
 
-        if (!finalPhone) {
+        if (!finalPhone && !capturedCode && !currentTokenOrCode && !finalToken) {
             setError('Please enter your WhatsApp Phone Number ID from Meta Dashboard.')
+            return
+        }
+
+        if (finalPhone && !/^\d{1,40}$/.test(finalPhone)) {
+            setError('Phone Number ID must be a numeric ID (e.g. 1369567429576618), not an email or text.')
             return
         }
 

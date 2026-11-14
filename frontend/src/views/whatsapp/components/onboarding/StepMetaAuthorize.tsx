@@ -125,29 +125,6 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
                     {isAuthorized ? (
                         /* Explicit Save Connection Button */
                         <div className="mb-3">
-                            <div className="p-2 border rounded-2 mb-2" style={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0' }}>
-                                <div className="fw-semibold text-dark small mb-1">Verify Connection IDs (Meta Business):</div>
-                                <Row className="g-1 mb-1">
-                                    <Col xs="6">
-                                        <Label className="small mb-0 text-muted" style={{ fontSize: '0.72rem' }}>WABA ID (Auto-detect if blank)</Label>
-                                        <Input
-                                            bsSize="sm"
-                                            placeholder="Auto-detected"
-                                            value={manualWabaId}
-                                            onChange={(e) => setManualWabaId(e.target.value)}
-                                        />
-                                    </Col>
-                                    <Col xs="6">
-                                        <Label className="small mb-0 text-muted" style={{ fontSize: '0.72rem' }}>Phone Number ID</Label>
-                                        <Input
-                                            bsSize="sm"
-                                            placeholder="e.g. 1369567429576618"
-                                            value={manualPhoneId}
-                                            onChange={(e) => setManualPhoneId(e.target.value)}
-                                        />
-                                    </Col>
-                                </Row>
-                            </div>
                             <Button
                                 type="button"
                                 disabled={busy}
