@@ -31,7 +31,7 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
 }) => {
     const [imgError, setImgError] = useState(false)
     const [manualWabaId, setManualWabaId] = useState(capturedAssets?.waba_id || '')
-    const [manualPhoneId, setManualPhoneId] = useState(capturedAssets?.phone_number_id || '1369567429576618')
+    const [manualPhoneId, setManualPhoneId] = useState(capturedAssets?.phone_number_id || '')
     const [showManualFields, setShowManualFields] = useState(true)
 
     React.useEffect(() => {
@@ -140,7 +140,7 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
                                         <Label className="small mb-0 text-muted" style={{ fontSize: '0.72rem' }}>Phone Number ID</Label>
                                         <Input
                                             bsSize="sm"
-                                            placeholder="1369567429576618"
+                                            placeholder="e.g. 1369567429576618"
                                             value={manualPhoneId}
                                             onChange={(e) => setManualPhoneId(e.target.value)}
                                         />
@@ -225,7 +225,7 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
                                     <Label className="small mb-0 text-muted">Phone Number ID *</Label>
                                     <Input
                                         bsSize="sm"
-                                        placeholder="1369567429576618"
+                                        placeholder="e.g. 1369567429576618"
                                         value={manualPhoneId}
                                         onChange={(e) => setManualPhoneId(e.target.value)}
                                     />

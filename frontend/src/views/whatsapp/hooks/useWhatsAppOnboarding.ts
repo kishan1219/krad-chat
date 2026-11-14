@@ -285,8 +285,8 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
                         if (captured?.phone_number_id && captured?.waba_id) {
                             void finish(codeOrToken, captured)
                         } else {
-                            setCapturedAssets(prev => prev || { waba_id: '', phone_number_id: '1369567429576618' })
-                            setNotice('Meta authorization verified! Review your Phone Number ID below and click Save & Activate WhatsApp Line.')
+                            if (captured) setCapturedAssets(captured)
+                            setNotice('Meta authorization verified! Please enter your Phone Number ID below and click Save Connection Now.')
                         }
                     } else if (response.status !== 'connected') {
                         setError('Facebook Login was closed without completing authorization.')
@@ -313,7 +313,12 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
     // Explicit manual save trigger when popup completes or direct save is requested
     const handleManualSave = useCallback(async (customWabaId?: string, customPhoneId?: string) => {
         const finalWaba = (customWabaId || capturedAssets?.waba_id || currentWabaId || '').trim()
-        const finalPhone = (customPhoneId || capturedAssets?.phone_number_id || '1369567429576618').trim()
+        const finalPhone = (customPhoneId || capturedAssets?.phone_number_id || '').trim()
+
+        if (!finalPhone) {
+            setError('Please enter your WhatsApp Phone Number ID from Meta Dashboard.')
+            return
+        }
 
         setBusy(true)
         setError('')
