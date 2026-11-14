@@ -34,6 +34,11 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
     const [manualPhoneId, setManualPhoneId] = useState(capturedAssets?.phone_number_id || '1369567429576618')
     const [showManualFields, setShowManualFields] = useState(true)
 
+    React.useEffect(() => {
+        if (capturedAssets?.waba_id) setManualWabaId(capturedAssets.waba_id)
+        if (capturedAssets?.phone_number_id) setManualPhoneId(capturedAssets.phone_number_id)
+    }, [capturedAssets])
+
     let brandImgUrl = ''
     try {
         brandImgUrl = require('../../../../assets/images/logo/Brand.png')?.default || require('../../../../assets/images/logo/Brand.png')
@@ -196,7 +201,7 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
                                     className="btn btn-link btn-sm p-0 text-decoration-none"
                                     style={{ color: '#ff8c21', fontSize: '0.75rem', fontWeight: 600 }}
                                 >
-                                    {showManualFields ? 'Hide manual entry' : 'I finished popup - Save now'}
+                                    {showManualFields ? 'Hide direct ID setup' : 'Configure IDs manually'}
                                 </button>
                             </div>
                         </div>

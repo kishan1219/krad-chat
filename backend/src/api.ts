@@ -471,6 +471,16 @@ export class Api {
       this.requireMethod(method, ['GET'], res);
       return this.metaConnections.qualityForecast(actor, qualityForecast[1]);
     }
+    const obaStatus = /^whatsapp\/connections\/(\d+)\/oba-status$/.exec(path);
+    if (obaStatus) {
+      this.requireMethod(method, ['GET'], res);
+      return this.metaConnections.obaStatus(actor, obaStatus[1]);
+    }
+    const obaApply = /^whatsapp\/connections\/(\d+)\/oba-apply$/.exec(path);
+    if (obaApply) {
+      this.requireMethod(method, ['POST'], res);
+      return this.metaConnections.obaApply(actor, obaApply[1], body);
+    }
     if (path === 'whatsapp/multi-waba/dashboard') {
       this.requireMethod(method, ['GET'], res);
       return this.metaConnections.multiWabaDashboard(actor);

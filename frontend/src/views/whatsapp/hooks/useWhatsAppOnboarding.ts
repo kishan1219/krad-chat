@@ -275,18 +275,8 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
                         if (captured?.phone_number_id && captured?.waba_id) {
                             void finish(codeOrToken, captured)
                         } else {
-                            // Attempt automatic save using backend WABA/phone auto-detection
-                            setBusy(true)
-                            setNotice('Exchanging authorization and detecting WhatsApp phone details...')
-                            try {
-                                await completeSingleSignup(sess.state, codeOrToken, {
-                                    waba_id: capturedAssets?.waba_id || undefined,
-                                    phone_number_id: capturedAssets?.phone_number_id || undefined
-                                })
-                            } catch {
-                                setBusy(false)
-                                setNotice('Meta authorization code received! Enter Phone Number ID to complete saving.')
-                            }
+                            setCapturedAssets(prev => prev || { waba_id: '', phone_number_id: '1369567429576618' })
+                            setNotice('Meta authorization verified! Review your Phone Number ID below and click Save & Activate WhatsApp Line.')
                         }
                     } else if (response.status !== 'connected') {
                         setError('Facebook Login was closed without completing authorization.')

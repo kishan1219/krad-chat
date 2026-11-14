@@ -176,12 +176,34 @@ export class Webhooks {
         if(change.field==='phone_number_name_update'){
           const targetPhone = String(value.phone_number_id || value.metadata?.phone_number_id || '');
           const verifiedName = String(value.verified_name || '');
-          if(verifiedName){
-            await this.db.query(
-              `UPDATE meta_connections SET verified_name=$2, code_verification_status='VERIFIED', updated_at=now() 
-               WHERE status='connected' AND (($1 <> '' AND phone_number_id=$1) OR ($1 = '' AND waba_id=$3))`,
-              [targetPhone, verifiedName, String(entry.id)]
-            );
+          const decision = String(value.decision || 'APPROVED');
+          const nameStatus = decision === 'APPROVED' ? 'APPROVED' : decision === 'DECLINED' ? 'DECLINED' : 'PENDING_REVIEW';
+          if(verifiedName || targetPhone){
+            const updatedRows = (await this.db.query(
+              `UPDATE meta_connections 
+               SET verified_name = COALESCE(NULLIF($2, ''), verified_name),
+                   name_status = $4,
+                   code_verification_status = 'VERIFIED',
+                   updated_at = now() 
+               WHERE status='connected' AND (($1 <> '' AND phone_number_id=$1) OR ($1 = '' AND waba_id=$3))
+               RETURNING id, tenant_id, phone_number_id, display_phone_number, verified_name, name_status`,
+              [targetPhone, verifiedName, String(entry.id), nameStatus]
+            )).rows;
+
+            for (const conn of updatedRows) {
+              if (this.notify) {
+                this.notify(Number(conn.tenant_id), {
+                  type: 'meta.name_approved',
+                  phone_number_id: conn.phone_number_id,
+                  display_phone_number: conn.display_phone_number,
+                  verified_name: conn.verified_name,
+                  name_status: conn.name_status,
+                  message: decision === 'APPROVED'
+                    ? `🎉 Meta has approved the Display Name '${conn.verified_name}'! Your WhatsApp line is now verified and active.`
+                    : `⚠️ Meta display name review status: ${decision}.`
+                });
+              }
+            }
           }
           continue;
         }

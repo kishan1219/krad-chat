@@ -26,6 +26,7 @@ interface ConnectionsTableProps {
     onOpenForecast?: (conn: WhatsAppConnection) => void
     onOpenTierUpgrade?: (conn: WhatsAppConnection) => void
     onOpenIncrementalSync?: (conn: WhatsAppConnection) => void
+    onOpenOba?: (conn: WhatsAppConnection) => void
     onOpenAddModal: () => void
 }
 
@@ -40,6 +41,7 @@ export function ConnectionsTable({
     onOpenForecast,
     onOpenTierUpgrade,
     onOpenIncrementalSync,
+    onOpenOba,
     onOpenAddModal
 }: ConnectionsTableProps) {
     const filtered = connections.filter(c => {
@@ -230,6 +232,18 @@ export function ConnectionsTable({
 
                                         <td className="py-3 px-3 text-end">
                                             <div className="d-flex align-items-center justify-content-end gap-1">
+                                                {onOpenOba && (
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        color="light"
+                                                        onClick={() => onOpenOba(conn)}
+                                                        title="Official Business Account (OBA Green Checkmark) Status Tracker"
+                                                        style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem', color: '#059669', borderColor: '#a7f3d0', backgroundColor: '#ecfdf5' }}
+                                                    >
+                                                        ✓ OBA
+                                                    </Button>
+                                                )}
                                                 {onOpenForecast && (
                                                     <Button
                                                         type="button"

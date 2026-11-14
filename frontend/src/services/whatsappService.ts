@@ -710,5 +710,18 @@ export const whatsappService = {
             method: 'POST',
             body: JSON.stringify({ recipient_count: recipientCount })
         })
+    },
+
+    // Official Business Account (OBA Green Checkmark) Status Tracker & Application
+    async getObaStatus(connectionId: number | string): Promise<any> {
+        return requestApi(`whatsapp/connections/${connectionId}/oba-status`, {
+            method: 'GET'
+        })
+    },
+
+    async applyOba(connectionId: number | string): Promise<any> {
+        return requestApi(`whatsapp/connections/${connectionId}/oba-apply`, {
+            method: 'POST'
+        })
     }
 }

@@ -14,6 +14,7 @@ import { QualityForecastModal } from './components/connections/QualityForecastMo
 import { InboundRouterModal } from './components/connections/InboundRouterModal'
 import { MultiWabaDashboard } from './components/connections/MultiWabaDashboard'
 import { TierUpgradeCountdownModal } from './components/TierUpgradeCountdownModal'
+import { OfficialBusinessAccountModal } from './components/connections/OfficialBusinessAccountModal'
 import AddWhatsappConfigModal from './AddWhatsappConfigModal'
 import { WhatsAppConnection } from '../../services/whatsappService'
 
@@ -39,6 +40,7 @@ export default function Connections() {
     const [incSyncConn, setIncSyncConn] = useState<WhatsAppConnection | null>(null)
     const [forecastConn, setForecastConn] = useState<WhatsAppConnection | null>(null)
     const [tierUpgradeConn, setTierUpgradeConn] = useState<WhatsAppConnection | null>(null)
+    const [obaConn, setObaConn] = useState<WhatsAppConnection | null>(null)
 
     return (
         <div className="container-fluid px-2 px-sm-3 py-2">
@@ -148,6 +150,7 @@ export default function Connections() {
                         onOpenForecast={(conn) => setForecastConn(conn)}
                         onOpenTierUpgrade={(conn) => setTierUpgradeConn(conn)}
                         onOpenIncrementalSync={(conn) => setIncSyncConn(conn)}
+                        onOpenOba={(conn) => setObaConn(conn)}
                         onOpenAddModal={() => setShowAddModal(true)}
                     />
                 </>
@@ -188,6 +191,13 @@ export default function Connections() {
                 connection={tierUpgradeConn}
                 isOpen={!!tierUpgradeConn}
                 onClose={() => setTierUpgradeConn(null)}
+            />
+
+            {/* Official Business Account (OBA Green Checkmark) Status Modal */}
+            <OfficialBusinessAccountModal
+                connection={obaConn}
+                isOpen={Boolean(obaConn)}
+                toggle={() => setObaConn(null)}
             />
 
             {/* Multi-WABA Inbound Router Modal */}

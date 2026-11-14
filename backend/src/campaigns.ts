@@ -46,9 +46,21 @@ export class Campaigns {
         if(!chat)throw new ApiError(404,'Chat message not found.');
         if(chat.phone_number_id)input.payload.phone_number_id=chat.phone_number_id;
       }
-      const accounts=(await this.db.query("SELECT phone_number_id,templates FROM meta_connections WHERE tenant_id=$1 AND status='connected' AND ($2::text IS NULL OR phone_number_id=$2)",[actor.tenant_id,input.payload.phone_number_id||null])).rows;
-      if(accounts.length===1)input.payload.phone_number_id=accounts[0].phone_number_id;
-      else if(this.cfg.PROVIDER_MODE==='live'||input.payload.phone_number_id||accounts.length>1)throw new ApiError(422,'Select a connected WhatsApp sender belonging to this business.');
+      const accounts=(await this.db.query("SELECT phone_number_id,templates,quality_rating FROM meta_connections WHERE tenant_id=$1 AND status='connected' AND ($2::text IS NULL OR phone_number_id=$2)",[actor.tenant_id,input.payload.phone_number_id||null])).rows;
+      const isAutoPool = input.payload.phone_number_id === 'auto_pool' || input.payload.load_balance === true;
+      if (isAutoPool && accounts.length > 0) {
+        const pool = accounts.filter(a => a.quality_rating !== 'RED').map(a => a.phone_number_id);
+        input.payload.load_balance_pool = pool.length ? pool : accounts.map(a => a.phone_number_id);
+        input.payload.phone_number_id = input.payload.load_balance_pool[0];
+      } else if (accounts.length === 1) {
+        input.payload.phone_number_id = accounts[0].phone_number_id;
+      } else if (!input.payload.phone_number_id && accounts.length > 1) {
+        const pool = accounts.filter(a => a.quality_rating !== 'RED').map(a => a.phone_number_id);
+        input.payload.load_balance_pool = pool.length ? pool : accounts.map(a => a.phone_number_id);
+        input.payload.phone_number_id = input.payload.load_balance_pool[0];
+      } else if (this.cfg.PROVIDER_MODE === 'live' || input.payload.phone_number_id || accounts.length > 1) {
+        throw new ApiError(422, 'Select a connected WhatsApp sender belonging to this business.');
+      }
       if(input.payload.template&&accounts.length===1){
         const template=templateMessageSchema.parse(input.payload.template);input.payload.template=template;
         if(!accounts[0].templates.some((t:any)=>t.name===template.name&&t.language===template.language.code&&t.status==='APPROVED'))throw new ApiError(422,'Template is not approved for the selected sender. Synchronize templates first.');
@@ -192,7 +204,12 @@ export class Campaigns {
             if(row.payload.workflow_run_id){const blocked=await this.db.query("SELECT 1 FROM workflow_runs r JOIN conversations c ON c.id=r.conversation_id WHERE r.id=$1 AND r.tenant_id=$2 AND (c.bot_paused=true OR c.state='closed')",[row.payload.workflow_run_id,row.tenant_id]);if(blocked.rowCount)throw new ProviderFailure('Workflow paused before submission.');}
             if(row.payload.automation_run_id){const blocked=await this.db.query("SELECT 1 FROM automation_runs r JOIN conversations c ON c.id=r.conversation_id WHERE r.id=$1 AND r.tenant_id=$2 AND (c.bot_paused=true OR c.state='closed')",[row.payload.automation_run_id,row.tenant_id]);if(blocked.rowCount)throw new ProviderFailure('Automation paused before submission.');}
           }
-          const result = await this.providers.send({ id: String(row.id), tenant_id:Number(row.tenant_id),recipient: row.recipient, channel: row.channel, payload: row.payload });
+          let payloadToUse = row.payload;
+          if (row.channel === 'whatsapp' && Array.isArray(row.payload.load_balance_pool) && row.payload.load_balance_pool.length > 1) {
+            const pool = row.payload.load_balance_pool;
+            payloadToUse = { ...row.payload, phone_number_id: pool[Number(row.id) % pool.length] };
+          }
+          const result = await this.providers.send({ id: String(row.id), tenant_id:Number(row.tenant_id),recipient: row.recipient, channel: row.channel, payload: payloadToUse });
           await this.db.transaction(async c => {
             const locked = (await c.query('SELECT * FROM messages WHERE id=$1 FOR UPDATE', [row.id])).rows[0];
             if (locked.charged) return;

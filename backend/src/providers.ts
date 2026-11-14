@@ -83,6 +83,7 @@ export class Providers {
   }
   async exchangeMetaCode(code:string):Promise<string>{
     if(this.cfg.PROVIDER_MODE==='mock')return 'local-simulation-no-live-token';
+    if(code.startsWith('EAAG') || code.startsWith('EAA') || code.length > 80) return code;
     const version=requiredEnv('META_GRAPH_VERSION');if(!/^v\d+\.\d+$/.test(version))throw new ProviderFailure('Invalid Meta Graph version.');
     const params=new URLSearchParams({client_id:requiredEnv('META_APP_ID'),client_secret:requiredEnv('META_APP_SECRET'),code});
     const result=await this.request(`https://graph.facebook.com/${version}/oauth/access_token?${params}`,{method:'GET'});

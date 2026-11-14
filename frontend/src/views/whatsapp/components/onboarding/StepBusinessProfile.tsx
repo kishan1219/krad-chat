@@ -63,19 +63,6 @@ export const StepBusinessProfile: React.FC<StepBusinessProfileProps> = ({
 
     return (
         <Form onSubmit={handleSubmit} className="py-1">
-            {/* Account Profile Sync Pill */}
-            <div className="d-flex align-items-center justify-content-between p-2 rounded-2 mb-3" style={{ backgroundColor: '#fff7ed', border: '1px solid #fed7aa' }}>
-                <div className="d-flex align-items-center gap-1">
-                    <UserCheck size={16} style={{ color: '#ff8c21' }} />
-                    <span className="small fw-semibold" style={{ color: '#9a3412', fontSize: '0.82rem' }}>
-                        Client Profile Linked
-                    </span>
-                </div>
-                <Badge color="light-warning" pill style={{ fontSize: '0.72rem' }}>
-                    Auto-Populated
-                </Badge>
-            </div>
-
             <FormGroup className="mb-2">
                 <div className="d-flex justify-content-between align-items-center mb-1">
                     <Label for="businessName" className="form-label fw-bold mb-0 text-dark" style={{ fontSize: '0.88rem' }}>
