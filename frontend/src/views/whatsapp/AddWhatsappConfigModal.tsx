@@ -30,6 +30,8 @@ export default function AddWhatsappConfigModal({
     const {
         step,
         setStep,
+        signupMode,
+        setSignupMode,
         name,
         setName,
         category,
@@ -55,6 +57,9 @@ export default function AddWhatsappConfigModal({
         savingQuickConfig,
         saveQuickConfig,
         handleConnectWithFacebook,
+        capturedCode,
+        capturedAssets,
+        handleManualSave,
         wabaPhoneNumbers,
         selectedNumberIds,
         setSelectedNumberIds,
@@ -100,14 +105,19 @@ export default function AddWhatsappConfigModal({
                 }
             >
                 <div className="d-flex align-items-center gap-2">
-                    <span className="fw-bolder fs-5" style={{ color: '#5e5873' }}>
+                    <span className="fw-bolder fs-5" style={{ color: '#1e293b' }}>
                         Add WhatsApp Connection
                     </span>
-                    {config && !config.configured && (
-                        <span className="badge bg-light-warning text-warning fw-semibold d-none d-sm-inline" style={{ fontSize: '0.7rem' }}>
-                            Setup Needed
-                        </span>
-                    )}
+                    <span
+                        className="badge pill fw-semibold d-none d-sm-inline"
+                        style={{
+                            backgroundColor: signupMode === 'coexistence' ? '#dcfce7' : '#fff7ed',
+                            color: signupMode === 'coexistence' ? '#16a34a' : '#ff8c21',
+                            fontSize: '0.72rem'
+                        }}
+                    >
+                        {signupMode === 'coexistence' ? 'Co-Existence (App + API)' : 'Dedicated Cloud API'}
+                    </span>
                 </div>
             </ModalHeader>
 
@@ -150,6 +160,8 @@ export default function AddWhatsappConfigModal({
                 {/* Step Routing */}
                 {step === 1 && (
                     <StepPrerequisites
+                        signupMode={signupMode}
+                        setSignupMode={setSignupMode}
                         onNext={() => setStep(2)}
                         onClose={handleClose}
                     />
@@ -173,11 +185,15 @@ export default function AddWhatsappConfigModal({
                 {step === 3 && (
                     <StepMetaAuthorize
                         name={name}
+                        signupMode={signupMode}
                         config={config}
                         busy={busy}
+                        capturedCode={capturedCode}
+                        capturedAssets={capturedAssets}
                         onBack={() => setStep(2)}
                         onConnectLive={() => handleConnectWithFacebook('live')}
                         onConnectSandbox={() => handleConnectWithFacebook('sandbox')}
+                        onManualSave={handleManualSave}
                     />
                 )}
 

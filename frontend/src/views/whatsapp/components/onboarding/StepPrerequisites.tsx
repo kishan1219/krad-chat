@@ -1,13 +1,20 @@
 import React, { useState } from 'react'
 import { Card, CardBody, Row, Col, Button, Badge } from 'reactstrap'
-import { CheckCircle, Shield, Smartphone, Globe, ExternalLink, ArrowRight, Zap, Check } from 'react-feather'
+import { CheckCircle, Shield, Smartphone, Globe, ExternalLink, ArrowRight, Zap, Check, Layers } from 'react-feather'
 
 interface StepPrerequisitesProps {
+    signupMode: 'standard' | 'coexistence'
+    setSignupMode: (mode: 'standard' | 'coexistence') => void
     onNext: () => void
     onClose: () => void
 }
 
-export const StepPrerequisites: React.FC<StepPrerequisitesProps> = ({ onNext, onClose }) => {
+export const StepPrerequisites: React.FC<StepPrerequisitesProps> = ({
+    signupMode,
+    setSignupMode,
+    onNext,
+    onClose
+}) => {
     const [checkedItems, setCheckedItems] = useState<{ [key: string]: boolean }>({
         businessManager: true,
         phoneNumber: true,
@@ -22,65 +29,144 @@ export const StepPrerequisites: React.FC<StepPrerequisitesProps> = ({ onNext, on
 
     return (
         <div className="py-1">
-            {/* Top Banner: Meta Cloud API v22.0 Feature Highlights */}
-            <div
-                className="p-3 mb-3 rounded-3"
-                style={{
-                    background: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)',
-                    border: '1px solid #fed7aa'
-                }}
-            >
-                <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
-                    <div className="d-flex align-items-center gap-2">
-                        <div
-                            className="rounded-circle d-flex align-items-center justify-content-center text-white"
-                            style={{ width: '32px', height: '32px', backgroundColor: '#ff8c21' }}
-                        >
-                            <Zap size={16} />
-                        </div>
-                        <div>
-                            <h6 className="fw-bolder mb-0" style={{ color: '#9a3412', fontSize: '1rem' }}>
-                                Direct Meta WhatsApp Cloud API v22.0
-                            </h6>
-                            <small style={{ color: '#c2410c' }}>
-                                Fast, secure enterprise onboarding with zero middleman markups.
-                            </small>
-                        </div>
-                    </div>
-                    <Badge
-                        color="success"
-                        pill
-                        className="py-1 px-2 d-inline-flex align-items-center gap-1"
-                        style={{ fontSize: '0.75rem', fontWeight: 600 }}
-                    >
-                        <Check size={12} /> Live API Ready
-                    </Badge>
-                </div>
-
-                <div className="d-flex align-items-center gap-3 text-muted flex-wrap" style={{ fontSize: '0.78rem' }}>
-                    <span className="d-inline-flex align-items-center gap-1" style={{ color: '#9a3412' }}>
-                        <Shield size={13} /> Official Meta BSP Architecture
-                    </span>
-                    <span className="d-inline-flex align-items-center gap-1" style={{ color: '#9a3412' }}>
-                        <Globe size={13} /> Global High Delivery (99.9%)
-                    </span>
-                    <span className="d-inline-flex align-items-center gap-1" style={{ color: '#9a3412' }}>
-                        <Smartphone size={13} /> Multi-Number Line Support
-                    </span>
-                </div>
-            </div>
-
-            {/* Headline and Context */}
+            {/* Onboarding Mode Selection (Two Distinct Options) */}
             <div className="mb-3">
-                <h5 className="fw-bolder mb-1" style={{ color: '#2d3748', fontSize: '1.15rem' }}>
-                    Pre-Flight Readiness Checklist
+                <span className="badge bg-light-primary text-primary fw-bold mb-1" style={{ fontSize: '0.75rem' }}>
+                    Step 1: Choose Integration Architecture
+                </span>
+                <h5 className="fw-bolder mb-1" style={{ color: '#1e293b', fontSize: '1.2rem' }}>
+                    Select WhatsApp Connection Mode
                 </h5>
-                <p className="text-muted mb-0" style={{ fontSize: '0.86rem' }}>
-                    Verify these three core requirements before initiating Meta Embedded authorization:
+                <p className="text-muted mb-2" style={{ fontSize: '0.85rem' }}>
+                    Choose how you want to deploy your WhatsApp line with Meta Cloud API:
                 </p>
+
+                <Row className="g-2">
+                    {/* Option 1: Standard Dedicated Cloud API */}
+                    <Col xs="12" md="6">
+                        <Card
+                            className={`border rounded-3 cursor-pointer h-100 transition-all ${
+                                signupMode === 'standard' ? 'shadow-sm' : ''
+                            }`}
+                            onClick={() => setSignupMode('standard')}
+                            style={{
+                                borderColor: signupMode === 'standard' ? '#ff8c21' : '#e2e8f0',
+                                backgroundColor: signupMode === 'standard' ? '#fffaf5' : '#ffffff',
+                                borderWidth: signupMode === 'standard' ? '1.5px' : '1px'
+                            }}
+                        >
+                            <CardBody className="p-3 d-flex flex-column justify-content-between">
+                                <div>
+                                    <div className="d-flex align-items-center justify-content-between mb-2">
+                                        <div
+                                            className="rounded-3 d-flex align-items-center justify-content-center"
+                                            style={{
+                                                width: '36px',
+                                                height: '36px',
+                                                backgroundColor: '#fff7ed',
+                                                color: '#ff8c21'
+                                            }}
+                                        >
+                                            <Zap size={18} />
+                                        </div>
+                                        <Badge color={signupMode === 'standard' ? 'warning' : 'light-secondary'} pill style={{ fontSize: '0.7rem' }}>
+                                            High Volume API
+                                        </Badge>
+                                    </div>
+                                    <h6 className="fw-bold mb-1" style={{ color: '#1e293b', fontSize: '0.95rem' }}>
+                                        Dedicated Cloud API Line
+                                    </h6>
+                                    <p className="text-muted small mb-0" style={{ fontSize: '0.8rem', lineHeight: 1.45 }}>
+                                        Direct standalone connection to Meta Cloud API v22.0. Max throughput for bulk broadcasts and AI chatbots.
+                                    </p>
+                                </div>
+                                <div className="pt-2 mt-2 border-top d-flex align-items-center justify-content-between">
+                                    <span className="small fw-semibold text-muted" style={{ fontSize: '0.75rem' }}>
+                                        Fresh / Virtual Number
+                                    </span>
+                                    <div
+                                        className="rounded-circle d-flex align-items-center justify-content-center"
+                                        style={{
+                                            width: '20px',
+                                            height: '20px',
+                                            backgroundColor: signupMode === 'standard' ? '#ff8c21' : '#cbd5e1',
+                                            color: '#ffffff'
+                                        }}
+                                    >
+                                        {signupMode === 'standard' && <Check size={12} />}
+                                    </div>
+                                </div>
+                            </CardBody>
+                        </Card>
+                    </Col>
+
+                    {/* Option 2: WhatsApp Co-Existence Mode */}
+                    <Col xs="12" md="6">
+                        <Card
+                            className={`border rounded-3 cursor-pointer h-100 transition-all ${
+                                signupMode === 'coexistence' ? 'shadow-sm' : ''
+                            }`}
+                            onClick={() => setSignupMode('coexistence')}
+                            style={{
+                                borderColor: signupMode === 'coexistence' ? '#ff8c21' : '#e2e8f0',
+                                backgroundColor: signupMode === 'coexistence' ? '#f0fdf4' : '#ffffff',
+                                borderWidth: signupMode === 'coexistence' ? '1.5px' : '1px'
+                            }}
+                        >
+                            <CardBody className="p-3 d-flex flex-column justify-content-between">
+                                <div>
+                                    <div className="d-flex align-items-center justify-content-between mb-2">
+                                        <div
+                                            className="rounded-3 d-flex align-items-center justify-content-center"
+                                            style={{
+                                                width: '36px',
+                                                height: '36px',
+                                                backgroundColor: '#dcfce7',
+                                                color: '#16a34a'
+                                            }}
+                                        >
+                                            <Layers size={18} />
+                                        </div>
+                                        <Badge color={signupMode === 'coexistence' ? 'success' : 'light-secondary'} pill style={{ fontSize: '0.7rem' }}>
+                                            App + API Co-Existence
+                                        </Badge>
+                                    </div>
+                                    <h6 className="fw-bold mb-1" style={{ color: '#1e293b', fontSize: '0.95rem' }}>
+                                        Co-Existence Mode (App + API)
+                                    </h6>
+                                    <p className="text-muted small mb-0" style={{ fontSize: '0.8rem', lineHeight: 1.45 }}>
+                                        Keep your phone's official WhatsApp Business App active, WHILE managing chats and campaigns in KradChat!
+                                    </p>
+                                </div>
+                                <div className="pt-2 mt-2 border-top d-flex align-items-center justify-content-between">
+                                    <span className="small fw-semibold text-muted" style={{ fontSize: '0.75rem' }}>
+                                        No Phone App Deletion
+                                    </span>
+                                    <div
+                                        className="rounded-circle d-flex align-items-center justify-content-center"
+                                        style={{
+                                            width: '20px',
+                                            height: '20px',
+                                            backgroundColor: signupMode === 'coexistence' ? '#16a34a' : '#cbd5e1',
+                                            color: '#ffffff'
+                                        }}
+                                    >
+                                        {signupMode === 'coexistence' && <Check size={12} />}
+                                    </div>
+                                </div>
+                            </CardBody>
+                        </Card>
+                    </Col>
+                </Row>
             </div>
 
-            {/* Interactive Requirement Cards */}
+            {/* Pre-Flight Readiness Checklist */}
+            <div className="mb-2">
+                <h6 className="fw-bolder mb-1" style={{ color: '#2d3748', fontSize: '0.95rem' }}>
+                    Readiness Verification Checklist
+                </h6>
+            </div>
+
             <Row className="g-2 mb-3">
                 {/* 1. Meta Business Portfolio Admin */}
                 <Col xs="12">
@@ -99,48 +185,41 @@ export const StepPrerequisites: React.FC<StepPrerequisitesProps> = ({ onNext, on
                                 <div
                                     className="rounded-3 d-flex align-items-center justify-content-center"
                                     style={{
-                                        width: '38px',
-                                        height: '38px',
+                                        width: '36px',
+                                        height: '36px',
                                         backgroundColor: '#eff6ff',
                                         color: '#2563eb'
                                     }}
                                 >
-                                    <Shield size={20} />
+                                    <Shield size={18} />
                                 </div>
                                 <div>
-                                    <h6 className="fw-bold mb-0" style={{ fontSize: '0.92rem', color: '#1e293b' }}>
+                                    <h6 className="fw-bold mb-0" style={{ fontSize: '0.88rem', color: '#1e293b' }}>
                                         Meta Business Portfolio Admin
                                     </h6>
                                     <small className="text-muted">
-                                        Full management access to your Facebook Business Manager portfolio.
+                                        Admin access to your Meta Business Account with permissions for WhatsApp.
                                     </small>
                                 </div>
                             </div>
                             <div className="d-flex align-items-center gap-2">
-                                <Badge
-                                    color={checkedItems.businessManager ? 'light-success' : 'light-secondary'}
-                                    className="d-none d-sm-inline-flex py-1 px-2"
-                                    style={{ fontSize: '0.72rem' }}
-                                >
-                                    {checkedItems.businessManager ? '✓ Verified' : 'Check'}
-                                </Badge>
                                 <div
                                     className="rounded-circle d-flex align-items-center justify-content-center"
                                     style={{
-                                        width: '22px',
-                                        height: '22px',
+                                        width: '20px',
+                                        height: '20px',
                                         backgroundColor: checkedItems.businessManager ? '#ff8c21' : '#cbd5e1',
                                         color: '#ffffff'
                                     }}
                                 >
-                                    <Check size={14} />
+                                    <Check size={12} />
                                 </div>
                             </div>
                         </CardBody>
                     </Card>
                 </Col>
 
-                {/* 2. Dedicated Phone Number (OTP Ready) */}
+                {/* 2. Phone Line (OTP or Mobile App) */}
                 <Col xs="12">
                     <Card
                         className={`border rounded-3 transition-all cursor-pointer ${
@@ -157,41 +236,36 @@ export const StepPrerequisites: React.FC<StepPrerequisitesProps> = ({ onNext, on
                                 <div
                                     className="rounded-3 d-flex align-items-center justify-content-center"
                                     style={{
-                                        width: '38px',
-                                        height: '38px',
+                                        width: '36px',
+                                        height: '36px',
                                         backgroundColor: '#ecfdf5',
                                         color: '#059669'
                                     }}
                                 >
-                                    <Smartphone size={20} />
+                                    <Smartphone size={18} />
                                 </div>
                                 <div>
-                                    <h6 className="fw-bold mb-0" style={{ fontSize: '0.92rem', color: '#1e293b' }}>
-                                        Dedicated Phone Number (OTP Ready)
+                                    <h6 className="fw-bold mb-0" style={{ fontSize: '0.88rem', color: '#1e293b' }}>
+                                        {signupMode === 'coexistence' ? 'Active WhatsApp Business App' : 'Dedicated Phone Line (OTP Ready)'}
                                     </h6>
                                     <small className="text-muted">
-                                        Can receive SMS or Voice OTP. Cannot be registered on personal WhatsApp app.
+                                        {signupMode === 'coexistence'
+                                            ? 'Phone number currently active on your phone’s WhatsApp Business application.'
+                                            : 'Able to receive SMS or voice OTP verification code.'}
                                     </small>
                                 </div>
                             </div>
                             <div className="d-flex align-items-center gap-2">
-                                <Badge
-                                    color={checkedItems.phoneNumber ? 'light-success' : 'light-secondary'}
-                                    className="d-none d-sm-inline-flex py-1 px-2"
-                                    style={{ fontSize: '0.72rem' }}
-                                >
-                                    {checkedItems.phoneNumber ? '✓ OTP Ready' : 'Check'}
-                                </Badge>
                                 <div
                                     className="rounded-circle d-flex align-items-center justify-content-center"
                                     style={{
-                                        width: '22px',
-                                        height: '22px',
+                                        width: '20px',
+                                        height: '20px',
                                         backgroundColor: checkedItems.phoneNumber ? '#ff8c21' : '#cbd5e1',
                                         color: '#ffffff'
                                     }}
                                 >
-                                    <Check size={14} />
+                                    <Check size={12} />
                                 </div>
                             </div>
                         </CardBody>
@@ -215,64 +289,40 @@ export const StepPrerequisites: React.FC<StepPrerequisitesProps> = ({ onNext, on
                                 <div
                                     className="rounded-3 d-flex align-items-center justify-content-center"
                                     style={{
-                                        width: '38px',
-                                        height: '38px',
+                                        width: '36px',
+                                        height: '36px',
                                         backgroundColor: '#f5f3ff',
                                         color: '#7c3aed'
                                     }}
                                 >
-                                    <Globe size={20} />
+                                    <Globe size={18} />
                                 </div>
                                 <div>
-                                    <h6 className="fw-bold mb-0" style={{ fontSize: '0.92rem', color: '#1e293b' }}>
+                                    <h6 className="fw-bold mb-0" style={{ fontSize: '0.88rem', color: '#1e293b' }}>
                                         Official Brand Display Name
                                     </h6>
                                     <small className="text-muted">
-                                        Brand name matching your legal documents (e.g. <strong>KRAD Technology</strong>).
+                                        Matches legal trade name or branding documentation (e.g. <strong>KRAD Technology</strong>).
                                     </small>
                                 </div>
                             </div>
                             <div className="d-flex align-items-center gap-2">
-                                <Badge
-                                    color={checkedItems.displayName ? 'light-success' : 'light-secondary'}
-                                    className="d-none d-sm-inline-flex py-1 px-2"
-                                    style={{ fontSize: '0.72rem' }}
-                                >
-                                    {checkedItems.displayName ? '✓ Verified' : 'Check'}
-                                </Badge>
                                 <div
                                     className="rounded-circle d-flex align-items-center justify-content-center"
                                     style={{
-                                        width: '22px',
-                                        height: '22px',
+                                        width: '20px',
+                                        height: '20px',
                                         backgroundColor: checkedItems.displayName ? '#ff8c21' : '#cbd5e1',
                                         color: '#ffffff'
                                     }}
                                 >
-                                    <Check size={14} />
+                                    <Check size={12} />
                                 </div>
                             </div>
                         </CardBody>
                     </Card>
                 </Col>
             </Row>
-
-            {/* Meta Display Name Guidelines Helper */}
-            <div className="d-flex align-items-center justify-content-between p-2 rounded-2 bg-light mb-3">
-                <span className="small text-muted" style={{ fontSize: '0.8rem' }}>
-                    Need help matching Meta's strict display name policies?
-                </span>
-                <a
-                    href="https://www.facebook.com/business/help/529612240923421"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="small fw-semibold d-inline-flex align-items-center gap-1 text-decoration-none"
-                    style={{ color: '#ff8c21', fontSize: '0.8rem' }}
-                >
-                    <span>Meta Guidelines</span>
-                    <ExternalLink size={12} />
-                </a>
-            </div>
 
             {/* Modal Navigation Buttons */}
             <div className="d-flex flex-column-reverse flex-sm-row justify-content-end align-items-stretch align-items-sm-center gap-2 pt-2 border-top">
@@ -307,7 +357,7 @@ export const StepPrerequisites: React.FC<StepPrerequisitesProps> = ({ onNext, on
                         opacity: allChecked ? 1 : 0.6
                     }}
                 >
-                    <span>Continue to Profile Setup</span>
+                    <span>Configure Profile & Next</span>
                     <ArrowRight size={15} />
                 </Button>
             </div>

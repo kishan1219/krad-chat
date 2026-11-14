@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
+import { useSelector } from 'react-redux'
 import {
     whatsappService,
     MetaOnboardingConfig,
@@ -8,12 +9,16 @@ import {
 import { SuccessToast, ErrorToast } from '../../../utility/Utils'
 
 export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, onClose?: () => void) {
-    const [step, setStep] = useState<1 | 2 | 3 | 4>(1) // 1: Pre-reqs, 2: Profile, 3: Connect/FB, 4: Multi-Number
-    const [name, setName] = useState('')
-    const [category, setCategory] = useState('OTHER')
+    const user = useSelector((state: any) => state.auth?.userData)
+    const clientName = user?.company_name || user?.name || user?.username || 'KRAD Technology'
+
+    const [step, setStep] = useState<1 | 2 | 3 | 4>(1) // 1: Mode & Checklist, 2: Profile, 3: Authorize & Save, 4: Multi-Number
+    const [signupMode, setSignupMode] = useState<'standard' | 'coexistence'>('standard')
+    const [name, setName] = useState(clientName)
+    const [category, setCategory] = useState('PROF_SERVICES')
     const [enableAutoResponse, setEnableAutoResponse] = useState(false)
     const [autoResponseMessage, setAutoResponseMessage] = useState(
-        'Hello! Thank you for reaching out to us. We have received your message and will respond shortly.'
+        'Hello! Welcome to our WhatsApp service. How can we assist you today?'
     )
 
     const [busy, setBusy] = useState(false)
@@ -28,6 +33,11 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
     const [quickAppSecret, setQuickAppSecret] = useState('')
     const [quickGraphVersion, setQuickGraphVersion] = useState('v22.0')
     const [savingQuickConfig, setSavingQuickConfig] = useState(false)
+
+    // Authorization & Captured Assets State (Ensures user has explicit save button)
+    const [capturedCode, setCapturedCode] = useState<string>('')
+    const [capturedAssets, setCapturedAssets] = useState<{ waba_id: string; phone_number_id: string } | null>(null)
+    const [activeState, setActiveState] = useState<string>('')
 
     // Multi-number selection state
     const [wabaPhoneNumbers, setWabaPhoneNumbers] = useState<MetaWabaPhoneNumber[]>([])
@@ -53,16 +63,20 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
     useEffect(() => {
         if (isOpen) {
             void fetchConfig()
+            if (!name) setName(clientName)
         } else {
             setStep(1)
             setError('')
             setNotice('')
             setShowQuickConfig(false)
+            setCapturedCode('')
+            setCapturedAssets(null)
+            setActiveState('')
             setWabaPhoneNumbers([])
             setSelectedNumberIds([])
         }
         return () => cleanup.current()
-    }, [isOpen, fetchConfig])
+    }, [isOpen, fetchConfig, clientName])
 
     const saveQuickConfig = useCallback(async (e: React.FormEvent) => {
         e.preventDefault()
@@ -99,21 +113,40 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
             const conn = await whatsappService.completeOnboarding({
                 state,
                 code,
-                name: name.trim() || 'WhatsApp Business Line',
+                name: name.trim() || clientName,
                 waba_id: assets.waba_id,
                 phone_number_id: assets.phone_number_id
             })
-            SuccessToast(`Connected! WhatsApp number ${conn.display_phone_number || assets.phone_number_id} is active.`)
+
+            // If user checked "Enable Auto Response", create initial welcome auto-response rule
+            if (enableAutoResponse && autoResponseMessage.trim() && conn.phone_number_id) {
+                try {
+                    await whatsappService.createRoutingRule({
+                        name: `Welcome Auto-Reply (${conn.name || 'WhatsApp Line'})`,
+                        rule_type: 'fallback',
+                        match_pattern: '*',
+                        target_phone_number_id: conn.phone_number_id,
+                        target_waba_id: conn.waba_id || assets.waba_id,
+                        department: category || 'general',
+                        priority: 50,
+                        active: true
+                    })
+                } catch {
+                    // Ignore auto-reply provision failure gracefully
+                }
+            }
+
+            SuccessToast(`Connected! WhatsApp line ${conn.display_phone_number || assets.phone_number_id} is now saved & active!`)
             if (onSuccess) onSuccess()
             if (onClose) onClose()
         } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : 'Failed to complete WhatsApp onboarding'
+            const msg = err instanceof Error ? err.message : 'Failed to save WhatsApp connection to KradChat'
             setError(msg)
             ErrorToast(msg)
         } finally {
             setBusy(false)
         }
-    }, [name, onSuccess, onClose])
+    }, [name, clientName, enableAutoResponse, autoResponseMessage, category, onSuccess, onClose])
 
     const handleConnectWithFacebook = useCallback(async (mode: 'live' | 'sandbox' = 'live') => {
         if (mode === 'live' && config && !config.configured) {
@@ -128,30 +161,19 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
 
         try {
             const sess = await whatsappService.beginOnboarding(mode)
+            setActiveState(sess.state)
 
             if (sess.simulated || mode === 'sandbox') {
                 const simulatedWaba = `1099${Math.floor(100000 + Math.random() * 900000)}`
-                // Fetch numbers to give user choice if multi-number is enabled
-                const wabaRes = await whatsappService.fetchWabaPhoneNumbers(simulatedWaba, 'simulated_code')
-                if (wabaRes.numbers && wabaRes.numbers.length > 1) {
-                    setCurrentWabaId(simulatedWaba)
-                    setCurrentTokenOrCode('simulated_code')
-                    setWabaPhoneNumbers(wabaRes.numbers)
-                    setSelectedNumberIds(wabaRes.numbers.map(n => n.id))
-                    setStep(4) // Move to multi-number selection
-                    setBusy(false)
-                    return
-                }
-
-                const simulatedAssets = {
-                    waba_id: simulatedWaba,
-                    phone_number_id: `1055${Math.floor(100000 + Math.random() * 900000)}`
-                }
+                const simulatedPhoneId = `1055${Math.floor(100000 + Math.random() * 900000)}`
+                const simulatedAssets = { waba_id: simulatedWaba, phone_number_id: simulatedPhoneId }
+                setCapturedCode('simulated_code_' + Date.now())
+                setCapturedAssets(simulatedAssets)
                 await completeSingleSignup(sess.state, 'simulated_oauth_code_' + Date.now(), simulatedAssets)
                 return
             }
 
-            // Load Meta Facebook SDK
+            // Load Meta Facebook SDK if missing
             if (!(window as any).FB) {
                 await new Promise<void>((resolve, reject) => {
                     const script = document.createElement('script')
@@ -160,7 +182,7 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
                     script.onload = () => resolve()
                     script.onerror = () => {
                         script.remove()
-                        reject(new Error('Meta Facebook SDK failed to load.'))
+                        reject(new Error('Meta Facebook SDK failed to load. Check ad-blocker or network.'))
                     }
                     document.head.appendChild(script)
                 })
@@ -173,42 +195,55 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
                 xfbml: false
             })
 
-            let code = ''
-            let assets: { waba_id: string; phone_number_id: string } | null = null
-            let submitted = false
+            let authCode = ''
+            let captured: { waba_id: string; phone_number_id: string } | null = null
+            let isFinalizing = false
 
-            const finish = async () => {
-                if (!submitted && code && assets?.phone_number_id && assets?.waba_id) {
-                    submitted = true
-                    try {
-                        const wabaRes = await whatsappService.fetchWabaPhoneNumbers(assets.waba_id, code)
-                        if (wabaRes.numbers && wabaRes.numbers.length > 1) {
-                            setCurrentWabaId(assets.waba_id)
-                            setCurrentTokenOrCode(code)
-                            setWabaPhoneNumbers(wabaRes.numbers)
-                            setSelectedNumberIds(wabaRes.numbers.map(n => n.id))
-                            setStep(4) // Multi-number selection
-                            setBusy(false)
-                            return
-                        }
-                    } catch {
-                        // fallback to single connect
+            const finish = async (codeToUse: string, assetsToUse: { waba_id: string; phone_number_id: string }) => {
+                if (isFinalizing) return
+                if (!codeToUse || !assetsToUse.phone_number_id || !assetsToUse.waba_id) return
+                isFinalizing = true
+                setBusy(true)
+
+                try {
+                    const wabaRes = await whatsappService.fetchWabaPhoneNumbers(assetsToUse.waba_id, codeToUse)
+                    if (wabaRes.numbers && wabaRes.numbers.length > 1) {
+                        setCurrentWabaId(assetsToUse.waba_id)
+                        setCurrentTokenOrCode(codeToUse)
+                        setWabaPhoneNumbers(wabaRes.numbers)
+                        setSelectedNumberIds(wabaRes.numbers.map(n => n.id))
+                        setStep(4) // Multi-number selection
+                        setBusy(false)
+                        return
                     }
-                    await completeSingleSignup(sess.state, code, assets)
+                } catch {
+                    // Fallback to single connect
                 }
+                await completeSingleSignup(sess.state, codeToUse, assetsToUse)
             }
 
+            // PostMessage listener supporting all Facebook origins
             const messageHandler = (event: MessageEvent) => {
-                if (event.origin !== 'https://www.facebook.com' && event.origin !== 'https://web.facebook.com') return
+                const origin = event.origin || ''
+                if (!origin.endsWith('facebook.com') && !origin.includes('facebook.com')) return
                 try {
                     const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data
                     if (data?.type === 'WA_EMBEDDED_SIGNUP') {
                         if (data.event === 'FINISH') {
-                            assets = {
-                                phone_number_id: String(data.data?.phone_number_id || ''),
-                                waba_id: String(data.data?.waba_id || '')
+                            const wabaId = String(data.data?.waba_id || data.data?.wabaId || '')
+                            const phoneId = String(
+                                data.data?.phone_number_id ||
+                                data.data?.phone_numbers?.[0]?.id ||
+                                data.data?.phoneNumberId ||
+                                ''
+                            )
+                            if (wabaId && phoneId) {
+                                captured = { waba_id: wabaId, phone_number_id: phoneId }
+                                setCapturedAssets(captured)
+                                if (authCode) {
+                                    void finish(authCode, captured)
+                                }
                             }
-                            void finish()
                         } else if (data.event === 'CANCEL') {
                             setBusy(false)
                             setError('Onboarding was cancelled in Facebook.')
@@ -222,21 +257,34 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
             window.addEventListener('message', messageHandler)
             cleanup.current = () => window.removeEventListener('message', messageHandler)
 
+            // Configure extras for Coexistence vs Standard mode
+            const sessionExtras: Record<string, unknown> = {
+                setup: {},
+                featureType: signupMode === 'coexistence' ? 'coexistence' : '',
+                sessionInfoVersion: '2'
+            }
+
             ;(window as any).FB.login(
                 (response: any) => {
                     if (response.authResponse?.code) {
-                        code = response.authResponse.code
-                        void finish()
+                        authCode = response.authResponse.code
+                        setCapturedCode(authCode)
+                        if (captured?.phone_number_id && captured?.waba_id) {
+                            void finish(authCode, captured)
+                        } else {
+                            setBusy(false)
+                            setNotice('Meta authorization code received! Enter Phone Number ID to complete saving.')
+                        }
                     } else if (response.status !== 'connected') {
                         setBusy(false)
-                        setError('Facebook Login was closed without authorization.')
+                        setError('Facebook Login was closed without completing authorization.')
                     }
                 },
                 {
                     config_id: sess.config_id,
                     response_type: 'code',
                     override_default_response_type: true,
-                    extras: { setup: {}, featureType: '', sessionInfoVersion: '2' }
+                    extras: sessionExtras
                 }
             )
         } catch (err: unknown) {
@@ -245,7 +293,21 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
             setError(msg)
             ErrorToast(msg)
         }
-    }, [config, completeSingleSignup])
+    }, [config, signupMode, completeSingleSignup])
+
+    // Explicit manual save trigger when popup completes
+    const handleManualSave = useCallback(async (customWabaId?: string, customPhoneId?: string) => {
+        const finalWaba = customWabaId || capturedAssets?.waba_id || currentWabaId
+        const finalPhone = customPhoneId || capturedAssets?.phone_number_id
+        const finalCode = capturedCode || currentTokenOrCode
+
+        if (!finalWaba || !finalPhone || !finalCode || !activeState) {
+            setError('Missing required Meta authorization parameters. Please launch Facebook Login again.')
+            return
+        }
+
+        await completeSingleSignup(activeState, finalCode, { waba_id: finalWaba, phone_number_id: finalPhone })
+    }, [capturedAssets, currentWabaId, capturedCode, currentTokenOrCode, activeState, completeSingleSignup])
 
     const handleBatchConnect = useCallback(async () => {
         if (!selectedNumberIds.length || !currentWabaId) return
@@ -254,11 +316,11 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
         try {
             const numbers = selectedNumberIds.map(id => ({
                 phone_number_id: id,
-                name: numberLabels[id]?.trim() || `${name || 'WhatsApp'} (${id.slice(-4)})`
+                name: numberLabels[id]?.trim() || `${name || clientName} (${id.slice(-4)})`
             }))
             const res = await whatsappService.batchConnect({
                 waba_id: currentWabaId,
-                access_token: currentTokenOrCode,
+                access_token: currentTokenOrCode || capturedCode,
                 numbers
             })
             SuccessToast(`Successfully connected ${res.count} phone numbers!`)
@@ -271,11 +333,13 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
         } finally {
             setBusy(false)
         }
-    }, [selectedNumberIds, currentWabaId, currentTokenOrCode, numberLabels, name, onSuccess, onClose])
+    }, [selectedNumberIds, currentWabaId, currentTokenOrCode, capturedCode, numberLabels, name, clientName, onSuccess, onClose])
 
     return {
         step,
         setStep,
+        signupMode,
+        setSignupMode,
         name,
         setName,
         category,
@@ -302,6 +366,9 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
         savingQuickConfig,
         saveQuickConfig,
         handleConnectWithFacebook,
+        capturedCode,
+        capturedAssets,
+        handleManualSave,
         // Multi-number
         wabaPhoneNumbers,
         selectedNumberIds,
@@ -311,4 +378,3 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
         handleBatchConnect
     }
 }
-

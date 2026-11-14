@@ -1,23 +1,34 @@
 import React from 'react'
-import { Form, FormGroup, Label, Input, Button } from 'reactstrap'
+import { Form, FormGroup, Label, Input, Button, Badge, Alert } from 'reactstrap'
+import { ArrowLeft, ArrowRight, UserCheck, MessageSquare, Zap } from 'react-feather'
 
 export const BUSINESS_CATEGORIES = [
-    { value: 'OTHER', label: 'OTHER' },
-    { value: 'AUTO', label: 'AUTO' },
-    { value: 'BEAUTY', label: 'BEAUTY' },
-    { value: 'APPAREL', label: 'APPAREL' },
-    { value: 'EDU', label: 'EDU' },
-    { value: 'ENTERTAIN', label: 'ENTERTAIN' },
-    { value: 'EVENT_PLAN', label: 'EVENT_PLAN' },
-    { value: 'FINANCE', label: 'FINANCE' },
-    { value: 'FOOD_GROCERY', label: 'FOOD_GROCERY' },
-    { value: 'HEALTH', label: 'HEALTH' },
-    { value: 'HOTEL', label: 'HOTEL' },
-    { value: 'NONPROFIT', label: 'NONPROFIT' },
-    { value: 'PROF_SERVICES', label: 'PROF_SERVICES' },
-    { value: 'RESTAURANT', label: 'RESTAURANT' },
-    { value: 'RETAIL', label: 'RETAIL' },
-    { value: 'TRAVEL', label: 'TRAVEL' }
+    { value: 'PROF_SERVICES', label: 'Professional Services & Consulting' },
+    { value: 'TECH', label: 'Technology, IT & Software' },
+    { value: 'FINANCE', label: 'Financial Services, Banking & Insurance' },
+    { value: 'RETAIL', label: 'Retail, E-Commerce & Consumer Goods' },
+    { value: 'HEALTH', label: 'Healthcare, Medical & Pharmaceuticals' },
+    { value: 'EDU', label: 'Education & Training' },
+    { value: 'AUTO', label: 'Automotive & Transport' },
+    { value: 'BEAUTY', label: 'Beauty, Cosmetics & Personal Care' },
+    { value: 'APPAREL', label: 'Clothing, Apparel & Fashion' },
+    { value: 'ENTERTAIN', label: 'Entertainment & Recreation' },
+    { value: 'EVENT_PLAN', label: 'Event Planning & Services' },
+    { value: 'FOOD_GROCERY', label: 'Grocery, Supermarkets & FMCG' },
+    { value: 'HOTEL', label: 'Hotel, Lodging & Hospitality' },
+    { value: 'RESTAURANT', label: 'Restaurants, Dining & Food Delivery' },
+    { value: 'TRAVEL', label: 'Travel, Tourism & Airlines' },
+    { value: 'REAL_ESTATE', label: 'Real Estate & Property Management' },
+    { value: 'MEDIA', label: 'Media, News & Publishing' },
+    { value: 'TELECOM', label: 'Telecommunications' },
+    { value: 'LOGISTICS', label: 'Logistics, Shipping & Courier' },
+    { value: 'LEGAL', label: 'Legal & Corporate Advisory' },
+    { value: 'MANUFACTURING', label: 'Manufacturing & Heavy Industry' },
+    { value: 'AGRICULTURE', label: 'Agriculture & Farming' },
+    { value: 'ARTS', label: 'Arts, Culture & Design' },
+    { value: 'FITNESS', label: 'Fitness, Sports & Gym' },
+    { value: 'NONPROFIT', label: 'Non-Profit & NGO' },
+    { value: 'OTHER', label: 'Other Business Category' }
 ]
 
 interface StepBusinessProfileProps {
@@ -52,52 +63,63 @@ export const StepBusinessProfile: React.FC<StepBusinessProfileProps> = ({
 
     return (
         <Form onSubmit={handleSubmit} className="py-1">
+            {/* Account Profile Sync Pill */}
+            <div className="d-flex align-items-center justify-content-between p-2 rounded-2 mb-3" style={{ backgroundColor: '#fff7ed', border: '1px solid #fed7aa' }}>
+                <div className="d-flex align-items-center gap-1">
+                    <UserCheck size={16} style={{ color: '#ff8c21' }} />
+                    <span className="small fw-semibold" style={{ color: '#9a3412', fontSize: '0.82rem' }}>
+                        Client Profile Linked
+                    </span>
+                </div>
+                <Badge color="light-warning" pill style={{ fontSize: '0.72rem' }}>
+                    Auto-Populated
+                </Badge>
+            </div>
+
             <FormGroup className="mb-2">
-                <Label
-                    for="businessName"
-                    className="form-label fw-bolder mb-50"
-                    style={{ color: '#22292f', fontSize: '0.92rem' }}
-                >
-                    Name
-                </Label>
+                <div className="d-flex justify-content-between align-items-center mb-1">
+                    <Label for="businessName" className="form-label fw-bold mb-0 text-dark" style={{ fontSize: '0.88rem' }}>
+                        Brand Display Name *
+                    </Label>
+                    <small className="text-muted" style={{ fontSize: '0.75rem' }}>
+                        Shown to WhatsApp users
+                    </small>
+                </div>
                 <Input
                     id="businessName"
                     type="text"
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. Krad Technology"
-                    style={{
-                        borderRadius: '6px',
-                        border: '1px solid #d8d6de',
-                        padding: '0.65rem 0.9rem',
-                        fontSize: '0.9rem'
-                    }}
+                    placeholder="e.g. KRAD Technology"
+                    bsSize="sm"
+                    style={{ borderRadius: '6px', fontSize: '0.88rem', padding: '0.55rem 0.75rem' }}
                 />
             </FormGroup>
 
-            <FormGroup className="mb-2">
-                <Label
-                    for="businessCategory"
-                    className="form-label fw-bolder mb-50"
-                    style={{ color: '#22292f', fontSize: '0.92rem' }}
-                >
-                    Business Category <span style={{ color: '#ea5455' }}>*</span>
-                </Label>
+            <FormGroup className="mb-3">
+                <div className="d-flex justify-content-between align-items-center mb-1">
+                    <Label for="businessCategory" className="form-label fw-bold mb-0 text-dark" style={{ fontSize: '0.88rem' }}>
+                        Meta Industry Category *
+                    </Label>
+                    <small className="text-muted" style={{ fontSize: '0.75rem' }}>
+                        Official Meta classification
+                    </small>
+                </div>
                 <Input
                     id="businessCategory"
                     type="select"
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
+                    bsSize="sm"
                     style={{
                         borderRadius: '6px',
                         border: '1.5px solid #ff8c21',
-                        padding: '0.65rem 0.9rem',
-                        fontSize: '0.9rem',
-                        color: '#22292f'
+                        fontSize: '0.88rem',
+                        padding: '0.55rem 0.75rem',
+                        color: '#1e293b'
                     }}
                 >
-                    <option value="" disabled>select</option>
                     {BUSINESS_CATEGORIES.map((cat) => (
                         <option key={cat.value} value={cat.value}>
                             {cat.label}
@@ -106,8 +128,9 @@ export const StepBusinessProfile: React.FC<StepBusinessProfileProps> = ({
                 </Input>
             </FormGroup>
 
-            <div className="pt-50 mb-2">
-                <div className="form-check d-flex align-items-center">
+            {/* Inbound Auto-Response Rule Setup */}
+            <div className="p-3 rounded-3 mb-3" style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                <div className="form-check d-flex align-items-center mb-2">
                     <Input
                         type="checkbox"
                         id="enableAutoResponseCheck"
@@ -122,20 +145,21 @@ export const StepBusinessProfile: React.FC<StepBusinessProfileProps> = ({
                     />
                     <Label
                         for="enableAutoResponseCheck"
-                        className="form-check-label fw-bolder ms-1"
-                        style={{ color: '#22292f', fontSize: '0.92rem', cursor: 'pointer' }}
+                        className="form-check-label fw-bold ms-1 cursor-pointer mb-0 text-dark"
+                        style={{ fontSize: '0.88rem' }}
                     >
-                        Enable Auto Response
+                        Provision Instant Inbound Auto-Response
                     </Label>
                 </div>
 
+                <small className="text-muted d-block mb-2" style={{ fontSize: '0.78rem', lineHeight: 1.45 }}>
+                    Automatically responds to any incoming WhatsApp message with an instant greeting, wired directly to KradChat’s Inbound Router.
+                </small>
+
                 {enableAutoResponse && (
-                    <div className="mt-1 ms-2">
-                        <Label
-                            for="autoResponseMsg"
-                            className="form-label small text-muted mb-50"
-                        >
-                            Auto Response Message
+                    <div>
+                        <Label for="autoResponseMsg" className="form-label small fw-semibold text-muted mb-1">
+                            Greeting Message Text:
                         </Label>
                         <Input
                             id="autoResponseMsg"
@@ -144,49 +168,48 @@ export const StepBusinessProfile: React.FC<StepBusinessProfileProps> = ({
                             value={autoResponseMessage}
                             onChange={(e) => setAutoResponseMessage(e.target.value)}
                             placeholder="Type an instant reply message..."
-                            style={{
-                                borderRadius: '6px',
-                                border: '1px solid #d8d6de',
-                                fontSize: '0.88rem'
-                            }}
+                            style={{ borderRadius: '6px', fontSize: '0.85rem' }}
                         />
                     </div>
                 )}
             </div>
 
-            <div className="d-flex flex-column-reverse flex-sm-row justify-content-end align-items-stretch align-items-sm-center gap-2 pt-2 border-top mt-3">
+            {/* Modal Navigation Buttons */}
+            <div className="d-flex justify-content-between align-items-center pt-2 border-top">
                 <Button
                     color="secondary"
                     outline
                     type="button"
                     onClick={onBack}
-                    className="w-100 w-sm-auto"
+                    className="d-inline-flex align-items-center gap-1"
                     style={{
                         borderRadius: '6px',
-                        padding: '0.6rem 1.75rem',
+                        padding: '0.55rem 1.5rem',
                         fontWeight: 500,
-                        borderColor: '#b9b9c3',
-                        color: '#6e6b7b'
+                        borderColor: '#cbd5e1',
+                        color: '#475569'
                     }}
                 >
-                    Back
+                    <ArrowLeft size={14} />
+                    <span>Back</span>
                 </Button>
                 <Button
                     type="submit"
-                    className="w-100 w-sm-auto"
+                    className="d-inline-flex align-items-center gap-1 shadow-sm"
                     style={{
                         backgroundColor: '#ff8c21',
                         borderColor: '#ff8c21',
                         color: '#ffffff',
                         borderRadius: '6px',
-                        padding: '0.6rem 2.25rem',
-                        fontWeight: 600,
-                        boxShadow: '0 2px 6px rgba(255,140,33,0.3)'
+                        padding: '0.55rem 2rem',
+                        fontWeight: 600
                     }}
                 >
-                    Continue
+                    <span>Proceed to Meta Auth</span>
+                    <ArrowRight size={14} />
                 </Button>
             </div>
         </Form>
     )
 }
+export default StepBusinessProfile
