@@ -481,6 +481,20 @@ export class Api {
       this.requireMethod(method, ['POST'], res);
       return this.metaConnections.obaApply(actor, obaApply[1], body);
     }
+    const resubmitName = /^whatsapp\/connections\/(\d+)\/resubmit-name$/.exec(path);
+    if (resubmitName) {
+      this.requireMethod(method, ['POST'], res);
+      return this.metaConnections.resubmitDisplayName(actor, resubmitName[1], body);
+    }
+    const syncTemplates = /^whatsapp\/connections\/(\d+)\/sync-templates$/.exec(path);
+    if (syncTemplates) {
+      this.requireMethod(method, ['POST'], res);
+      return this.metaConnections.syncTemplates(actor, syncTemplates[1]);
+    }
+    if (path === 'whatsapp/webhook-health') {
+      this.requireMethod(method, ['GET'], res);
+      return this.metaConnections.getWebhookHealth(actor);
+    }
     if (path === 'whatsapp/multi-waba/dashboard') {
       this.requireMethod(method, ['GET'], res);
       return this.metaConnections.multiWabaDashboard(actor);

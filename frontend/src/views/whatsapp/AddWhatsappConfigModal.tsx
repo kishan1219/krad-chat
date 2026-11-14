@@ -83,25 +83,14 @@ export default function AddWhatsappConfigModal({
                 toggle={handleClose}
                 className="border-bottom py-2 px-3 bg-light"
                 close={
-                    <div className="d-flex align-items-center gap-1">
-                        <Button
-                            color="link"
-                            size="sm"
-                            className="p-1 text-muted d-flex align-items-center"
-                            title="Meta App Config"
-                            onClick={() => setShowQuickConfig(!showQuickConfig)}
-                        >
-                            <Settings size={18} />
-                        </Button>
-                        <Button
-                            color="link"
-                            size="sm"
-                            className="p-1 text-muted d-flex align-items-center"
-                            onClick={handleClose}
-                        >
-                            <X size={20} />
-                        </Button>
-                    </div>
+                    <Button
+                        color="link"
+                        size="sm"
+                        className="p-1 text-muted d-flex align-items-center"
+                        onClick={handleClose}
+                    >
+                        <X size={20} />
+                    </Button>
                 }
             >
                 <div className="d-flex align-items-center gap-2">

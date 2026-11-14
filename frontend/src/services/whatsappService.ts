@@ -723,5 +723,33 @@ export const whatsappService = {
         return requestApi(`whatsapp/connections/${connectionId}/oba-apply`, {
             method: 'POST'
         })
+    },
+
+    // Automated Display Name Re-Review Submission
+    async resubmitDisplayName(connectionId: number | string, newName: string): Promise<any> {
+        return requestApi(`whatsapp/connections/${connectionId}/resubmit-name`, {
+            method: 'POST',
+            body: JSON.stringify({ new_name: newName })
+        })
+    },
+
+    // WABA Template Sync Scheduler & Manual Sync
+    async syncTemplates(connectionId: number | string): Promise<any> {
+        return requestApi(`whatsapp/connections/${connectionId}/sync-templates`, {
+            method: 'POST'
+        })
+    },
+
+    // In-App Webhook Health Diagnostic
+    async getWebhookHealth(): Promise<{
+        status: string
+        round_trip_latency_ms: number
+        last_event_at: string
+        uptime_percentage: string
+        webhook_endpoint: string
+    }> {
+        return requestApi('whatsapp/webhook-health', {
+            method: 'GET'
+        })
     }
 }

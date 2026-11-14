@@ -21,6 +21,9 @@ interface ConnectionMobileCardProps {
     onOpenForecast?: (conn: WhatsAppConnection) => void
     onOpenTierUpgrade?: (conn: WhatsAppConnection) => void
     onOpenIncrementalSync?: (conn: WhatsAppConnection) => void
+    onOpenOba?: (conn: WhatsAppConnection) => void
+    onOpenReReview?: (conn: WhatsAppConnection) => void
+    onSyncTemplates?: (id: number) => void
 }
 
 export const ConnectionMobileCard: React.FC<ConnectionMobileCardProps> = ({
@@ -32,7 +35,10 @@ export const ConnectionMobileCard: React.FC<ConnectionMobileCardProps> = ({
     onOpenCoExistence,
     onOpenForecast,
     onOpenTierUpgrade,
-    onOpenIncrementalSync
+    onOpenIncrementalSync,
+    onOpenOba,
+    onOpenReReview,
+    onSyncTemplates
 }) => {
     const isConnected = conn.status === 'connected' || conn.status === 'verified'
     const quality = (conn.quality_rating || 'GREEN').toUpperCase()
@@ -65,11 +71,23 @@ export const ConnectionMobileCard: React.FC<ConnectionMobileCardProps> = ({
                                         ✓ Approved
                                     </Badge>
                                 ) : conn.name_status === 'PENDING_REVIEW' ? (
-                                    <Badge color="light-warning" pill style={{ fontSize: '0.65rem' }}>
+                                    <Badge
+                                        color="light-warning"
+                                        pill
+                                        style={{ fontSize: '0.65rem', cursor: onOpenReReview ? 'pointer' : 'default' }}
+                                        onClick={() => onOpenReReview?.(conn)}
+                                        title="View Review Status / Re-submit"
+                                    >
                                         ⟳ In Review
                                     </Badge>
                                 ) : conn.name_status === 'DECLINED' || conn.name_status === 'REJECTED' ? (
-                                    <Badge color="light-danger" pill style={{ fontSize: '0.65rem' }}>
+                                    <Badge
+                                        color="light-danger"
+                                        pill
+                                        style={{ fontSize: '0.65rem', cursor: onOpenReReview ? 'pointer' : 'default' }}
+                                        onClick={() => onOpenReReview?.(conn)}
+                                        title="Meta Declined: Click to Re-submit Review"
+                                    >
                                         ✕ Action Needed
                                     </Badge>
                                 ) : null}
@@ -155,6 +173,29 @@ export const ConnectionMobileCard: React.FC<ConnectionMobileCardProps> = ({
                             style={{ fontSize: '0.72rem', padding: '0.25rem 0.5rem', flex: '1 1 auto' }}
                         >
                             Sync Chats
+                        </Button>
+                    )}
+                    {onOpenOba && (
+                        <Button
+                            type="button"
+                            size="sm"
+                            color="light"
+                            onClick={() => onOpenOba(conn)}
+                            style={{ fontSize: '0.72rem', padding: '0.25rem 0.5rem', flex: '1 1 auto', color: '#059669', borderColor: '#a7f3d0' }}
+                        >
+                            ✓ OBA
+                        </Button>
+                    )}
+                    {onSyncTemplates && (
+                        <Button
+                            type="button"
+                            size="sm"
+                            color="light"
+                            onClick={() => onSyncTemplates(conn.id)}
+                            disabled={isBusy}
+                            style={{ fontSize: '0.72rem', padding: '0.25rem 0.5rem', flex: '1 1 auto' }}
+                        >
+                            Templates
                         </Button>
                     )}
                 </div>

@@ -26,10 +26,10 @@ export function ConnectionsHeader({
             <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-2 mb-2">
                 <div>
                     <h2
-                        className="fw-bolder mb-0"
-                        style={{ color: '#ff8c21', fontSize: '1.65rem', letterSpacing: '-0.3px' }}
+                        className="fw-bolder mb-0 text-dark"
+                        style={{ fontSize: '1.65rem', letterSpacing: '-0.3px', color: '#1e293b' }}
                     >
-                        Whatsapp Configuration
+                        WhatsApp Configuration
                     </h2>
                     <p className="text-muted small mb-0" style={{ fontSize: '0.85rem' }}>
                         Manage your connected phone numbers, Meta Embedded Signups, and messaging limit tiers.

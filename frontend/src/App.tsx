@@ -6,6 +6,7 @@ import Router from './router/Router'
 import { logout } from './utility/apis/authentication'
 import { isValid } from './utility/helpers/common'
 import useUser from './utility/hooks/useUser'
+import ErrorBoundary from './@core/components/ErrorBoundary'
 
 const App = () => {
     const dispatch = useAppDispatch()
@@ -25,9 +26,11 @@ const App = () => {
     })
 
     return (
-        <Suspense fallback={null}>
-            <Router />
-        </Suspense>
+        <ErrorBoundary fallbackTitle="Application View Unavailable">
+            <Suspense fallback={null}>
+                <Router />
+            </Suspense>
+        </ErrorBoundary>
     )
 }
 

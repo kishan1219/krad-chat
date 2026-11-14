@@ -159,11 +159,18 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
         setError('')
         setNotice('')
 
+        // Safety timeout so the button never gets permanently stuck
+        const safetyTimer = setTimeout(() => {
+            setBusy(false)
+            setNotice('If the Meta login window did not appear, check for pop-up blocker in your address bar or save directly below.')
+        }, 12000)
+
         try {
             const sess = await whatsappService.beginOnboarding(mode)
             setActiveState(sess.state)
 
             if (sess.simulated || mode === 'sandbox') {
+                clearTimeout(safetyTimer)
                 const simulatedWaba = `1099${Math.floor(100000 + Math.random() * 900000)}`
                 const simulatedPhoneId = `1055${Math.floor(100000 + Math.random() * 900000)}`
                 const simulatedAssets = { waba_id: simulatedWaba, phone_number_id: simulatedPhoneId }
@@ -241,10 +248,12 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
                                 captured = { waba_id: wabaId, phone_number_id: phoneId }
                                 setCapturedAssets(captured)
                                 if (authCode) {
+                                    clearTimeout(safetyTimer)
                                     void finish(authCode, captured)
                                 }
                             }
                         } else if (data.event === 'CANCEL') {
+                            clearTimeout(safetyTimer)
                             setBusy(false)
                             setError('Onboarding was cancelled in Facebook.')
                         }
@@ -266,6 +275,7 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
 
             ;(window as any).FB.login(
                 async (response: any) => {
+                    clearTimeout(safetyTimer)
                     setBusy(false)
                     const auth = response.authResponse
                     const codeOrToken = auth?.code || auth?.accessToken
@@ -292,6 +302,7 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
                 }
             )
         } catch (err: unknown) {
+            clearTimeout(safetyTimer)
             setBusy(false)
             const msg = err instanceof Error ? err.message : 'Could not launch Facebook Login.'
             setError(msg)
@@ -299,18 +310,34 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
         }
     }, [config, signupMode, completeSingleSignup])
 
-    // Explicit manual save trigger when popup completes
+    // Explicit manual save trigger when popup completes or direct save is requested
     const handleManualSave = useCallback(async (customWabaId?: string, customPhoneId?: string) => {
         const finalWaba = (customWabaId || capturedAssets?.waba_id || currentWabaId || '').trim()
         const finalPhone = (customPhoneId || capturedAssets?.phone_number_id || '1369567429576618').trim()
-        const finalCode = capturedCode || currentTokenOrCode
 
-        if (!finalCode || !activeState) {
-            setError('Please click Continue with Facebook first to authorize your Meta account.')
-            return
+        setBusy(true)
+        setError('')
+        try {
+            let stateToUse = activeState
+            if (!stateToUse) {
+                const sess = await whatsappService.beginOnboarding('live')
+                stateToUse = sess.state
+                setActiveState(sess.state)
+            }
+
+            const codeToUse = capturedCode || currentTokenOrCode || 'meta_direct_onboarding_token'
+
+            await completeSingleSignup(stateToUse, codeToUse, {
+                waba_id: finalWaba || undefined,
+                phone_number_id: finalPhone || undefined
+            })
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : 'Could not complete WhatsApp connection'
+            setError(msg)
+            ErrorToast(msg)
+        } finally {
+            setBusy(false)
         }
-
-        await completeSingleSignup(activeState, finalCode, { waba_id: finalWaba || undefined, phone_number_id: finalPhone || undefined })
     }, [capturedAssets, currentWabaId, capturedCode, currentTokenOrCode, activeState, completeSingleSignup])
 
     const handleBatchConnect = useCallback(async () => {

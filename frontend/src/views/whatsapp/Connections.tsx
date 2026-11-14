@@ -15,8 +15,10 @@ import { InboundRouterModal } from './components/connections/InboundRouterModal'
 import { MultiWabaDashboard } from './components/connections/MultiWabaDashboard'
 import { TierUpgradeCountdownModal } from './components/TierUpgradeCountdownModal'
 import { OfficialBusinessAccountModal } from './components/connections/OfficialBusinessAccountModal'
+import { ReReviewModal } from './components/connections/ReReviewModal'
 import AddWhatsappConfigModal from './AddWhatsappConfigModal'
-import { WhatsAppConnection } from '../../services/whatsappService'
+import { WhatsAppConnection, whatsappService } from '../../services/whatsappService'
+import { SuccessToast, ErrorToast } from '../../utility/Utils'
 
 export default function Connections() {
     const {
@@ -41,6 +43,18 @@ export default function Connections() {
     const [forecastConn, setForecastConn] = useState<WhatsAppConnection | null>(null)
     const [tierUpgradeConn, setTierUpgradeConn] = useState<WhatsAppConnection | null>(null)
     const [obaConn, setObaConn] = useState<WhatsAppConnection | null>(null)
+    const [reReviewConn, setReReviewConn] = useState<WhatsAppConnection | null>(null)
+
+    const handleSyncTemplates = async (connectionId: number) => {
+        try {
+            const res = await whatsappService.syncTemplates(connectionId)
+            SuccessToast(res.message || 'Templates synchronized with Meta!')
+            void fetchConnections()
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : 'Template sync failed'
+            ErrorToast(msg)
+        }
+    }
 
     return (
         <div className="container-fluid px-2 px-sm-3 py-2">
@@ -151,10 +165,20 @@ export default function Connections() {
                         onOpenTierUpgrade={(conn) => setTierUpgradeConn(conn)}
                         onOpenIncrementalSync={(conn) => setIncSyncConn(conn)}
                         onOpenOba={(conn) => setObaConn(conn)}
+                        onOpenReReview={(conn) => setReReviewConn(conn)}
+                        onSyncTemplates={handleSyncTemplates}
                         onOpenAddModal={() => setShowAddModal(true)}
                     />
                 </>
             )}
+
+            {/* Display Name Re-Review Modal */}
+            <ReReviewModal
+                connection={reReviewConn}
+                isOpen={Boolean(reReviewConn)}
+                toggle={() => setReReviewConn(null)}
+                onSuccess={fetchConnections}
+            />
 
             {/* Embedded Signup Modal (Multi-step Wizard) */}
             <AddWhatsappConfigModal

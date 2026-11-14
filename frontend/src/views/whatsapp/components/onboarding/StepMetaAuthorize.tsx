@@ -189,7 +189,7 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
                                 </svg>
-                                <span>{busy ? 'Opening Meta Auth...' : 'Continue with Facebook'}</span>
+                                <span>{busy ? 'Connecting to Meta...' : 'Continue with Facebook'}</span>
                             </Button>
                             <div className="d-flex align-items-center justify-content-between mt-1 px-1">
                                 <small className="text-muted" style={{ fontSize: '0.75rem' }}>
@@ -213,19 +213,19 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
                             <h6 className="small fw-bold text-dark mb-1">Enter IDs from Meta Dashboard:</h6>
                             <Row className="g-1 mb-2">
                                 <Col xs="6">
-                                    <Label className="small mb-0 text-muted">WABA ID</Label>
+                                    <Label className="small mb-0 text-muted">WABA ID (Optional - Auto-detected)</Label>
                                     <Input
                                         bsSize="sm"
-                                        placeholder="e.g. 109876543210987"
+                                        placeholder="Auto-detected if blank"
                                         value={manualWabaId}
                                         onChange={(e) => setManualWabaId(e.target.value)}
                                     />
                                 </Col>
                                 <Col xs="6">
-                                    <Label className="small mb-0 text-muted">Phone Number ID</Label>
+                                    <Label className="small mb-0 text-muted">Phone Number ID *</Label>
                                     <Input
                                         bsSize="sm"
-                                        placeholder="e.g. 105592837482"
+                                        placeholder="1369567429576618"
                                         value={manualPhoneId}
                                         onChange={(e) => setManualPhoneId(e.target.value)}
                                     />
@@ -233,12 +233,22 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
                             </Row>
                             <Button
                                 size="sm"
-                                style={{ backgroundColor: '#ff8c21', borderColor: '#ff8c21', color: '#fff' }}
-                                disabled={!manualPhoneId || !manualWabaId || busy}
+                                type="button"
+                                style={{
+                                    backgroundColor: '#ff8c21',
+                                    borderColor: '#ff8c21',
+                                    color: '#ffffff',
+                                    borderRadius: '6px',
+                                    fontWeight: 700,
+                                    padding: '0.45rem 1.25rem',
+                                    boxShadow: '0 2px 6px rgba(255,140,33,0.3)'
+                                }}
+                                disabled={!manualPhoneId}
                                 onClick={() => onManualSave?.(manualWabaId, manualPhoneId)}
-                                className="fw-semibold"
+                                className="fw-semibold d-inline-flex align-items-center gap-1 shadow-sm"
                             >
-                                Save Connection Now
+                                <Check size={16} />
+                                <span>Save Connection Now</span>
                             </Button>
                         </Card>
                     )}

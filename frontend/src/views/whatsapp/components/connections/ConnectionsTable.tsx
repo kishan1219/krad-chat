@@ -27,6 +27,8 @@ interface ConnectionsTableProps {
     onOpenTierUpgrade?: (conn: WhatsAppConnection) => void
     onOpenIncrementalSync?: (conn: WhatsAppConnection) => void
     onOpenOba?: (conn: WhatsAppConnection) => void
+    onOpenReReview?: (conn: WhatsAppConnection) => void
+    onSyncTemplates?: (id: number) => void
     onOpenAddModal: () => void
 }
 
@@ -42,6 +44,8 @@ export function ConnectionsTable({
     onOpenTierUpgrade,
     onOpenIncrementalSync,
     onOpenOba,
+    onOpenReReview,
+    onSyncTemplates,
     onOpenAddModal
 }: ConnectionsTableProps) {
     const filtered = connections.filter(c => {
@@ -132,6 +136,9 @@ export function ConnectionsTable({
                         onOpenForecast={onOpenForecast}
                         onOpenTierUpgrade={onOpenTierUpgrade}
                         onOpenIncrementalSync={onOpenIncrementalSync}
+                        onOpenOba={onOpenOba}
+                        onOpenReReview={onOpenReReview}
+                        onSyncTemplates={onSyncTemplates}
                     />
                 ))}
             </div>
@@ -180,12 +187,24 @@ export function ConnectionsTable({
                                                                 ✓ Approved
                                                             </Badge>
                                                         ) : conn.name_status === 'PENDING_REVIEW' ? (
-                                                            <Badge color="light-warning" pill style={{ fontSize: '0.68rem' }}>
+                                                            <Badge
+                                                                color="light-warning"
+                                                                pill
+                                                                style={{ fontSize: '0.68rem', cursor: onOpenReReview ? 'pointer' : 'default' }}
+                                                                onClick={() => onOpenReReview?.(conn)}
+                                                                title="Meta Review in progress - Click to view or resubmit"
+                                                            >
                                                                 ⟳ In Review
                                                             </Badge>
                                                         ) : conn.name_status === 'DECLINED' || conn.name_status === 'REJECTED' ? (
-                                                            <Badge color="light-danger" pill style={{ fontSize: '0.68rem' }}>
-                                                                ✕ Action Needed
+                                                            <Badge
+                                                                color="light-danger"
+                                                                pill
+                                                                style={{ fontSize: '0.68rem', cursor: onOpenReReview ? 'pointer' : 'default' }}
+                                                                onClick={() => onOpenReReview?.(conn)}
+                                                                title="Meta declined display name - Click to resubmit"
+                                                            >
+                                                                ✕ Action Needed (Re-Review)
                                                             </Badge>
                                                         ) : null}
                                                     </div>
@@ -288,6 +307,19 @@ export function ConnectionsTable({
                                                         style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
                                                     >
                                                         Sync
+                                                    </Button>
+                                                )}
+                                                {onSyncTemplates && (
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        color="light"
+                                                        onClick={() => onSyncTemplates(conn.id)}
+                                                        disabled={isBusy}
+                                                        title="Sync WhatsApp Templates with Meta WABA"
+                                                        style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
+                                                    >
+                                                        Templates
                                                     </Button>
                                                 )}
                                                 <Button

@@ -339,6 +339,7 @@ export async function createApplication(options: { config?: ReturnType<typeof lo
 
   // Background workers orchestration
   let timer: NodeJS.Timeout | undefined;
+  let templateSyncTimer: NodeJS.Timeout | undefined;
   if (cfg.WORKER_ENABLED) {
     timer = setInterval(() => {
       void webhooks.inbox.tick().catch(e => logger.error('Webhook worker failed:', e, 'Worker'));
@@ -348,10 +349,16 @@ export async function createApplication(options: { config?: ReturnType<typeof lo
       void automation.tick().catch(e => logger.error('Automation worker failed:', e, 'Worker'));
       void commerce.expire().catch(e => logger.error('Order expiry failed:', e, 'Worker'));
     }, WORKER_TICK_INTERVAL_MS);
+
+    // Hourly WABA Template Sync Scheduler (Auto-fetches APPROVED/REJECTED statuses from Meta)
+    templateSyncTimer = setInterval(() => {
+      void metaConnections.syncAllActiveTemplates().catch(e => logger.error('Hourly template sync failed:', e, 'Worker'));
+    }, 60 * 60 * 1000);
   }
 
   const shutdown = async () => {
     if (timer) clearInterval(timer);
+    if (templateSyncTimer) clearInterval(templateSyncTimer);
     realtime.close();
     await app.close();
     await db.pool.end();
