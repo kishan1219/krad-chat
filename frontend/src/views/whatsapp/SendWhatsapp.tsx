@@ -474,10 +474,13 @@ console.log(mediaFilePath, 'mediaFilePath')
         })
     }
     const CustomPagination = () => {
-        const count = Math.ceil(contactList?.total / contactList?.per_page)
+        const total = Number(contactList?.total) || 0
+        const perPage = Number(contactList?.per_page) || 10
+        const currentPage = Number(contactList?.current_page) || 1
+        const count = Math.max(1, Math.ceil(total / perPage))
         return (
             <ReactPaginate
-                initialPage={contactList?.current_page - 1}
+                initialPage={Math.max(0, currentPage - 1)}
                 disableInitialCallback
                 previousLabel={''}
                 nextLabel={''}

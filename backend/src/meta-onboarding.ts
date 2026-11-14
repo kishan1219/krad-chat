@@ -150,6 +150,20 @@ export class MetaOnboarding {
      } catch {}
    }
 
+   if (targetWaba && !targetPhone) {
+     try {
+       const phoneList = await this.providers.meta(
+         `${targetWaba}/phone_numbers?fields=id,display_phone_number,verified_name&limit=10`,
+         'GET',
+         undefined,
+         accessToken
+       );
+       if (phoneList?.data?.length) {
+         targetPhone = String(phoneList.data[0].id);
+       }
+     } catch {}
+   }
+
    if (!targetWaba || !targetPhone) {
      try {
        const detected = await this.connections.detectWaba(actor, { access_token: accessToken });

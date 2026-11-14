@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { Row, Col, Button, Alert, Card, CardBody, Badge, Input, Label } from 'reactstrap'
-import { Shield, CheckCircle, ArrowLeft, Check, Layers, Zap, Smartphone } from 'react-feather'
+import { Row, Col, Button, Alert, Card, CardBody, Badge } from 'reactstrap'
+import { Shield, CheckCircle, ArrowLeft, Check, Smartphone } from 'react-feather'
 import { PhoneMockup } from './PhoneMockup'
 import { MetaOnboardingConfig } from '../../../../services/whatsappService'
 
@@ -14,7 +14,7 @@ interface StepMetaAuthorizeProps {
     onBack: () => void
     onConnectLive: () => void
     onConnectSandbox?: () => void
-    onManualSave?: (wabaId?: string, phoneId?: string, customToken?: string) => void
+    onSave?: () => void
 }
 
 export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
@@ -27,18 +27,9 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
     onBack,
     onConnectLive,
     onConnectSandbox,
-    onManualSave
+    onSave
 }) => {
     const [imgError, setImgError] = useState(false)
-    const [manualWabaId, setManualWabaId] = useState(capturedAssets?.waba_id || '')
-    const [manualPhoneId, setManualPhoneId] = useState(capturedAssets?.phone_number_id || '')
-    const [manualAccessToken, setManualAccessToken] = useState('')
-    const [showManualFields, setShowManualFields] = useState(true)
-
-    React.useEffect(() => {
-        if (capturedAssets?.waba_id) setManualWabaId(capturedAssets.waba_id)
-        if (capturedAssets?.phone_number_id) setManualPhoneId(capturedAssets.phone_number_id)
-    }, [capturedAssets])
 
     let brandImgUrl = ''
     try {
@@ -53,7 +44,7 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
     return (
         <div className="py-1">
             <Row className="align-items-center g-3">
-                {/* Left Column: Authorization & Explicit Save Card */}
+                {/* Left Column: Authorization & Save Status */}
                 <Col md="7" sm="12">
                     <div className="mb-2">
                         <div className="d-flex align-items-center gap-1 mb-1">
@@ -123,12 +114,12 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
 
                     {/* Primary Action Buttons */}
                     {isAuthorized ? (
-                        /* Explicit Save Connection Button */
+                        /* Save Connection Button */
                         <div className="mb-3">
                             <Button
                                 type="button"
                                 disabled={busy}
-                                onClick={() => onManualSave?.(manualWabaId, manualPhoneId, manualAccessToken)}
+                                onClick={onSave}
                                 className="w-100 py-2 d-flex align-items-center justify-content-center gap-2 shadow-sm"
                                 style={{
                                     backgroundColor: '#ff8c21',
@@ -141,7 +132,7 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
                                 }}
                             >
                                 <Check size={18} />
-                                <span>{busy ? 'Saving to KradChat...' : 'Save & Activate WhatsApp Line'}</span>
+                                <span>{busy ? 'Saving & Activating in KradChat...' : 'Save & Activate WhatsApp Line'}</span>
                             </Button>
                             <small className="text-success text-center d-block mt-1 fw-semibold" style={{ fontSize: '0.78rem' }}>
                                 ✓ Meta authorization received! Click above to save into KradChat.
@@ -169,76 +160,10 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
                                 </svg>
                                 <span>{busy ? 'Connecting to Meta...' : 'Continue with Facebook'}</span>
                             </Button>
-                            <div className="d-flex align-items-center justify-content-between mt-1 px-1">
-                                <small className="text-muted" style={{ fontSize: '0.75rem' }}>
-                                    Opens Meta's secure embedded popup
-                                </small>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowManualFields(!showManualFields)}
-                                    className="btn btn-link btn-sm p-0 text-decoration-none"
-                                    style={{ color: '#ff8c21', fontSize: '0.75rem', fontWeight: 600 }}
-                                >
-                                    {showManualFields ? 'Hide direct ID setup' : 'Configure IDs manually'}
-                                </button>
-                            </div>
+                            <small className="text-muted d-block text-center mt-1" style={{ fontSize: '0.75rem' }}>
+                                Opens Meta's secure embedded popup
+                            </small>
                         </div>
-                    )}
-
-                    {/* Manual Fallback Entry if popup finished but postMessage was blocked */}
-                    {showManualFields && !isAuthorized && (
-                        <Card className="border rounded-3 p-2 mb-2 bg-light shadow-none">
-                            <h6 className="small fw-bold text-dark mb-1">Enter IDs from Meta Dashboard:</h6>
-                            <Row className="g-1 mb-2">
-                                <Col xs="6">
-                                    <Label className="small mb-0 text-muted">WABA ID (Optional - Auto-detected)</Label>
-                                    <Input
-                                        bsSize="sm"
-                                        placeholder="Auto-detected if blank"
-                                        value={manualWabaId}
-                                        onChange={(e) => setManualWabaId(e.target.value)}
-                                    />
-                                </Col>
-                                <Col xs="6">
-                                    <Label className="small mb-0 text-muted">Phone Number ID *</Label>
-                                    <Input
-                                        bsSize="sm"
-                                        placeholder="e.g. 1369567429576618"
-                                        value={manualPhoneId}
-                                        onChange={(e) => setManualPhoneId(e.target.value)}
-                                    />
-                                </Col>
-                            </Row>
-                            <div className="mb-2">
-                                <Label className="small mb-0 text-muted">System User Access Token (Optional)</Label>
-                                <Input
-                                    bsSize="sm"
-                                    type="password"
-                                    placeholder="EAAG... (Leave blank if using server token or Facebook Login)"
-                                    value={manualAccessToken}
-                                    onChange={(e) => setManualAccessToken(e.target.value)}
-                                />
-                            </div>
-                            <Button
-                                size="sm"
-                                type="button"
-                                style={{
-                                    backgroundColor: '#ff8c21',
-                                    borderColor: '#ff8c21',
-                                    color: '#ffffff',
-                                    borderRadius: '6px',
-                                    fontWeight: 700,
-                                    padding: '0.45rem 1.25rem',
-                                    boxShadow: '0 2px 6px rgba(255,140,33,0.3)'
-                                }}
-                                disabled={!manualPhoneId}
-                                onClick={() => onManualSave?.(manualWabaId, manualPhoneId, manualAccessToken)}
-                                className="fw-semibold d-inline-flex align-items-center gap-1 shadow-sm"
-                            >
-                                <Check size={16} />
-                                <span>Save Connection Now</span>
-                            </Button>
-                        </Card>
                     )}
 
                     {config?.simulated && (

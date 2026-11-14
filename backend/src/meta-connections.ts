@@ -129,7 +129,10 @@ export class MetaConnections {
 
    if (!targetWabaId) {
     try {
-     const debug = await this.providers.meta(`debug_token?input_token=${encodeURIComponent(input.access_token)}`, 'GET', undefined, input.access_token);
+     const appToken = process.env.META_APP_ID && process.env.META_APP_SECRET
+       ? `${process.env.META_APP_ID}|${process.env.META_APP_SECRET}`
+       : input.access_token;
+     const debug = await this.providers.meta(`debug_token?input_token=${encodeURIComponent(input.access_token)}`, 'GET', undefined, appToken);
      const granularScopes = debug.data?.granular_scopes || [];
      const wabaScope = granularScopes.find((s: any) => s.scope === 'whatsapp_business_management' || s.scope === 'whatsapp_business_messaging');
      if (wabaScope?.target_ids?.length) {
@@ -138,6 +141,19 @@ export class MetaConnections {
     } catch {
      // fallback
     }
+   }
+
+   if (!targetWabaId) {
+    try {
+     const bizRes = await this.providers.meta('me/businesses?fields=id,name,owned_whatsapp_business_accounts{id,name},client_whatsapp_business_accounts{id,name}', 'GET', undefined, input.access_token);
+     for (const b of (bizRes.data || [])) {
+       const candidate = b.owned_whatsapp_business_accounts?.data?.[0]?.id || b.client_whatsapp_business_accounts?.data?.[0]?.id;
+       if (candidate) {
+         targetWabaId = candidate;
+         break;
+       }
+     }
+    } catch {}
    }
 
    if (!targetWabaId) {

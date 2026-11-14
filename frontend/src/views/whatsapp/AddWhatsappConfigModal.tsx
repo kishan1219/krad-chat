@@ -182,7 +182,7 @@ export default function AddWhatsappConfigModal({
                         onBack={() => setStep(2)}
                         onConnectLive={() => handleConnectWithFacebook('live')}
                         onConnectSandbox={() => handleConnectWithFacebook('sandbox')}
-                        onManualSave={handleManualSave}
+                        onSave={handleManualSave}
                     />
                 )}
 
