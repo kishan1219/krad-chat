@@ -29,6 +29,7 @@ import { Commerce } from './commerce';
 import { Automation } from './automation';
 import { Workflows } from './workflows';
 import { Features } from './features';
+import { MetaConnections } from './meta-connections';
 import { correlationMiddleware, logger } from './logger';
 import { handleDocsJson, handleDocsUi } from './swagger';
 import {
@@ -117,6 +118,7 @@ export async function createApplication(options: { config?: ReturnType<typeof lo
   };
 
   const files = new Files(db, cfg);
+  const metaConnections = new MetaConnections(db, cfg, providers, notify);
   const campaigns = new Campaigns(db, cfg, providers, notify);
   const reports = new Reports(db, files);
   const billing = new Billing(db, providers);
@@ -355,7 +357,7 @@ export async function createApplication(options: { config?: ReturnType<typeof lo
 
     // Hourly WABA Template Sync Scheduler (Auto-fetches APPROVED/REJECTED statuses from Meta)
     templateSyncTimer = setInterval(() => {
-      void metaConnections.syncAllActiveTemplates().catch(e => logger.error('Hourly template sync failed:', e, 'Worker'));
+      void metaConnections.syncAllActiveTemplates().catch((e: any) => logger.error('Hourly template sync failed:', e, 'Worker'));
     }, 60 * 60 * 1000);
   }
 

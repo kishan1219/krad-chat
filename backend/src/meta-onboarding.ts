@@ -203,9 +203,9 @@ export class MetaOnboarding {
    await this.db.query("UPDATE meta_onboarding_sessions SET status='completed',connection_id=$2,completed_at=now() WHERE id=$1",[id,connection.id]);
    await this.db.query("INSERT INTO audit_logs(tenant_id,user_id,action,target) VALUES($1,$2,'meta.onboarding.completed',$3)",[actor.tenant_id,actor.id,String(connection.id)]);
    return connection;
-  }catch(err){
+  }catch(err: any){
    const msg = (err && err.message) || 'Connection could not be verified. Start signup again or reconnect an existing number.';
-   await this.db.query("UPDATE meta_onboarding_sessions SET status='failed',error=$2,completed_at=now() WHERE id=$1",[id, msg.slice(0, 500)]);
+   await this.db.query("UPDATE meta_onboarding_sessions SET status='failed',error=$2,completed_at=now() WHERE id=$1",[id, (typeof msg === 'string' ? msg : JSON.stringify(msg)).slice(0, 500)]);
    throw (err && err.statusCode ? err : new ApiError(422, msg));
   }
  }

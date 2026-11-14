@@ -47,17 +47,19 @@ export class Campaigns {
         if(chat.phone_number_id)input.payload.phone_number_id=chat.phone_number_id;
       }
       const accounts=(await this.db.query("SELECT phone_number_id,templates,quality_rating FROM meta_connections WHERE tenant_id=$1 AND status='connected' AND ($2::text IS NULL OR phone_number_id=$2)",[actor.tenant_id,input.payload.phone_number_id||null])).rows;
-      const isAutoPool = input.payload.phone_number_id === 'auto_pool' || input.payload.load_balance === true;
+      const isAutoPool = input.payload.phone_number_id === 'auto_pool' || (input.payload as any).load_balance === true;
       if (isAutoPool && accounts.length > 0) {
         const pool = accounts.filter(a => a.quality_rating !== 'RED').map(a => a.phone_number_id);
-        input.payload.load_balance_pool = pool.length ? pool : accounts.map(a => a.phone_number_id);
-        input.payload.phone_number_id = input.payload.load_balance_pool[0];
+        const autoPool = pool.length ? pool : accounts.map(a => a.phone_number_id);
+        (input.payload as any).load_balance_pool = autoPool;
+        input.payload.phone_number_id = autoPool[0];
       } else if (accounts.length === 1) {
         input.payload.phone_number_id = accounts[0].phone_number_id;
       } else if (!input.payload.phone_number_id && accounts.length > 1) {
         const pool = accounts.filter(a => a.quality_rating !== 'RED').map(a => a.phone_number_id);
-        input.payload.load_balance_pool = pool.length ? pool : accounts.map(a => a.phone_number_id);
-        input.payload.phone_number_id = input.payload.load_balance_pool[0];
+        const autoPool = pool.length ? pool : accounts.map(a => a.phone_number_id);
+        (input.payload as any).load_balance_pool = autoPool;
+        input.payload.phone_number_id = autoPool[0];
       } else if (this.cfg.PROVIDER_MODE === 'live' || input.payload.phone_number_id || accounts.length > 1) {
         throw new ApiError(422, 'Select a connected WhatsApp sender belonging to this business.');
       }
