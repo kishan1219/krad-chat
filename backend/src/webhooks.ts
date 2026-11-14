@@ -169,6 +169,19 @@ export class Webhooks {
                   });
                 }
               }
+
+              const hasTierChanged = isUpgraded || previousTier !== tier;
+              if (!isDegraded && !hasTierChanged && this.notify) {
+                this.notify(connection.tenant_id, {
+                  type: 'meta.quality_update',
+                  connection_id: connection.id,
+                  phone_number_id: connection.phone_number_id,
+                  quality_rating: quality,
+                  messaging_limit_tier: tier,
+                  verified_name: verifiedName || connection.verified_name,
+                  updated_at: new Date().toISOString()
+                });
+              }
             });
           }
           continue;

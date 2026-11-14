@@ -1083,7 +1083,7 @@ export class MetaConnections {
     const row = await this.owned(actor, id);
     const tier = row.messaging_limit_tier || 'TIER_1K';
     const quality = (row.quality_rating || 'GREEN').toUpperCase();
-    const isQualityGreen = quality === 'GREEN' || quality === 'HIGH';
+    const isQualityGreen = quality === 'GREEN' || quality === 'HIGH' || quality === 'UNKNOWN';
     const isTierEligible = ['TIER_10K', 'TIER_100K', 'TIER_UNLIMITED'].includes(tier);
     const is2FAVerified = row.code_verification_status === 'VERIFIED';
     const obaStatus = row.oba_status || (row.verified_name && isTierEligible && isQualityGreen ? 'ELIGIBLE' : 'NOT_ELIGIBLE');
@@ -1143,6 +1143,136 @@ export class MetaConnections {
       oba_status: 'IN_REVIEW',
       message: 'Official Business Account (OBA) application recorded. Meta review typically concludes in 2-3 business days.'
     };
+  }
+
+  // Automated OBA Re-Application Scheduler & Eligibility Checker
+  async checkAndScheduleObaEligibility(actor: Actor, id: unknown) {
+    const row = await this.owned(actor, id);
+    const tier = row.messaging_limit_tier || 'TIER_1K';
+    const quality = (row.quality_rating || 'GREEN').toUpperCase();
+    const isQualityGreen = quality === 'GREEN' || quality === 'HIGH' || quality === 'UNKNOWN';
+    const isTierEligible = ['TIER_10K', 'TIER_100K', 'TIER_UNLIMITED'].includes(tier);
+
+    // Check rolling 30-day message volume for this tenant
+    const countRes = await this.db.query(
+      "SELECT count(*)::int as count FROM messages WHERE tenant_id=$1 AND created_at >= now() - interval '30 days' AND status IN ('sent', 'delivered', 'read')",
+      [actor.tenant_id]
+    );
+    const rolling30dCount = Number(countRes.rows[0]?.count || 0);
+    const volumeEligible = rolling30dCount >= 10000;
+
+    const becameEligible = (isTierEligible || volumeEligible) && isQualityGreen;
+
+    if (becameEligible && row.oba_status !== 'APPROVED' && row.oba_status !== 'IN_REVIEW') {
+      await this.db.query(
+        "UPDATE meta_connections SET oba_status='ELIGIBLE', updated_at=now() WHERE id=$1",
+        [row.id]
+      );
+
+      const notif = {
+        title: '★ WhatsApp Official Business Account (Green Checkmark) Milestone Unlocked!',
+        message: `Your line ${row.display_phone_number || row.phone_number_id} has unlocked the Tier 10K+ milestone with ${rolling30dCount.toLocaleString()} delivered messages. You can now apply for the Meta Green Checkmark badge!`,
+        connection_id: row.id,
+        phone_number_id: row.phone_number_id,
+        tier: tier,
+        type: 'meta_oba_eligible',
+        severity: 'success',
+        created_at: new Date().toISOString()
+      };
+
+      await this.db.query(
+        "INSERT INTO resources(tenant_id, kind, data, created_by) VALUES($1, 'notification', $2, $3)",
+        [actor.tenant_id, JSON.stringify(notif), actor.id]
+      );
+
+      if (this.notify) {
+        this.notify(actor.tenant_id, {
+          command: 'notification',
+          type: 'meta_oba_eligible',
+          data: notif,
+          connection_id: row.id,
+          phone_number_id: row.phone_number_id,
+          oba_status: 'ELIGIBLE'
+        });
+      }
+
+      return {
+        success: true,
+        eligible: true,
+        oba_status: 'ELIGIBLE',
+        rolling_30d_volume: rolling30dCount,
+        messaging_limit_tier: tier,
+        message: 'Congratulations! Your account is now ELIGIBLE for the Official Business Account badge.'
+      };
+    }
+
+    return {
+      success: true,
+      eligible: row.oba_status === 'APPROVED' || row.oba_status === 'IN_REVIEW' || becameEligible,
+      oba_status: row.oba_status || (becameEligible ? 'ELIGIBLE' : 'NOT_ELIGIBLE'),
+      rolling_30d_volume: rolling30dCount,
+      messaging_limit_tier: tier,
+      message: becameEligible
+        ? 'Account is eligible for OBA verification.'
+        : `Currently ${rolling30dCount.toLocaleString()} messages in past 30 days (Tier: ${tier}). 10,000 delivered messages or Tier 10K required.`
+    };
+  }
+
+  // Periodic Poller across all active accounts
+  async checkAllConnectionsObaEligibility() {
+    const rows = (await this.db.query(
+      "SELECT id, tenant_id, phone_number_id, display_phone_number, messaging_limit_tier, quality_rating, oba_status FROM meta_connections WHERE oba_status IS NULL OR oba_status = 'NOT_ELIGIBLE'"
+    )).rows;
+
+    for (const row of rows) {
+      try {
+        const tier = row.messaging_limit_tier || 'TIER_1K';
+        const quality = (row.quality_rating || 'GREEN').toUpperCase();
+        const isQualityGreen = quality === 'GREEN' || quality === 'HIGH' || quality === 'UNKNOWN';
+        const isTierEligible = ['TIER_10K', 'TIER_100K', 'TIER_UNLIMITED'].includes(tier);
+
+        const countRes = await this.db.query(
+          "SELECT count(*)::int as count FROM messages WHERE tenant_id=$1 AND created_at >= now() - interval '30 days' AND status IN ('sent', 'delivered', 'read')",
+          [row.tenant_id]
+        );
+        const rolling30dCount = Number(countRes.rows[0]?.count || 0);
+        const volumeEligible = rolling30dCount >= 10000;
+
+        if ((isTierEligible || volumeEligible) && isQualityGreen) {
+          await this.db.query(
+            "UPDATE meta_connections SET oba_status='ELIGIBLE', updated_at=now() WHERE id=$1",
+            [row.id]
+          );
+
+          const notif = {
+            title: '★ WhatsApp Official Business Account (Green Checkmark) Milestone Unlocked!',
+            message: `Your line ${row.display_phone_number || row.phone_number_id} has reached 10K+ volume (${rolling30dCount.toLocaleString()} messages). You are now eligible to apply for the Meta Green Checkmark!`,
+            connection_id: row.id,
+            phone_number_id: row.phone_number_id,
+            tier: tier,
+            type: 'meta_oba_eligible',
+            severity: 'success',
+            created_at: new Date().toISOString()
+          };
+
+          await this.db.query(
+            "INSERT INTO resources(tenant_id, kind, data, created_by) VALUES($1, 'notification', $2, 1)",
+            [row.tenant_id, JSON.stringify(notif)]
+          );
+
+          if (this.notify) {
+            this.notify(row.tenant_id, {
+              command: 'notification',
+              type: 'meta_oba_eligible',
+              data: notif,
+              connection_id: row.id,
+              phone_number_id: row.phone_number_id,
+              oba_status: 'ELIGIBLE'
+            });
+          }
+        }
+      } catch {}
+    }
   }
 
   async resubmitDisplayName(actor: Actor, id: unknown, body: any) {

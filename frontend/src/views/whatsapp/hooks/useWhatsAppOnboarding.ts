@@ -7,6 +7,7 @@ import {
     SaveMetaConfigPayload
 } from '../../../services/whatsappService'
 import { SuccessToast, ErrorToast } from '../../../utility/Utils'
+import { ensureFreshToken } from '../../../utility/auth/tokenManager'
 
 export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, onClose?: () => void) {
     const user = useSelector((state: any) => state.auth?.userData)
@@ -62,6 +63,7 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
 
     useEffect(() => {
         if (isOpen) {
+            void ensureFreshToken(15 * 60 * 1000)
             void fetchConfig()
             if (!name) setName(clientName)
         } else {
@@ -149,6 +151,9 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
     }, [name, clientName, enableAutoResponse, autoResponseMessage, category, onSuccess, onClose])
 
     const handleConnectWithFacebook = useCallback(async (mode: 'live' | 'sandbox' = 'live') => {
+        // Guarantee refreshed JWT session before opening Meta popup
+        await ensureFreshToken(15 * 60 * 1000)
+
         if (mode === 'live' && config && !config.configured) {
             setShowQuickConfig(true)
             setError('Meta Embedded Signup is not configured yet. Enter App ID and credentials below.')

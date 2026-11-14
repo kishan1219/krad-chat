@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { whatsappService, MetaConnection, RequestCodePayload } from '../../../services/whatsappService'
 import { SuccessToast, ErrorToast } from '../../../utility/Utils'
+import useWebSockets from '../../../utility/hooks/useSocket'
 
 export interface DegradationAlertInfo {
     id?: number
@@ -43,42 +44,90 @@ export function useWhatsAppConnections() {
         void fetchConnections()
     }, [fetchConnections])
 
-    // WebSocket listener for real-time quality degradation and tier upgrades
+    const { lastMessage } = useWebSockets()
+
+    // Real-Time WABA Webhook Syncing: Instant phone_number_name_update, quality_update, tier_upgrade, and OBA reflections
     useEffect(() => {
-        const handleWsMessage = (e: MessageEvent) => {
-            try {
-                const payload = typeof e.data === 'string' ? JSON.parse(e.data) : e.data
-                if (payload?.command === 'notification' || payload?.type) {
-                    if (payload.type === 'meta_quality_degradation') {
-                        const alertData = payload.data || {}
-                        const quality = alertData.current_quality || alertData.quality || 'YELLOW'
-                        const newAlert: DegradationAlertInfo = {
-                            title: alertData.title || 'WhatsApp Quality Rating Downgraded',
-                            message: alertData.message || '',
-                            phoneNumber: alertData.phone_number || '',
-                            phoneNumberId: alertData.phone_number_id || '',
-                            previousQuality: alertData.previous_quality || 'GREEN',
-                            newQuality: quality,
-                            currentQuality: quality,
-                            severity: alertData.severity || 'warning',
-                            timestamp: alertData.degraded_at || new Date().toISOString()
-                        }
-                        setDegradationAlerts(prev => [newAlert, ...prev])
-                        ErrorToast(`${newAlert.title}: ${newAlert.message}`)
-                        void fetchConnections()
-                    } else if (payload.type === 'meta_tier_upgrade') {
-                        SuccessToast(`Messaging limit upgraded: ${payload.data?.tier || 'New Tier'}`)
-                        void fetchConnections()
+        if (!lastMessage) return
+        const payload = lastMessage
+
+        // 1. Instant phone_number_name_update reflection
+        if (payload.type === 'meta.name_approved' || payload.type === 'meta_name_approved') {
+            const phoneId = payload.phone_number_id
+            const verifiedName = payload.verified_name
+            const nameStatus = payload.name_status || 'APPROVED'
+
+            setConnections(prev => prev.map(c => {
+                if (c.phone_number_id === phoneId || c.id === payload.connection_id) {
+                    return {
+                        ...c,
+                        verified_name: verifiedName || c.verified_name,
+                        name_status: nameStatus
                     }
                 }
-            } catch {
-                // Ignore non-json or unformatted messages
-            }
+                return c
+            }))
+
+            SuccessToast(payload.message || `🎉 Meta approved Display Name '${verifiedName}'!`)
+            void fetchConnections()
         }
 
-        window.addEventListener('message', handleWsMessage)
-        return () => window.removeEventListener('message', handleWsMessage)
-    }, [fetchConnections])
+        // 2. Instant phone_number_quality_update & tier upgrade reflection
+        if (
+            payload.type === 'meta.quality_update' ||
+            payload.type === 'meta_quality_degradation' ||
+            payload.type === 'meta_tier_upgrade'
+        ) {
+            const phoneId = payload.phone_number_id || payload.data?.phone_number_id
+            const quality = payload.quality_rating || payload.data?.quality || payload.data?.current_quality
+            const tier = payload.messaging_limit_tier || payload.data?.tier || payload.data?.current_tier
+            const verifiedName = payload.verified_name
+
+            setConnections(prev => prev.map(c => {
+                if (c.phone_number_id === phoneId || c.id === payload.connection_id) {
+                    return {
+                        ...c,
+                        ...(quality ? { quality_rating: quality } : {}),
+                        ...(tier ? { messaging_limit_tier: tier } : {}),
+                        ...(verifiedName ? { verified_name: verifiedName } : {})
+                    }
+                }
+                return c
+            }))
+
+            if (payload.type === 'meta_quality_degradation') {
+                ErrorToast(`⚠️ WhatsApp Quality Rating Downgraded to ${quality}!`)
+            } else if (payload.type === 'meta_tier_upgrade') {
+                SuccessToast(`🚀 WhatsApp Messaging Limit Tier Upgraded to ${tier}!`)
+            }
+            void fetchConnections()
+        }
+
+        // 3. Instant Official Business Account (Green Checkmark) reflection
+        if (payload.type === 'meta_oba_approved' || payload.type === 'meta.oba_update' || payload.type === 'meta_oba_eligible') {
+            const phoneId = payload.phone_number_id || payload.data?.phone_number_id
+            const obaStatus = payload.oba_status || payload.data?.oba_status || (payload.type === 'meta_oba_eligible' ? 'ELIGIBLE' : 'APPROVED')
+
+            setConnections(prev => prev.map(c => {
+                if (c.phone_number_id === phoneId || c.id === payload.connection_id) {
+                    return { ...c, oba_status: obaStatus }
+                }
+                return c
+            }))
+
+            if (payload.type === 'meta_oba_approved') {
+                SuccessToast('🎉 Meta has approved your Official Business Account (Green Checkmark)!')
+            } else if (payload.type === 'meta_oba_eligible') {
+                SuccessToast('★ Milestone Reached! Tier 10K+ unlocked - OBA Green Checkmark application is now available.')
+            }
+            void fetchConnections()
+        }
+
+        // 4. Instant Template Status update
+        if (payload.type === 'meta_template_status_update' || payload.type === 'meta.template_approved') {
+            void fetchConnections()
+        }
+    }, [lastMessage, fetchConnections])
 
     // Real-Time Meta Display Name & Profile Status Polling
     useEffect(() => {

@@ -481,6 +481,11 @@ export class Api {
       this.requireMethod(method, ['POST'], res);
       return this.metaConnections.obaApply(actor, obaApply[1], body);
     }
+    const obaCheck = /^whatsapp\/connections\/(\d+)\/oba-check-eligibility$/.exec(path);
+    if (obaCheck) {
+      this.requireMethod(method, ['POST'], res);
+      return this.metaConnections.checkAndScheduleObaEligibility(actor, obaCheck[1]);
+    }
     const resubmitName = /^whatsapp\/connections\/(\d+)\/resubmit-name$/.exec(path);
     if (resubmitName) {
       this.requireMethod(method, ['POST'], res);
@@ -497,6 +502,18 @@ export class Api {
       if (method === 'GET') return this.metaConnections.getBusinessProfile(actor, profileAvatar[1]);
       if (method === 'DELETE') return this.metaConnections.deleteBusinessProfileAvatar(actor, profileAvatar[1]);
       return this.metaConnections.uploadBusinessProfileAvatar(actor, profileAvatar[1], body);
+    }
+    if (path === 'whatsapp/media/resize-header') {
+      this.requireMethod(method, ['POST'], res);
+      return this.files.processBroadcastImageVariants(actor, body);
+    }
+    if (path === 'whatsapp/stickers/convert') {
+      this.requireMethod(method, ['POST'], res);
+      return this.files.createWhatsAppSticker(actor, body);
+    }
+    if (path === 'whatsapp/stickers') {
+      this.requireMethod(method, ['GET'], res);
+      return this.files.listWhatsAppStickers(actor);
     }
     if (path === 'whatsapp/webhook-health') {
       this.requireMethod(method, ['GET'], res);

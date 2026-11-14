@@ -12,7 +12,7 @@ import {
     Progress,
     Alert
 } from 'reactstrap'
-import { CheckCircle, AlertCircle, Shield, Award, ExternalLink, X } from 'react-feather'
+import { CheckCircle, AlertCircle, Shield, Award, ExternalLink, X, RefreshCw } from 'react-feather'
 import { whatsappService, WhatsAppConnection } from '../../../../services/whatsappService'
 import { SuccessToast, ErrorToast } from '../../../../utility/Utils'
 
@@ -29,6 +29,8 @@ export function OfficialBusinessAccountModal({
 }: OfficialBusinessAccountModalProps) {
     const [loading, setLoading] = useState(false)
     const [applying, setApplying] = useState(false)
+    const [evaluating, setEvaluating] = useState(false)
+    const [milestoneInfo, setMilestoneInfo] = useState<{ volume?: number; message?: string } | null>(null)
     const [obaData, setObaData] = useState<any>(null)
     const [error, setError] = useState('')
 
@@ -51,8 +53,30 @@ export function OfficialBusinessAccountModal({
         } else {
             setObaData(null)
             setError('')
+            setMilestoneInfo(null)
         }
     }, [isOpen, connection])
+
+    const handleReEvaluate = async () => {
+        if (!connection?.id) return
+        setEvaluating(true)
+        setError('')
+        try {
+            const res = await whatsappService.checkObaEligibility(connection.id)
+            setMilestoneInfo({ volume: res.rolling_30d_volume, message: res.message })
+            if (res.eligible) {
+                SuccessToast(res.message || 'Milestone achieved! Account is eligible for OBA.')
+                setObaData((prev: any) => ({ ...prev, oba_status: 'ELIGIBLE', eligible: true }))
+            } else {
+                SuccessToast(res.message)
+            }
+            loadStatus()
+        } catch (err: any) {
+            setError(err?.message || 'Failed to re-evaluate OBA eligibility.')
+        } finally {
+            setEvaluating(false)
+        }
+    }
 
     const handleApply = async () => {
         if (!connection?.id) return
@@ -207,6 +231,17 @@ export function OfficialBusinessAccountModal({
                                         style={{ height: '7px', borderRadius: '4px' }}
                                     />
                                 </div>
+
+                                {milestoneInfo && (
+                                    <div className="mt-2 p-2 rounded bg-light border small text-dark d-flex align-items-center justify-content-between">
+                                        <span>{milestoneInfo.message}</span>
+                                        {milestoneInfo.volume !== undefined && (
+                                            <Badge color="primary" pill>
+                                                {milestoneInfo.volume.toLocaleString()} msgs / 30d
+                                            </Badge>
+                                        )}
+                                    </div>
+                                )}
                             </CardBody>
                         </Card>
 
@@ -315,9 +350,22 @@ export function OfficialBusinessAccountModal({
             </ModalBody>
 
             <ModalFooter className="border-top py-2 px-3 bg-light d-flex justify-content-between align-items-center">
-                <Button color="secondary" size="sm" onClick={toggle} outline>
-                    Close
-                </Button>
+                <div className="d-flex align-items-center gap-2">
+                    <Button color="secondary" size="sm" onClick={toggle} outline>
+                        Close
+                    </Button>
+                    <Button
+                        type="button"
+                        size="sm"
+                        color="light"
+                        disabled={evaluating || loading}
+                        onClick={handleReEvaluate}
+                        className="d-inline-flex align-items-center gap-1 border"
+                    >
+                        <RefreshCw size={13} className={evaluating ? 'spin' : ''} />
+                        <span>{evaluating ? 'Evaluating...' : 'Re-evaluate 10K Milestone'}</span>
+                    </Button>
+                </div>
 
                 <div className="d-flex align-items-center gap-2">
                     {obaData?.direct_meta_application_url && (

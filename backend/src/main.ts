@@ -346,6 +346,7 @@ export async function createApplication(options: { config?: ReturnType<typeof lo
   // Background workers orchestration
   let timer: NodeJS.Timeout | undefined;
   let templateSyncTimer: NodeJS.Timeout | undefined;
+  let obaReviewTimer: NodeJS.Timeout | undefined;
   if (cfg.WORKER_ENABLED) {
     timer = setInterval(() => {
       void webhooks.inbox.tick().catch(e => logger.error('Webhook worker failed:', e, 'Worker'));
@@ -360,11 +361,19 @@ export async function createApplication(options: { config?: ReturnType<typeof lo
     templateSyncTimer = setInterval(() => {
       void metaConnections.syncAllActiveTemplates().catch((e: any) => logger.error('15-minute template review poller failed:', e, 'Worker'));
     }, 15 * 60 * 1000);
+
+    // Automated OBA Re-Application Scheduler (Evaluates 30-day message volume & Tier 10K milestone hourly)
+    obaReviewTimer = setInterval(() => {
+      void metaConnections.checkAllConnectionsObaEligibility().catch((e: any) => logger.error('OBA review scheduler failed:', e, 'Worker'));
+    }, 60 * 60 * 1000);
+    // Initial evaluation on worker boot
+    void metaConnections.checkAllConnectionsObaEligibility().catch(() => {});
   }
 
   const shutdown = async () => {
     if (timer) clearInterval(timer);
     if (templateSyncTimer) clearInterval(templateSyncTimer);
+    if (obaReviewTimer) clearInterval(obaReviewTimer);
     realtime.close();
     await app.close();
     await db.pool.end();

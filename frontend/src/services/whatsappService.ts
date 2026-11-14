@@ -844,5 +844,94 @@ export const whatsappService = {
         return requestApi(`whatsapp/connections/${connectionId}/profile-avatar`, {
             method: 'DELETE'
         })
+    },
+
+    // Automated OBA Re-Application Scheduler & Eligibility Checker
+    async checkObaEligibility(connectionId: number | string): Promise<{
+        success: boolean
+        eligible: boolean
+        oba_status: string
+        rolling_30d_volume: number
+        messaging_limit_tier: string
+        message: string
+    }> {
+        return requestApi(`whatsapp/connections/${connectionId}/oba-check-eligibility`, {
+            method: 'POST'
+        })
+    },
+
+    // Multi-Format Media Resizer: Responsive WebP, PNG, JPEG broadcast image headers
+    async resizeBroadcastHeader(payload: {
+        file_id?: string
+        image_base64?: string
+        filename?: string
+        width?: number
+        height?: number
+    }): Promise<{
+        success: boolean
+        original_name: string
+        target_dimensions: string
+        variants: {
+            webp: { file_id: string; filename: string; download_path: string; cdn_url: string; mime: string; size_bytes: number }
+            png: { file_id: string; filename: string; download_path: string; cdn_url: string; mime: string; size_bytes: number }
+            jpeg: { file_id: string; filename: string; download_path: string; cdn_url: string; mime: string; size_bytes: number }
+        }
+        recommended_format: string
+        recommended_url: string
+        message: string
+    }> {
+        return requestApi('whatsapp/media/resize-header', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        })
+    },
+
+    // WebP Animation & Graphic to WhatsApp 512×512 Sticker Exporter
+    async convertWhatsAppSticker(payload: {
+        file_id?: string
+        image_base64?: string
+        filename?: string
+        pack_name?: string
+        author?: string
+        is_animated?: boolean
+    }): Promise<{
+        success: boolean
+        sticker_id: number
+        file_id: string
+        name: string
+        pack_name: string
+        author: string
+        dimensions: string
+        mime: string
+        size_bytes: number
+        download_path: string
+        cdn_url: string
+        whatsapp_guidelines_compliant: boolean
+        message: string
+    }> {
+        return requestApi('whatsapp/stickers/convert', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        })
+    },
+
+    async getWhatsAppStickers(): Promise<Array<{
+        id: number
+        file_id: string
+        name: string
+        pack_name: string
+        author: string
+        dimensions: string
+        mime: string
+        size_bytes: number
+        download_path: string
+        cdn_url: string
+        is_animated?: boolean
+        compliant: boolean
+        created_at: string
+    }>> {
+        return requestApi('whatsapp/stickers', {
+            method: 'GET'
+        })
     }
 }

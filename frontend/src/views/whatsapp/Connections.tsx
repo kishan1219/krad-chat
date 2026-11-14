@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Button } from 'reactstrap'
-import { Smartphone, Activity, GitBranch } from 'react-feather'
+import { Smartphone, Activity, GitBranch, Smile } from 'react-feather'
 import { useWhatsAppConnections } from './hooks/useWhatsAppConnections'
 import { ConnectionsHeader } from './components/connections/ConnectionsHeader'
 import { ConnectionsMetrics } from './components/connections/ConnectionsMetrics'
@@ -17,6 +17,7 @@ import { TierUpgradeCountdownModal } from './components/TierUpgradeCountdownModa
 import { OfficialBusinessAccountModal } from './components/connections/OfficialBusinessAccountModal'
 import { ReReviewModal } from './components/connections/ReReviewModal'
 import { ProfileMediaCdnModal } from './components/connections/ProfileMediaCdnModal'
+import { WhatsAppStickerCreatorModal } from './components/stickers/WhatsAppStickerCreatorModal'
 import AddWhatsappConfigModal from './AddWhatsappConfigModal'
 import { WhatsAppConnection, whatsappService } from '../../services/whatsappService'
 import { SuccessToast, ErrorToast } from '../../utility/Utils'
@@ -39,6 +40,7 @@ export default function Connections() {
     const [showManual, setShowManual] = useState(false)
     const [showAddModal, setShowAddModal] = useState(false)
     const [showRouterModal, setShowRouterModal] = useState(false)
+    const [showStickerModal, setShowStickerModal] = useState(false)
     const [coExistenceConn, setCoExistenceConn] = useState<WhatsAppConnection | null>(null)
     const [incSyncConn, setIncSyncConn] = useState<WhatsAppConnection | null>(null)
     const [forecastConn, setForecastConn] = useState<WhatsAppConnection | null>(null)
@@ -110,24 +112,44 @@ export default function Connections() {
                     </Button>
                 </div>
 
-                <Button
-                    type="button"
-                    color="light"
-                    size="sm"
-                    onClick={() => setShowRouterModal(true)}
-                    style={{
-                        borderColor: '#e2e8f0',
-                        color: '#334155',
-                        fontWeight: 600,
-                        borderRadius: '6px',
-                        padding: '0.45rem 1rem',
-                        backgroundColor: '#ffffff'
-                    }}
-                    className="d-inline-flex align-items-center gap-1 shadow-sm"
-                >
-                    <GitBranch size={15} style={{ color: '#ff8c21' }} />
-                    <span>Inbound Routing Rules</span>
-                </Button>
+                <div className="d-flex align-items-center gap-2">
+                    <Button
+                        type="button"
+                        color="light"
+                        size="sm"
+                        onClick={() => setShowStickerModal(true)}
+                        style={{
+                            borderColor: '#e2e8f0',
+                            color: '#334155',
+                            fontWeight: 600,
+                            borderRadius: '6px',
+                            padding: '0.45rem 1rem',
+                            backgroundColor: '#ffffff'
+                        }}
+                        className="d-inline-flex align-items-center gap-1 shadow-sm"
+                    >
+                        <Smile size={15} style={{ color: '#25D366' }} />
+                        <span>Sticker Studio</span>
+                    </Button>
+                    <Button
+                        type="button"
+                        color="light"
+                        size="sm"
+                        onClick={() => setShowRouterModal(true)}
+                        style={{
+                            borderColor: '#e2e8f0',
+                            color: '#334155',
+                            fontWeight: 600,
+                            borderRadius: '6px',
+                            padding: '0.45rem 1rem',
+                            backgroundColor: '#ffffff'
+                        }}
+                        className="d-inline-flex align-items-center gap-1 shadow-sm"
+                    >
+                        <GitBranch size={15} style={{ color: '#ff8c21' }} />
+                        <span>Inbound Routing Rules</span>
+                    </Button>
+                </div>
             </div>
 
             {/* Automated WhatsApp Disconnect Safeguard Banner (Auto-pause at 5% Block Rate) */}
@@ -240,6 +262,12 @@ export default function Connections() {
                 connections={connections}
                 isOpen={showRouterModal}
                 onClose={() => setShowRouterModal(false)}
+            />
+
+            {/* WhatsApp WebP 512x512 Sticker Creator & Exporter Modal */}
+            <WhatsAppStickerCreatorModal
+                isOpen={showStickerModal}
+                toggle={() => setShowStickerModal(false)}
             />
         </div>
     )
