@@ -356,7 +356,16 @@ export class MetaConnections {
   if(row.status!=='connected')throw new ApiError(409,'Reconnect this account first.');
   try{
    if(action==='subscribe'){
-    if(!row.simulated){const result=await this.call(row,`${row.waba_id}/subscribed_apps`,'POST',{});if(!result.success)throw new ApiError(502,'Meta did not confirm subscription.');}
+    if(!row.simulated){
+      try {
+        await this.call(row, `${row.waba_id}/subscribed_apps`, 'POST', {
+          subscribed_fields: ['messages', 'messaging_postbacks', 'message_template_status_update', 'phone_number_name_update', 'phone_number_quality_update', 'account_update']
+        });
+      } catch {
+        const result=await this.call(row,`${row.waba_id}/subscribed_apps`,'POST',{});
+        if(!result.success)throw new ApiError(502,'Meta did not confirm subscription.');
+      }
+    }
     await this.db.query('UPDATE meta_connections SET subscribed=true,last_error=NULL,updated_at=now() WHERE id=$1',[row.id]);
    }else if(action==='register'){
     const pin=z.string().regex(/^\d{6}$/).parse(body.pin);
@@ -1225,5 +1234,40 @@ export class MetaConnections {
       uptime_percentage: '99.98%',
       webhook_endpoint: 'https://krad-chat.onrender.com/api/webhooks/meta'
     };
+  }
+
+  async subscribeAppWebhooks(actor: Actor) {
+    authorizeAdminOrChannel(actor);
+    const appId = process.env.META_APP_ID || process.env.WHATSAPP_APP_ID || '';
+    const appSecret = process.env.META_APP_SECRET || '';
+    const verifyToken = process.env.META_WEBHOOK_VERIFY_TOKEN || 'krad_chat_meta_secure_webhook_token';
+    const callbackUrl = `${this.cfg.PUBLIC_API_URL || 'https://krad-chat.onrender.com'}/api/webhooks/meta`;
+
+    if (!appId || !appSecret) {
+      return { success: false, message: 'Meta App ID and Secret required for App-level subscription' };
+    }
+
+    try {
+      const appToken = `${appId}|${appSecret}`;
+      const res = await this.providers.meta(
+        `${appId}/subscriptions`,
+        'POST',
+        {
+          object: 'whatsapp_business_account',
+          callback_url: callbackUrl,
+          verify_token: verifyToken,
+          fields: ['messages', 'messaging_postbacks', 'message_template_status_update', 'phone_number_name_update', 'phone_number_quality_update', 'account_update']
+        },
+        appToken
+      );
+      await this.db.query(
+        "INSERT INTO audit_logs(tenant_id, user_id, action, target) VALUES($1, $2, 'meta.app.webhook_subscribed', $3)",
+        [actor.tenant_id, actor.id, String(appId)]
+      );
+      return { success: true, meta_response: res, subscribed_fields: ['phone_number_name_update', 'messages', 'message_template_status_update', 'phone_number_quality_update', 'account_update'] };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Meta App subscription failed';
+      return { success: false, error: msg };
+    }
   }
 }

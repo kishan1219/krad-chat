@@ -274,10 +274,10 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
             }
 
             ;(window as any).FB.login(
-                async (response: any) => {
+                (response: any) => {
                     clearTimeout(safetyTimer)
                     setBusy(false)
-                    const auth = response.authResponse
+                    const auth = response?.authResponse
                     const codeOrToken = auth?.code || auth?.accessToken
                     if (codeOrToken) {
                         authCode = codeOrToken
@@ -288,7 +288,7 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
                             if (captured) setCapturedAssets(captured)
                             setNotice('Meta authorization verified! Please enter your Phone Number ID below and click Save Connection Now.')
                         }
-                    } else if (response.status !== 'connected') {
+                    } else if (response?.status !== 'connected') {
                         setError('Facebook Login was closed without completing authorization.')
                     } else {
                         setNotice('Facebook account connected. Enter Phone Number ID to complete saving.')
@@ -311,9 +311,10 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
     }, [config, signupMode, completeSingleSignup])
 
     // Explicit manual save trigger when popup completes or direct save is requested
-    const handleManualSave = useCallback(async (customWabaId?: string, customPhoneId?: string) => {
+    const handleManualSave = useCallback(async (customWabaId?: string, customPhoneId?: string, customToken?: string) => {
         const finalWaba = (customWabaId || capturedAssets?.waba_id || currentWabaId || '').trim()
         const finalPhone = (customPhoneId || capturedAssets?.phone_number_id || '').trim()
+        const finalToken = (customToken || '').trim()
 
         if (!finalPhone) {
             setError('Please enter your WhatsApp Phone Number ID from Meta Dashboard.')
@@ -323,6 +324,20 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
         setBusy(true)
         setError('')
         try {
+            // If direct access token is provided, connect directly via createConnection
+            if (finalToken && finalWaba) {
+                await whatsappService.createConnection({
+                    name: name || clientName,
+                    waba_id: finalWaba,
+                    phone_number_id: finalPhone,
+                    access_token: finalToken
+                })
+                SuccessToast('WhatsApp connection saved successfully!')
+                if (onSuccess) onSuccess()
+                if (onClose) onClose()
+                return
+            }
+
             let stateToUse = activeState
             if (!stateToUse) {
                 const sess = await whatsappService.beginOnboarding('live')
@@ -330,7 +345,7 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
                 setActiveState(sess.state)
             }
 
-            const codeToUse = capturedCode || currentTokenOrCode || 'meta_direct_onboarding_token'
+            const codeToUse = finalToken || capturedCode || currentTokenOrCode || 'meta_direct_onboarding_token'
 
             await completeSingleSignup(stateToUse, codeToUse, {
                 waba_id: finalWaba || undefined,
@@ -343,7 +358,7 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
         } finally {
             setBusy(false)
         }
-    }, [capturedAssets, currentWabaId, capturedCode, currentTokenOrCode, activeState, completeSingleSignup])
+    }, [name, clientName, capturedAssets, currentWabaId, capturedCode, currentTokenOrCode, activeState, completeSingleSignup, onSuccess, onClose])
 
     const handleBatchConnect = useCallback(async () => {
         if (!selectedNumberIds.length || !currentWabaId) return

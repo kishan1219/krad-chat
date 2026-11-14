@@ -14,7 +14,7 @@ interface StepMetaAuthorizeProps {
     onBack: () => void
     onConnectLive: () => void
     onConnectSandbox?: () => void
-    onManualSave?: (wabaId?: string, phoneId?: string) => void
+    onManualSave?: (wabaId?: string, phoneId?: string, customToken?: string) => void
 }
 
 export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
@@ -32,6 +32,7 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
     const [imgError, setImgError] = useState(false)
     const [manualWabaId, setManualWabaId] = useState(capturedAssets?.waba_id || '')
     const [manualPhoneId, setManualPhoneId] = useState(capturedAssets?.phone_number_id || '')
+    const [manualAccessToken, setManualAccessToken] = useState('')
     const [showManualFields, setShowManualFields] = useState(true)
 
     React.useEffect(() => {
@@ -150,7 +151,7 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
                             <Button
                                 type="button"
                                 disabled={busy}
-                                onClick={() => onManualSave?.(manualWabaId, manualPhoneId)}
+                                onClick={() => onManualSave?.(manualWabaId, manualPhoneId, manualAccessToken)}
                                 className="w-100 py-2 d-flex align-items-center justify-content-center gap-2 shadow-sm"
                                 style={{
                                     backgroundColor: '#ff8c21',
@@ -231,6 +232,16 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
                                     />
                                 </Col>
                             </Row>
+                            <div className="mb-2">
+                                <Label className="small mb-0 text-muted">System User Access Token (Optional)</Label>
+                                <Input
+                                    bsSize="sm"
+                                    type="password"
+                                    placeholder="EAAG... (Leave blank if using server token or Facebook Login)"
+                                    value={manualAccessToken}
+                                    onChange={(e) => setManualAccessToken(e.target.value)}
+                                />
+                            </div>
                             <Button
                                 size="sm"
                                 type="button"
@@ -244,7 +255,7 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
                                     boxShadow: '0 2px 6px rgba(255,140,33,0.3)'
                                 }}
                                 disabled={!manualPhoneId}
-                                onClick={() => onManualSave?.(manualWabaId, manualPhoneId)}
+                                onClick={() => onManualSave?.(manualWabaId, manualPhoneId, manualAccessToken)}
                                 className="fw-semibold d-inline-flex align-items-center gap-1 shadow-sm"
                             >
                                 <Check size={16} />

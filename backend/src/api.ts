@@ -495,6 +495,10 @@ export class Api {
       this.requireMethod(method, ['GET'], res);
       return this.metaConnections.getWebhookHealth(actor);
     }
+    if (path === 'whatsapp/webhooks/subscribe-app') {
+      this.requireMethod(method, ['POST'], res);
+      return this.metaConnections.subscribeAppWebhooks(actor);
+    }
     if (path === 'whatsapp/multi-waba/dashboard') {
       this.requireMethod(method, ['GET'], res);
       return this.metaConnections.multiWabaDashboard(actor);

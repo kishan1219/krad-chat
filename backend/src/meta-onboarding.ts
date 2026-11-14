@@ -170,11 +170,21 @@ export class MetaOnboarding {
 
    const connection=await this.connections.connect(actor,{name:input.name,waba_id:targetWaba,phone_number_id:targetPhone,access_token:accessToken});
 
-   // Auto-subscribe WABA to Meta Webhook events
+   // Auto-subscribe WABA to Meta Webhook events including phone_number_name_update
    try {
-     await this.providers.meta(`${targetWaba}/subscribed_apps`, 'POST', {}, accessToken);
+     await this.providers.meta(
+       `${targetWaba}/subscribed_apps`,
+       'POST',
+       { subscribed_fields: ['messages', 'messaging_postbacks', 'message_template_status_update', 'phone_number_name_update', 'phone_number_quality_update', 'account_update'] },
+       accessToken
+     );
      await this.db.query('UPDATE meta_connections SET subscribed=true WHERE id=$1', [connection.id]);
-   } catch {}
+   } catch {
+     try {
+       await this.providers.meta(`${targetWaba}/subscribed_apps`, 'POST', {}, accessToken);
+       await this.db.query('UPDATE meta_connections SET subscribed=true WHERE id=$1', [connection.id]);
+     } catch {}
+   }
 
    await this.db.query("UPDATE meta_onboarding_sessions SET status='completed',connection_id=$2,completed_at=now() WHERE id=$1",[id,connection.id]);
    await this.db.query("INSERT INTO audit_logs(tenant_id,user_id,action,target) VALUES($1,$2,'meta.onboarding.completed',$3)",[actor.tenant_id,actor.id,String(connection.id)]);
