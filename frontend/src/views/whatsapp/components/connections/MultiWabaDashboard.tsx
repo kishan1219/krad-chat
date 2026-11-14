@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { Card, CardBody, Row, Col, Badge, Button } from 'reactstrap'
 import {
     Activity,
     Server,
@@ -44,207 +45,195 @@ export function MultiWabaDashboard({ onSwitchToLines }: MultiWabaDashboardProps)
 
     if (loading) {
         return (
-            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center">
-                <RefreshCw size={28} className="animate-spin text-orange-500 mx-auto mb-3" />
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Aggregating enterprise metrics across WhatsApp Business Accounts...
-                </p>
-            </div>
+            <Card className="border shadow-none rounded-3 p-5 text-center mb-3" style={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0' }}>
+                <CardBody>
+                    <RefreshCw size={28} className="animate-spin text-warning mx-auto mb-2" />
+                    <p className="small text-muted mb-0">
+                        Aggregating enterprise metrics across WhatsApp Business Accounts...
+                    </p>
+                </CardBody>
+            </Card>
         )
     }
 
     if (error || !data) {
         return (
-            <div className="rounded-2xl border border-rose-200 dark:border-rose-900/50 bg-rose-50/50 dark:bg-rose-950/20 p-8 text-center">
-                <AlertTriangle size={28} className="text-rose-500 mx-auto mb-2" />
-                <h4 className="text-sm font-semibold text-rose-800 dark:text-rose-300">
-                    Failed to Load Multi-WABA Dashboard
-                </h4>
-                <p className="text-xs text-rose-600 dark:text-rose-400 mt-1 mb-4">{error}</p>
-                <button
-                    onClick={fetchDashboard}
-                    className="px-4 py-2 text-xs font-semibold rounded-xl bg-rose-600 hover:bg-rose-700 text-white"
-                >
-                    Retry
-                </button>
-            </div>
+            <Card className="border shadow-none rounded-3 p-4 text-center mb-3" style={{ backgroundColor: '#fff5f5', borderColor: '#feb2b2' }}>
+                <CardBody>
+                    <AlertTriangle size={28} className="text-danger mx-auto mb-2" />
+                    <h5 className="fw-bold text-danger mb-1">Failed to Load Multi-WABA Dashboard</h5>
+                    <p className="small text-danger mb-3">{error}</p>
+                    <Button color="danger" size="sm" onClick={fetchDashboard} className="fw-semibold">
+                        Retry
+                    </Button>
+                </CardBody>
+            </Card>
         )
     }
 
     return (
-        <div className="space-y-6">
+        <div className="mb-3">
             {/* Top Aggregate Summary Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
-                    <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Total WABAs</span>
-                        <div className="p-2 rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400">
-                            <Server size={16} />
-                        </div>
-                    </div>
-                    <div className="text-2xl font-bold text-slate-900 dark:text-white mt-2">
-                        {data.total_wabas}
-                    </div>
-                    <div className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-                        Enterprise Business Accounts
-                    </div>
-                </div>
+            <Row className="g-2 mb-3">
+                <Col xs="12" sm="6" lg="3">
+                    <Card className="border shadow-none rounded-3 mb-0 h-100" style={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0' }}>
+                        <CardBody className="p-3 d-flex flex-column justify-content-between">
+                            <div className="d-flex align-items-center justify-content-between mb-2">
+                                <span className="small fw-semibold text-muted text-uppercase" style={{ fontSize: '0.75rem' }}>Total WABAs</span>
+                                <div className="rounded-3 d-flex align-items-center justify-content-center" style={{ width: '36px', height: '36px', backgroundColor: '#fff7ed', color: '#ff8c21' }}>
+                                    <Server size={18} />
+                                </div>
+                            </div>
+                            <div>
+                                <h3 className="fw-bolder mb-1 text-dark" style={{ fontSize: '1.75rem' }}>{data.total_wabas}</h3>
+                                <span className="text-muted small">Enterprise Business Accounts</span>
+                            </div>
+                        </CardBody>
+                    </Card>
+                </Col>
 
-                <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
-                    <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Active Numbers</span>
-                        <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                            <Smartphone size={16} />
-                        </div>
-                    </div>
-                    <div className="text-2xl font-bold text-slate-900 dark:text-white mt-2">
-                        {data.total_phone_numbers}
-                    </div>
-                    <div className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-                        {data.active_connections} operational lines
-                    </div>
-                </div>
+                <Col xs="12" sm="6" lg="3">
+                    <Card className="border shadow-none rounded-3 mb-0 h-100" style={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0' }}>
+                        <CardBody className="p-3 d-flex flex-column justify-content-between">
+                            <div className="d-flex align-items-center justify-content-between mb-2">
+                                <span className="small fw-semibold text-muted text-uppercase" style={{ fontSize: '0.75rem' }}>Active Numbers</span>
+                                <div className="rounded-3 d-flex align-items-center justify-content-center" style={{ width: '36px', height: '36px', backgroundColor: '#ecfdf5', color: '#059669' }}>
+                                    <Smartphone size={18} />
+                                </div>
+                            </div>
+                            <div>
+                                <h3 className="fw-bolder mb-1 text-dark" style={{ fontSize: '1.75rem' }}>{data.total_phone_numbers}</h3>
+                                <span className="text-muted small">{data.active_connections} operational lines</span>
+                            </div>
+                        </CardBody>
+                    </Card>
+                </Col>
 
-                <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
-                    <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">7-Day Volume</span>
-                        <div className="p-2 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
-                            <TrendingUp size={16} />
-                        </div>
-                    </div>
-                    <div className="text-2xl font-bold text-slate-900 dark:text-white mt-2">
-                        {data.total_messages_7d.toLocaleString()}
-                    </div>
-                    <div className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-                        Aggregated messages dispatched
-                    </div>
-                </div>
+                <Col xs="12" sm="6" lg="3">
+                    <Card className="border shadow-none rounded-3 mb-0 h-100" style={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0' }}>
+                        <CardBody className="p-3 d-flex flex-column justify-content-between">
+                            <div className="d-flex align-items-center justify-content-between mb-2">
+                                <span className="small fw-semibold text-muted text-uppercase" style={{ fontSize: '0.75rem' }}>7-Day Volume</span>
+                                <div className="rounded-3 d-flex align-items-center justify-content-center" style={{ width: '36px', height: '36px', backgroundColor: '#eff6ff', color: '#2563eb' }}>
+                                    <TrendingUp size={18} />
+                                </div>
+                            </div>
+                            <div>
+                                <h3 className="fw-bolder mb-1 text-dark" style={{ fontSize: '1.75rem' }}>{data.total_messages_7d.toLocaleString()}</h3>
+                                <span className="text-muted small">Aggregated messages dispatched</span>
+                            </div>
+                        </CardBody>
+                    </Card>
+                </Col>
 
-                <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
-                    <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Quality Health</span>
-                        <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-                            <Shield size={16} />
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2 mt-2">
-                        <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600">
-                            {data.quality_summary.green} High
-                        </span>
-                        {data.quality_summary.yellow > 0 && (
-                            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600">
-                                {data.quality_summary.yellow} Med
-                            </span>
-                        )}
-                        {data.quality_summary.red > 0 && (
-                            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600">
-                                {data.quality_summary.red} Low
-                            </span>
-                        )}
-                    </div>
-                    <div className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">
-                        Meta quality ratings distribution
-                    </div>
-                </div>
-            </div>
+                <Col xs="12" sm="6" lg="3">
+                    <Card className="border shadow-none rounded-3 mb-0 h-100" style={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0' }}>
+                        <CardBody className="p-3 d-flex flex-column justify-content-between">
+                            <div className="d-flex align-items-center justify-content-between mb-2">
+                                <span className="small fw-semibold text-muted text-uppercase" style={{ fontSize: '0.75rem' }}>Quality Health</span>
+                                <div className="rounded-3 d-flex align-items-center justify-content-center" style={{ width: '36px', height: '36px', backgroundColor: '#f5f3ff', color: '#7c3aed' }}>
+                                    <Shield size={18} />
+                                </div>
+                            </div>
+                            <div>
+                                <div className="d-flex align-items-center gap-1 mb-1">
+                                    <Badge color="light-success" pill>{data.quality_summary.green} High</Badge>
+                                    {data.quality_summary.yellow > 0 && <Badge color="light-warning" pill>{data.quality_summary.yellow} Med</Badge>}
+                                    {data.quality_summary.red > 0 && <Badge color="light-danger" pill>{data.quality_summary.red} Low</Badge>}
+                                </div>
+                                <span className="text-muted small">Meta ratings distribution</span>
+                            </div>
+                        </CardBody>
+                    </Card>
+                </Col>
+            </Row>
 
             {/* 7-Day Aggregate Volume Activity */}
-            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                    <div>
-                        <h4 className="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                            <Activity size={16} className="text-orange-500" />
-                            <span>Enterprise 7-Day Message Throughput</span>
-                        </h4>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                            Aggregated volume across all connected WhatsApp Business Accounts
-                        </p>
+            <Card className="border shadow-none rounded-3 mb-3" style={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0' }}>
+                <CardBody className="p-3">
+                    <div className="d-flex align-items-center justify-content-between mb-3">
+                        <div>
+                            <h6 className="fw-bold mb-0 text-dark d-flex align-items-center gap-1">
+                                <Activity size={16} style={{ color: '#ff8c21' }} />
+                                <span>Enterprise 7-Day Message Throughput</span>
+                            </h6>
+                            <small className="text-muted">Aggregated volume across all connected WhatsApp Business Accounts</small>
+                        </div>
+                        <Button color="light" size="sm" onClick={fetchDashboard} title="Refresh Data" className="p-1">
+                            <RefreshCw size={14} />
+                        </Button>
                     </div>
-                    <button
-                        onClick={fetchDashboard}
-                        className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-slate-600"
-                        title="Refresh"
-                    >
-                        <RefreshCw size={14} />
-                    </button>
-                </div>
 
-                <div className="grid grid-cols-7 gap-2 pt-2">
-                    {data.time_series.map((day, idx) => {
-                        const maxVal = Math.max(...data.time_series.map(t => t.sent), 1)
-                        const heightPct = Math.min(100, Math.max(15, Math.round((day.sent / maxVal) * 100)))
-                        return (
-                            <div key={idx} className="flex flex-col items-center">
-                                <div className="text-[11px] font-mono text-slate-500 mb-1">
-                                    {day.sent}
-                                </div>
-                                <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-xl h-24 flex items-end p-1">
-                                    <div
-                                        style={{ height: `${heightPct}%` }}
-                                        className="w-full bg-gradient-to-t from-orange-500 to-amber-400 rounded-lg transition-all"
-                                    />
-                                </div>
-                                <div className="text-[10px] text-slate-400 mt-1.5 font-medium">
-                                    {day.date.slice(5)}
-                                </div>
-                            </div>
-                        )
-                    })}
-                </div>
-            </div>
+                    <Row className="g-2 pt-2 text-center">
+                        {data.time_series.map((day, idx) => {
+                            const maxVal = Math.max(...data.time_series.map(t => t.sent), 1)
+                            const heightPct = Math.min(100, Math.max(15, Math.round((day.sent / maxVal) * 100)))
+                            return (
+                                <Col key={idx} xs="true" className="d-flex flex-column align-items-center">
+                                    <span className="font-monospace small text-muted mb-1" style={{ fontSize: '0.72rem' }}>
+                                        {day.sent}
+                                    </span>
+                                    <div className="w-100 bg-light rounded-2 d-flex align-items-end p-1" style={{ height: '90px' }}>
+                                        <div
+                                            style={{
+                                                height: `${heightPct}%`,
+                                                backgroundColor: '#ff8c21',
+                                                borderRadius: '4px',
+                                                width: '100%',
+                                                transition: 'height 0.4s'
+                                            }}
+                                        />
+                                    </div>
+                                    <span className="small text-muted mt-1 fw-semibold" style={{ fontSize: '0.7rem' }}>
+                                        {day.date.slice(5)}
+                                    </span>
+                                </Col>
+                            )
+                        })}
+                    </Row>
+                </CardBody>
+            </Card>
 
-            {/* Accounts Breakdown Table */}
-            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-sm">
-                <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            {/* Accounts Breakdown Card */}
+            <Card className="border shadow-none rounded-3 mb-3 overflow-hidden" style={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0' }}>
+                <div className="p-3 border-bottom d-flex align-items-center justify-content-between bg-light">
                     <div>
-                        <h4 className="text-sm font-bold text-slate-800 dark:text-white">
-                            Connected WhatsApp Business Accounts
-                        </h4>
-                        <p className="text-xs text-slate-500">
-                            {data.wabas.length} WABA portfolios managed
-                        </p>
+                        <h6 className="fw-bold mb-0 text-dark">Connected WhatsApp Business Accounts</h6>
+                        <small className="text-muted">{data.wabas.length} WABA portfolios managed</small>
                     </div>
-                    <button
-                        onClick={onSwitchToLines}
-                        className="text-xs font-semibold text-orange-600 hover:text-orange-700 dark:text-orange-400"
-                    >
+                    <Button color="link" size="sm" onClick={onSwitchToLines} className="p-0 text-decoration-none fw-semibold" style={{ color: '#ff8c21', fontSize: '0.85rem' }}>
                         View Individual Lines →
-                    </button>
+                    </Button>
                 </div>
-                <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                <div>
                     {data.wabas.map((waba, idx) => (
-                        <div key={idx} className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div key={idx} className="p-3 border-bottom d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-2">
                             <div>
-                                <div className="flex items-center gap-2">
-                                    <span className="font-semibold text-xs text-slate-800 dark:text-white">
-                                        {waba.name}
-                                    </span>
-                                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                                <div className="d-flex align-items-center gap-2">
+                                    <span className="fw-bold text-dark" style={{ fontSize: '0.9rem' }}>{waba.name}</span>
+                                    <Badge color="light-secondary" pill className="font-monospace" style={{ fontSize: '0.7rem' }}>
                                         ID: {waba.waba_id}
-                                    </span>
+                                    </Badge>
                                 </div>
-                                <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+                                <div className="small text-muted mt-1 d-flex align-items-center gap-2">
                                     <span>{waba.phone_count} Phone Numbers</span>
                                     <span>•</span>
-                                    <span>Messaging Tier: <strong className="text-orange-600">{waba.messaging_limit}</strong></span>
+                                    <span>Messaging Tier: <strong style={{ color: '#ff8c21' }}>{waba.messaging_limit}</strong></span>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2 flex-wrap">
+                            <div className="d-flex align-items-center gap-1 flex-wrap">
                                 {waba.phone_numbers.map((p, pIdx) => (
-                                    <span
-                                        key={pIdx}
-                                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-200"
-                                    >
-                                        <Smartphone size={12} className="text-emerald-500" />
+                                    <Badge key={pIdx} color="light-primary" pill className="d-inline-flex align-items-center gap-1 py-1 px-2 font-monospace" style={{ fontSize: '0.75rem' }}>
+                                        <Smartphone size={11} className="text-success" />
                                         <span>{p.display_phone_number || p.name}</span>
-                                    </span>
+                                    </Badge>
                                 ))}
                             </div>
                         </div>
                     ))}
                 </div>
-            </div>
+            </Card>
         </div>
     )
 }
-
+export default MultiWabaDashboard

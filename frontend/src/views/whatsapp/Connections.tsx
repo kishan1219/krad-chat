@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { Button } from 'reactstrap'
 import { Smartphone, Activity, GitBranch } from 'react-feather'
 import { useWhatsAppConnections } from './hooks/useWhatsAppConnections'
 import { ConnectionsHeader } from './components/connections/ConnectionsHeader'
@@ -40,7 +41,7 @@ export default function Connections() {
     const [tierUpgradeConn, setTierUpgradeConn] = useState<WhatsAppConnection | null>(null)
 
     return (
-        <div className="p-6 max-w-7xl mx-auto space-y-6">
+        <div className="container-fluid px-2 px-sm-3 py-2">
             {/* Header with Title, Action buttons, and Search */}
             <ConnectionsHeader
                 search={search}
@@ -53,40 +54,62 @@ export default function Connections() {
             />
 
             {/* View Mode Navigation Tabs */}
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
-                <div className="flex items-center gap-2">
-                    <button
+            <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 border-bottom pb-2 mb-3">
+                <div className="d-flex align-items-center gap-1 flex-wrap">
+                    <Button
+                        type="button"
                         onClick={() => setViewMode('lines')}
-                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-                            viewMode === 'lines'
-                                ? 'bg-orange-500 text-white shadow-sm shadow-orange-500/20'
-                                : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
-                        }`}
+                        size="sm"
+                        style={{
+                            backgroundColor: viewMode === 'lines' ? '#ff8c21' : '#f8f9fa',
+                            borderColor: viewMode === 'lines' ? '#ff8c21' : '#e2e8f0',
+                            color: viewMode === 'lines' ? '#ffffff' : '#4b5563',
+                            fontWeight: 600,
+                            borderRadius: '6px',
+                            padding: '0.45rem 1rem'
+                        }}
+                        className="d-inline-flex align-items-center gap-1 shadow-sm"
                     >
-                        <Smartphone size={14} />
+                        <Smartphone size={15} />
                         <span>Phone Numbers & Lines ({connections.length})</span>
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                        type="button"
                         onClick={() => setViewMode('analytics')}
-                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-                            viewMode === 'analytics'
-                                ? 'bg-orange-500 text-white shadow-sm shadow-orange-500/20'
-                                : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
-                        }`}
+                        size="sm"
+                        style={{
+                            backgroundColor: viewMode === 'analytics' ? '#ff8c21' : '#f8f9fa',
+                            borderColor: viewMode === 'analytics' ? '#ff8c21' : '#e2e8f0',
+                            color: viewMode === 'analytics' ? '#ffffff' : '#4b5563',
+                            fontWeight: 600,
+                            borderRadius: '6px',
+                            padding: '0.45rem 1rem'
+                        }}
+                        className="d-inline-flex align-items-center gap-1 shadow-sm"
                     >
-                        <Activity size={14} />
+                        <Activity size={15} />
                         <span>Enterprise Multi-WABA Analytics</span>
-                    </button>
+                    </Button>
                 </div>
 
-                <button
+                <Button
                     type="button"
+                    color="light"
+                    size="sm"
                     onClick={() => setShowRouterModal(true)}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-colors"
+                    style={{
+                        borderColor: '#e2e8f0',
+                        color: '#334155',
+                        fontWeight: 600,
+                        borderRadius: '6px',
+                        padding: '0.45rem 1rem',
+                        backgroundColor: '#ffffff'
+                    }}
+                    className="d-inline-flex align-items-center gap-1 shadow-sm"
                 >
-                    <GitBranch size={14} className="text-orange-500" />
+                    <GitBranch size={15} style={{ color: '#ff8c21' }} />
                     <span>Inbound Routing Rules</span>
-                </button>
+                </Button>
             </div>
 
             {/* Automated WhatsApp Disconnect Safeguard Banner (Auto-pause at 5% Block Rate) */}

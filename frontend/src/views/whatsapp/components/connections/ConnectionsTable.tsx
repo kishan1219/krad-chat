@@ -1,4 +1,5 @@
 import React from 'react'
+import { Card, CardBody, Table, Button, Badge } from 'reactstrap'
 import {
     RefreshCw,
     Trash2,
@@ -6,7 +7,10 @@ import {
     LogOut,
     LogIn,
     CheckCircle,
-    AlertCircle
+    AlertCircle,
+    Shield,
+    Zap,
+    Plus
 } from 'react-feather'
 import { WhatsAppConnection } from '../../../../services/whatsappService'
 import { ConnectionMobileCard } from './ConnectionMobileCard'
@@ -50,34 +54,70 @@ export function ConnectionsTable({
 
     if (filtered.length === 0) {
         return (
-            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 sm:p-12 text-center">
-                <div className="w-12 h-12 rounded-2xl bg-orange-500/10 text-orange-500 flex items-center justify-center mx-auto mb-4">
-                    <Smartphone size={24} />
-                </div>
-                <h3 className="text-base font-bold text-slate-800 dark:text-white">
-                    {search ? 'No matching phone numbers found' : 'No WhatsApp Connections Yet'}
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto mt-1 mb-6">
-                    {search
-                        ? 'Try refining your search query.'
-                        : 'Connect your Meta WhatsApp Business line using Meta Embedded Signup or manual credentials.'}
-                </p>
-                {!search && (
-                    <button
-                        onClick={onOpenAddModal}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-medium text-xs shadow-sm shadow-orange-500/20"
+            <Card className="border shadow-none rounded-3 text-center p-4 p-sm-5 mb-3" style={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0' }}>
+                <CardBody className="d-flex flex-column align-items-center">
+                    <div
+                        className="rounded-circle d-flex align-items-center justify-content-center mb-3 shadow-sm"
+                        style={{
+                            width: '56px',
+                            height: '56px',
+                            backgroundColor: '#fff7ed',
+                            color: '#ff8c21'
+                        }}
                     >
-                        <span>Add Your First Number</span>
-                    </button>
-                )}
-            </div>
+                        <Smartphone size={26} />
+                    </div>
+                    <h4 className="fw-bolder mb-1 text-dark" style={{ fontSize: '1.2rem' }}>
+                        {search ? 'No Matching Phone Numbers Found' : 'No WhatsApp Connections Yet'}
+                    </h4>
+                    <p className="text-muted mb-3" style={{ fontSize: '0.88rem', maxWidth: '440px' }}>
+                        {search
+                            ? 'Try refining your search keyword by name, phone number, or WABA ID.'
+                            : 'Connect your Meta WhatsApp Business line using Meta Embedded Signup (2 minutes) or direct System User Token.'}
+                    </p>
+
+                    {!search && (
+                        <div className="d-flex flex-wrap align-items-center justify-content-center gap-2 mb-4">
+                            <Button
+                                type="button"
+                                onClick={onOpenAddModal}
+                                style={{
+                                    backgroundColor: '#ff8c21',
+                                    borderColor: '#ff8c21',
+                                    color: '#ffffff',
+                                    fontWeight: 600,
+                                    borderRadius: '6px',
+                                    padding: '0.6rem 1.75rem',
+                                    fontSize: '0.9rem'
+                                }}
+                                className="d-inline-flex align-items-center gap-1 shadow-sm"
+                            >
+                                <Plus size={16} />
+                                <span>Connect First WhatsApp Line</span>
+                            </Button>
+                        </div>
+                    )}
+
+                    <div className="d-flex flex-wrap justify-content-center gap-3 text-muted pt-3 border-top w-100" style={{ fontSize: '0.8rem' }}>
+                        <span className="d-inline-flex align-items-center gap-1">
+                            <Shield size={14} className="text-success" /> Direct Meta Cloud API v22.0
+                        </span>
+                        <span className="d-inline-flex align-items-center gap-1">
+                            <Zap size={14} className="text-primary" /> Instant Webhook Sync
+                        </span>
+                        <span className="d-inline-flex align-items-center gap-1">
+                            <CheckCircle size={14} className="text-warning" /> Automatic Name Approval Polling
+                        </span>
+                    </div>
+                </CardBody>
+            </Card>
         )
     }
 
     return (
-        <div className="space-y-3">
+        <div className="mb-3">
             {/* Mobile Cards View (Visible on screens < 768px) */}
-            <div className="block md:hidden space-y-3">
+            <div className="d-block d-md-none">
                 {filtered.map(conn => (
                     <ConnectionMobileCard
                         key={conn.id}
@@ -95,187 +135,187 @@ export function ConnectionsTable({
             </div>
 
             {/* Desktop Table View (Visible on screens >= 768px) */}
-            <div className="hidden md:block rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-sm">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse text-xs">
-                        <thead>
-                            <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
-                                <th className="py-3 px-4">Line & Number</th>
-                                <th className="py-3 px-4">Meta Identifiers</th>
-                                <th className="py-3 px-4">Status</th>
-                                <th className="py-3 px-4">Quality Rating</th>
-                                <th className="py-3 px-4">Daily Limit Tier</th>
-                                <th className="py-3 px-4 text-right">Actions</th>
+            <div className="d-none d-md-block card border shadow-none rounded-3 overflow-hidden mb-3" style={{ borderColor: '#e2e8f0' }}>
+                <div className="table-responsive">
+                    <Table hover className="align-middle mb-0" style={{ fontSize: '0.85rem' }}>
+                        <thead style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                            <tr className="text-muted text-uppercase" style={{ fontSize: '0.72rem', letterSpacing: '0.5px' }}>
+                                <th className="py-2 px-3">Line & Display Name</th>
+                                <th className="py-2 px-3">Meta Identifiers</th>
+                                <th className="py-2 px-3">Status</th>
+                                <th className="py-2 px-3">Quality Rating</th>
+                                <th className="py-2 px-3">Daily Limit Tier</th>
+                                <th className="py-2 px-3 text-end">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                        <tbody>
                             {filtered.map((conn) => {
                                 const isBusy = actionBusyId === conn.id
                                 const isConnected = conn.status === 'connected' || conn.status === 'verified'
                                 const quality = (conn.quality_rating || 'GREEN').toUpperCase()
 
                                 return (
-                                    <tr key={conn.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/30 transition-colors">
-                                        <td className="py-3.5 px-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xs shrink-0">
-                                                    <Smartphone size={16} />
+                                    <tr key={conn.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                        <td className="py-3 px-3">
+                                            <div className="d-flex align-items-center gap-2">
+                                                <div
+                                                    className="rounded-3 d-flex align-items-center justify-content-center"
+                                                    style={{
+                                                        width: '36px',
+                                                        height: '36px',
+                                                        backgroundColor: '#ecfdf5',
+                                                        color: '#059669',
+                                                        flexShrink: 0
+                                                    }}
+                                                >
+                                                    <Smartphone size={18} />
                                                 </div>
                                                 <div>
-                                                    <div className="font-semibold text-slate-800 dark:text-white flex items-center gap-1.5">
-                                                        <span>{conn.name || 'WhatsApp Line'}</span>
+                                                    <div className="d-flex align-items-center gap-1">
+                                                        <span className="fw-bold text-dark">{conn.name || 'WhatsApp Line'}</span>
                                                         {conn.name_status === 'APPROVED' || conn.name_status === 'AVAILABLE_WITHOUT_REVIEW' ? (
-                                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 font-semibold" title="Display Name Approved by Meta">
+                                                            <Badge color="light-success" pill style={{ fontSize: '0.68rem' }}>
                                                                 ✓ Approved
-                                                            </span>
+                                                            </Badge>
                                                         ) : conn.name_status === 'PENDING_REVIEW' ? (
-                                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 font-semibold animate-pulse" title="Meta reviewing display name">
-                                                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" /> Review Pending
-                                                            </span>
+                                                            <Badge color="light-warning" pill style={{ fontSize: '0.68rem' }}>
+                                                                ⟳ In Review
+                                                            </Badge>
                                                         ) : conn.name_status === 'DECLINED' || conn.name_status === 'REJECTED' ? (
-                                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 font-semibold" title="Display Name Rejected by Meta">
-                                                                ✕ Rejected
-                                                            </span>
+                                                            <Badge color="light-danger" pill style={{ fontSize: '0.68rem' }}>
+                                                                ✕ Action Needed
+                                                            </Badge>
                                                         ) : null}
                                                     </div>
-                                                    <div className="text-slate-500 dark:text-slate-400 text-[11px] font-mono">
-                                                        {conn.display_phone_number || 'No display number'}
+                                                    <div className="text-muted font-monospace" style={{ fontSize: '0.78rem' }}>
+                                                        {conn.display_phone_number || 'No phone number'}
                                                     </div>
                                                 </div>
                                             </div>
                                         </td>
 
-                                        <td className="py-3.5 px-4 font-mono text-[11px] text-slate-500 dark:text-slate-400">
-                                            <div><span className="text-slate-400">WABA:</span> {conn.waba_id || 'N/A'}</div>
-                                            <div><span className="text-slate-400">Phone ID:</span> {conn.phone_number_id}</div>
+                                        <td className="py-3 px-3 font-monospace" style={{ fontSize: '0.78rem', color: '#64748b' }}>
+                                            <div><span className="text-muted">WABA:</span> {conn.waba_id || 'N/A'}</div>
+                                            <div><span className="text-muted">Phone ID:</span> {conn.phone_number_id}</div>
                                         </td>
 
-                                        <td className="py-3.5 px-4">
-                                            <span
-                                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium capitalize ${
-                                                    isConnected
-                                                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
-                                                }`}
+                                        <td className="py-3 px-3">
+                                            <Badge
+                                                color={isConnected ? 'light-success' : 'light-secondary'}
+                                                pill
+                                                className="d-inline-flex align-items-center gap-1 py-1 px-2"
+                                                style={{ fontSize: '0.75rem' }}
                                             >
-                                                {isConnected ? (
-                                                    <CheckCircle size={12} className="text-emerald-500" />
-                                                ) : (
-                                                    <AlertCircle size={12} className="text-slate-400" />
-                                                )}
-                                                <span>{conn.status}</span>
-                                            </span>
+                                                {isConnected ? <CheckCircle size={12} /> : <AlertCircle size={12} />}
+                                                <span className="text-capitalize">{conn.status}</span>
+                                            </Badge>
                                         </td>
 
-                                        <td className="py-3.5 px-4">
-                                            <span
-                                                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase ${
-                                                    quality === 'GREEN'
-                                                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                                                        : quality === 'YELLOW'
-                                                        ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30'
-                                                        : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30 animate-pulse'
-                                                }`}
+                                        <td className="py-3 px-3">
+                                            <Badge
+                                                color={quality === 'GREEN' ? 'light-success' : quality === 'YELLOW' ? 'light-warning' : 'light-danger'}
+                                                pill
+                                                className="py-1 px-2"
+                                                style={{ fontSize: '0.75rem' }}
                                             >
-                                                <span
-                                                    className={`w-1.5 h-1.5 rounded-full ${
-                                                        quality === 'GREEN'
-                                                            ? 'bg-emerald-500'
-                                                            : quality === 'YELLOW'
-                                                            ? 'bg-amber-500'
-                                                            : 'bg-rose-500'
-                                                    }`}
-                                                />
-                                                <span>{quality}</span>
-                                            </span>
+                                                {quality} Quality
+                                            </Badge>
                                         </td>
 
-                                        <td className="py-3.5 px-4">
-                                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20">
+                                        <td className="py-3 px-3">
+                                            <Badge color="light-primary" pill className="py-1 px-2" style={{ fontSize: '0.75rem' }}>
                                                 {conn.messaging_limit_tier || 'TIER_1K'}
-                                            </span>
+                                            </Badge>
                                         </td>
 
-                                        <td className="py-3.5 px-4 text-right">
-                                            <div className="flex items-center justify-end gap-1">
+                                        <td className="py-3 px-3 text-end">
+                                            <div className="d-flex align-items-center justify-content-end gap-1">
                                                 {onOpenForecast && (
-                                                    <button
+                                                    <Button
                                                         type="button"
+                                                        size="sm"
+                                                        color="light"
                                                         onClick={() => onOpenForecast(conn)}
                                                         title="Proactive Quality Health Forecast"
-                                                        className="px-2 py-1 rounded-lg border border-orange-200 dark:border-orange-900/60 bg-orange-50/50 dark:bg-orange-950/20 hover:bg-orange-100 text-[11px] text-orange-600 dark:text-orange-400 font-medium transition-colors"
+                                                        style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
                                                     >
                                                         Forecast
-                                                    </button>
+                                                    </Button>
                                                 )}
-
                                                 {onOpenTierUpgrade && (
-                                                    <button
+                                                    <Button
                                                         type="button"
+                                                        size="sm"
+                                                        color="light"
                                                         onClick={() => onOpenTierUpgrade(conn)}
                                                         title="Predictive Tier Upgrade Countdown"
-                                                        className="px-2 py-1 rounded-lg border border-amber-200 dark:border-amber-900/60 bg-amber-50/50 dark:bg-amber-950/20 hover:bg-amber-100 text-[11px] text-amber-600 dark:text-amber-400 font-medium transition-colors"
+                                                        style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
                                                     >
-                                                        Tier Upgrade
-                                                    </button>
+                                                        Tier
+                                                    </Button>
                                                 )}
-
-                                                <button
+                                                <Button
                                                     type="button"
+                                                    size="sm"
+                                                    color="light"
                                                     onClick={() => onOpenCoExistence(conn)}
                                                     title="Migrate WhatsApp Business Mobile App (Co-Existence)"
-                                                    className="px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-[11px] text-slate-600 dark:text-slate-300 transition-colors"
+                                                    style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
                                                 >
-                                                    Migrate App
-                                                </button>
-
+                                                    Migrate
+                                                </Button>
                                                 {onOpenIncrementalSync && (
-                                                    <button
+                                                    <Button
                                                         type="button"
+                                                        size="sm"
+                                                        color="light"
                                                         onClick={() => onOpenIncrementalSync(conn)}
-                                                        title="Co-Existence Incremental Sync & Polling"
-                                                        className="px-2 py-1 rounded-lg border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium transition-colors"
+                                                        title="Sync Chats"
+                                                        style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
                                                     >
-                                                        Sync Chats
-                                                    </button>
+                                                        Sync
+                                                    </Button>
                                                 )}
-
-                                                <button
+                                                <Button
                                                     type="button"
+                                                    size="sm"
+                                                    color="light"
                                                     onClick={() => onSync(conn.id)}
                                                     disabled={isBusy}
                                                     title="Sync Quality & Limit with Meta"
-                                                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
+                                                    style={{ padding: '0.35rem 0.5rem' }}
                                                 >
-                                                    <RefreshCw size={14} className={`${isBusy ? 'animate-spin' : ''}`} />
-                                                </button>
-
-                                                <button
+                                                    <RefreshCw size={14} className={isBusy ? 'animate-spin' : ''} />
+                                                </Button>
+                                                <Button
                                                     type="button"
+                                                    size="sm"
+                                                    color={isConnected ? 'light' : 'success'}
                                                     onClick={() => onToggleStatus(conn)}
                                                     disabled={isBusy}
                                                     title={isConnected ? 'Disconnect Line' : 'Reconnect Line'}
-                                                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
+                                                    style={{ padding: '0.35rem 0.5rem' }}
                                                 >
                                                     {isConnected ? <LogOut size={14} /> : <LogIn size={14} />}
-                                                </button>
-
-                                                <button
+                                                </Button>
+                                                <Button
                                                     type="button"
+                                                    size="sm"
+                                                    color="light"
                                                     onClick={() => onDelete(conn.id)}
                                                     disabled={isBusy}
                                                     title="Delete Connection"
-                                                    className="p-1.5 rounded-lg text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors disabled:opacity-50"
+                                                    style={{ padding: '0.35rem 0.5rem', color: '#ea5455' }}
                                                 >
                                                     <Trash2 size={14} />
-                                                </button>
+                                                </Button>
                                             </div>
                                         </td>
                                     </tr>
                                 )
                             })}
                         </tbody>
-                    </table>
+                    </Table>
                 </div>
             </div>
         </div>

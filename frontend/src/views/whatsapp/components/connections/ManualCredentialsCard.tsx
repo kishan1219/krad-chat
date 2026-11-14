@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { Key, Zap, CheckCircle } from 'react-feather'
+import { Card, CardBody, Row, Col, Input, Label, Button, Alert } from 'reactstrap'
+import { Key, Zap, CheckCircle, X } from 'react-feather'
 import { whatsappService, CreateConnectionPayload } from '../../../../services/whatsappService'
 import { SuccessToast, ErrorToast } from '../../../../utility/Utils'
 
@@ -84,135 +85,147 @@ export function ManualCredentialsCard({ onSuccess, onClose }: ManualCredentialsC
     }
 
     return (
-        <div className="mb-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-2.5">
-                    <div className="p-2 bg-orange-500/10 text-orange-600 rounded-xl">
-                        <Key size={18} />
-                    </div>
-                    <div>
-                        <h3 className="text-sm font-bold text-slate-800 dark:text-white">
-                            Manual Meta Cloud API Credentials
-                        </h3>
-                        <p className="text-xs text-slate-400">
-                            Direct connection using permanent System User Access Token
-                        </p>
-                    </div>
-                </div>
-                <button
-                    type="button"
-                    onClick={onClose}
-                    className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                >
-                    Hide
-                </button>
-            </div>
-
-            {error && (
-                <div className="mt-4 p-3 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 text-xs text-rose-700 dark:text-rose-300">
-                    {error}
-                </div>
-            )}
-
-            {detectedInfo && (
-                <div className="mt-4 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/50 text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
-                    <CheckCircle size={16} className="text-emerald-500 shrink-0" />
-                    <span>{detectedInfo}</span>
-                </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="sm:col-span-2">
-                    <div className="flex items-center justify-between mb-1">
-                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-300">
-                            Meta Permanent Access Token *
-                        </label>
-                        <button
-                            type="button"
-                            onClick={handleAutoDetect}
-                            disabled={detecting || !token.trim()}
-                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-orange-600 hover:text-orange-700 disabled:opacity-40"
+        <Card className="border mb-3 shadow-none rounded-3" style={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0' }}>
+            <CardBody className="p-3">
+                <div className="d-flex align-items-center justify-content-between pb-2 mb-3 border-bottom">
+                    <div className="d-flex align-items-center gap-2">
+                        <div
+                            className="rounded-3 d-flex align-items-center justify-content-center"
+                            style={{
+                                width: '36px',
+                                height: '36px',
+                                backgroundColor: '#fff7ed',
+                                color: '#ff8c21'
+                            }}
                         >
-                            <Zap size={12} />
-                            <span>{detecting ? 'Auto-Detecting...' : 'Auto-Detect WABA & Numbers'}</span>
-                        </button>
+                            <Key size={18} />
+                        </div>
+                        <div>
+                            <h6 className="fw-bolder mb-0 text-dark" style={{ fontSize: '0.95rem' }}>
+                                Manual Meta Cloud API Credentials
+                            </h6>
+                            <small className="text-muted">
+                                Direct connection using permanent System User Access Token
+                            </small>
+                        </div>
                     </div>
-                    <input
-                        type="password"
-                        required
-                        value={token}
-                        onChange={(e) => setToken(e.target.value)}
-                        placeholder="e.g. EAAG... (System User Permanent Token)"
-                        className="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
-                    />
-                </div>
-                <div>
-                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
-                        Display Name
-                    </label>
-                    <input
-                        type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="e.g. Krad Technology"
-                        className="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
-                    />
-                </div>
-                <div>
-                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
-                        Display Phone Number
-                    </label>
-                    <input
-                        type="text"
-                        value={displayNumber}
-                        onChange={(e) => setDisplayNumber(e.target.value)}
-                        placeholder="e.g. +91 98765 43210"
-                        className="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
-                    />
-                </div>
-                <div>
-                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
-                        WhatsApp Business Account (WABA) ID *
-                    </label>
-                    <input
-                        type="text"
-                        required
-                        value={wabaId}
-                        onChange={(e) => setWabaId(e.target.value)}
-                        placeholder="e.g. 109876543210987"
-                        className="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
-                    />
-                </div>
-                <div>
-                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
-                        Phone Number ID *
-                    </label>
-                    <input
-                        type="text"
-                        required
-                        value={phoneNumberId}
-                        onChange={(e) => setPhoneNumberId(e.target.value)}
-                        placeholder="e.g. 105592837482"
-                        className="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
-                    />
-                </div>
-                <div className="sm:col-span-2 flex justify-end gap-2 mt-2">
-                    <button
-                        type="button"
+                    <Button
+                        color="link"
+                        size="sm"
+                        className="p-1 text-muted"
                         onClick={onClose}
-                        className="px-4 py-2 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                        title="Close Form"
                     >
-                        Cancel
-                    </button>
-                    <button
-                        type="submit"
-                        disabled={busy}
-                        className="px-4 py-2 text-xs font-semibold rounded-xl bg-orange-500 hover:bg-orange-600 text-white shadow-sm disabled:opacity-50"
-                    >
-                        {busy ? 'Connecting...' : 'Establish Connection'}
-                    </button>
+                        <X size={18} />
+                    </Button>
                 </div>
-            </form>
-        </div>
+
+                {error && (
+                    <Alert color="danger" className="p-2 mb-2 rounded-2" style={{ fontSize: '0.82rem' }}>
+                        {error}
+                    </Alert>
+                )}
+
+                {detectedInfo && (
+                    <Alert color="success" className="p-2 mb-2 rounded-2 d-flex align-items-center gap-1" style={{ fontSize: '0.82rem' }}>
+                        <CheckCircle size={15} className="shrink-0" />
+                        <span>{detectedInfo}</span>
+                    </Alert>
+                )}
+
+                <form onSubmit={handleSubmit}>
+                    <Row className="g-2">
+                        <Col xs="12">
+                            <div className="d-flex align-items-center justify-content-between mb-1">
+                                <Label className="small mb-0 fw-bold text-dark">
+                                    Meta Permanent Access Token *
+                                </Label>
+                                <button
+                                    type="button"
+                                    onClick={handleAutoDetect}
+                                    disabled={detecting || !token.trim()}
+                                    className="btn btn-link btn-sm p-0 d-inline-flex align-items-center gap-1 text-decoration-none fw-semibold"
+                                    style={{ color: '#ff8c21', fontSize: '0.78rem' }}
+                                >
+                                    <Zap size={12} />
+                                    <span>{detecting ? 'Auto-Detecting...' : 'Auto-Detect WABA & Numbers'}</span>
+                                </button>
+                            </div>
+                            <Input
+                                type="password"
+                                required
+                                value={token}
+                                onChange={(e) => setToken(e.target.value)}
+                                placeholder="e.g. EAAG... (System User Permanent Token)"
+                                bsSize="sm"
+                            />
+                        </Col>
+                        <Col xs="12" sm="6">
+                            <Label className="small mb-1 fw-bold text-dark">Display Name</Label>
+                            <Input
+                                type="text"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="e.g. Krad Technology"
+                                bsSize="sm"
+                            />
+                        </Col>
+                        <Col xs="12" sm="6">
+                            <Label className="small mb-1 fw-bold text-dark">Display Phone Number</Label>
+                            <Input
+                                type="text"
+                                value={displayNumber}
+                                onChange={(e) => setDisplayNumber(e.target.value)}
+                                placeholder="e.g. +91 98765 43210"
+                                bsSize="sm"
+                            />
+                        </Col>
+                        <Col xs="12" sm="6">
+                            <Label className="small mb-1 fw-bold text-dark">WhatsApp Business Account (WABA) ID *</Label>
+                            <Input
+                                type="text"
+                                required
+                                value={wabaId}
+                                onChange={(e) => setWabaId(e.target.value)}
+                                placeholder="e.g. 109876543210987"
+                                bsSize="sm"
+                            />
+                        </Col>
+                        <Col xs="12" sm="6">
+                            <Label className="small mb-1 fw-bold text-dark">Phone Number ID *</Label>
+                            <Input
+                                type="text"
+                                required
+                                value={phoneNumberId}
+                                onChange={(e) => setPhoneNumberId(e.target.value)}
+                                placeholder="e.g. 105592837482"
+                                bsSize="sm"
+                            />
+                        </Col>
+                        <Col xs="12" className="d-flex justify-content-end gap-2 mt-2 pt-2 border-top">
+                            <Button
+                                type="button"
+                                size="sm"
+                                color="secondary"
+                                outline
+                                onClick={onClose}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                size="sm"
+                                disabled={busy}
+                                style={{ backgroundColor: '#ff8c21', borderColor: '#ff8c21', color: '#ffffff' }}
+                                className="fw-semibold"
+                            >
+                                {busy ? 'Connecting...' : 'Establish Connection'}
+                            </Button>
+                        </Col>
+                    </Row>
+                </form>
+            </CardBody>
+        </Card>
     )
 }
+export default ManualCredentialsCard

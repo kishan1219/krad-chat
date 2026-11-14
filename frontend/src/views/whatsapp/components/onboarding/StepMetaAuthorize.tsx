@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { Row, Col, Button, Alert } from 'reactstrap'
+import { Row, Col, Button, Alert, Card, CardBody, Badge } from 'reactstrap'
+import { Shield, CheckCircle, ExternalLink, ArrowLeft } from 'react-feather'
 import { PhoneMockup } from './PhoneMockup'
 import { MetaOnboardingConfig } from '../../../../services/whatsappService'
 
@@ -28,56 +29,91 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
         brandImgUrl = ''
     }
 
+    const businessName = name.trim() || 'Krad Technology'
+
     return (
         <div className="py-1">
-            <Row className="align-items-center">
-                {/* Left instructions matching user screenshot */}
-                <Col md="7" sm="12" className="mb-2 mb-md-0">
-                    <h3
-                        className="fw-bolder mb-1"
-                        style={{ color: '#5e5873', fontSize: '1.35rem', lineHeight: 1.3 }}
-                    >
-                        Create your WhatsApp Business Account
-                    </h3>
-                    <p className="text-muted mb-1" style={{ fontSize: '0.88rem', lineHeight: 1.6 }}>
-                        To continue you need to access your Facebook business account, as well as.
-                    </p>
-                    <ol
-                        style={{
-                            paddingLeft: '1.25rem',
-                            color: '#6e6b7b',
-                            fontSize: '0.88rem',
-                            lineHeight: 1.85
-                        }}
-                    >
-                        <li>Your company’s legal name and address</li>
-                        <li>A display name and short description</li>
-                        <li>
-                            A phone number you have access to, own by your business. Don’t have one?{' '}
-                            <a
-                                href="https://www.whatsapp.com/contact"
-                                target="_blank"
-                                rel="noreferrer"
-                                style={{ color: '#ff8c21', textDecoration: 'none', fontWeight: 600 }}
-                            >
-                                Contact Support
-                            </a>
-                        </li>
-                    </ol>
+            <Row className="align-items-center g-3">
+                {/* Left: Modern Meta Embedded Signup Launch Card */}
+                <Col md="7" sm="12">
+                    <div className="mb-2">
+                        <span className="badge bg-light-primary text-primary fw-bold mb-1" style={{ fontSize: '0.75rem' }}>
+                            Final Step: Meta Authorization
+                        </span>
+                        <h4 className="fw-bolder mb-1" style={{ color: '#1e293b', fontSize: '1.25rem' }}>
+                            Connect with Meta WhatsApp Business
+                        </h4>
+                        <p className="text-muted" style={{ fontSize: '0.85rem', lineHeight: 1.5 }}>
+                            Authenticate your Facebook Business Account to grant secure WhatsApp messaging permissions.
+                        </p>
+                    </div>
+
+                    {/* Pre-flight Connection Summary Card */}
+                    <Card className="border rounded-3 mb-3 shadow-none" style={{ backgroundColor: '#f8fafc', borderColor: '#e2e8f0' }}>
+                        <CardBody className="p-3">
+                            <h6 className="fw-bold mb-2 text-dark" style={{ fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                Connection Parameters
+                            </h6>
+                            <div className="d-flex flex-column gap-2" style={{ fontSize: '0.85rem' }}>
+                                <div className="d-flex justify-content-between align-items-center">
+                                    <span className="text-muted">Display Name:</span>
+                                    <span className="fw-semibold text-dark">{businessName}</span>
+                                </div>
+                                <div className="d-flex justify-content-between align-items-center">
+                                    <span className="text-muted">Cloud API Version:</span>
+                                    <Badge color="light-info" pill style={{ fontSize: '0.72rem' }}>
+                                        Graph v22.0
+                                    </Badge>
+                                </div>
+                                <div className="d-flex justify-content-between align-items-center">
+                                    <span className="text-muted">Security & Permissions:</span>
+                                    <span className="text-success fw-semibold d-inline-flex align-items-center gap-1" style={{ fontSize: '0.8rem' }}>
+                                        <CheckCircle size={13} /> Direct Meta OAuth 2.0
+                                    </span>
+                                </div>
+                            </div>
+                        </CardBody>
+                    </Card>
+
+                    {/* Meta Official CTA Button */}
+                    <div className="mb-2">
+                        <Button
+                            type="button"
+                            disabled={busy}
+                            onClick={onConnectLive}
+                            className="w-100 py-2 d-flex align-items-center justify-content-center gap-2 shadow-sm"
+                            style={{
+                                backgroundColor: '#1877F2',
+                                borderColor: '#1877F2',
+                                color: '#ffffff',
+                                borderRadius: '8px',
+                                fontWeight: 700,
+                                fontSize: '0.95rem'
+                            }}
+                        >
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                            </svg>
+                            <span>{busy ? 'Opening Meta Auth...' : 'Continue with Facebook'}</span>
+                        </Button>
+                        <small className="text-muted text-center d-block mt-1" style={{ fontSize: '0.75rem' }}>
+                            Opens Meta's secure embedded dialog to link your business portfolio.
+                        </small>
+                    </div>
 
                     {config?.simulated && (
-                        <Alert color="warning" className="p-1 mt-2 mb-0" style={{ fontSize: '0.82rem' }}>
-                            <div className="fw-bold mb-50">Development Mode Detected:</div>
+                        <Alert color="warning" className="p-2 mt-2 mb-0 rounded-2" style={{ fontSize: '0.82rem' }}>
+                            <div className="fw-bold mb-1">Development Mode Detected:</div>
                             Meta credentials are not set on this server. Sandbox simulation is ready.
                             {onConnectSandbox && (
-                                <div className="mt-50">
+                                <div className="mt-1">
                                     <button
                                         type="button"
                                         onClick={onConnectSandbox}
-                                        className="btn btn-link btn-sm p-0 text-decoration-underline"
-                                        style={{ color: '#ff8c21', fontWeight: 600 }}
+                                        className="btn btn-sm btn-link p-0 text-decoration-underline fw-bold"
+                                        style={{ color: '#ff8c21' }}
                                     >
-                                        Launch Instant Sandbox Simulation
+                                        Launch Instant Sandbox Simulation →
                                     </button>
                                 </div>
                             )}
@@ -85,7 +121,7 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
                     )}
                 </Col>
 
-                {/* Right phone mockup preview - Hidden on mobile phones to prioritize auth CTA */}
+                {/* Right: Interactive Phone Mockup Preview */}
                 <Col md="5" className="d-none d-md-block text-center">
                     {!imgError && brandImgUrl ? (
                         <img
@@ -93,19 +129,19 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
                             alt="WhatsApp Business Preview"
                             onError={() => setImgError(true)}
                             style={{
-                                maxHeight: '380px',
+                                maxHeight: '340px',
                                 width: 'auto',
                                 maxWidth: '100%',
                                 objectFit: 'contain',
                                 display: 'inline-block',
-                                borderRadius: '24px',
-                                boxShadow: '0 8px 24px rgba(0,0,0,0.12)'
+                                borderRadius: '20px',
+                                boxShadow: '0 8px 24px rgba(0,0,0,0.1)'
                             }}
                         />
                     ) : (
                         <div className="d-flex justify-content-center">
                             <PhoneMockup
-                                name={name}
+                                name={businessName}
                                 enableAutoResponse={true}
                                 autoResponseMessage="Hello! Welcome to our WhatsApp service."
                             />
@@ -114,41 +150,31 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
                 </Col>
             </Row>
 
-            {/* Footer Buttons */}
-            <div className="d-flex flex-column-reverse flex-sm-row justify-content-end align-items-stretch align-items-sm-center gap-2 pt-2 border-top mt-3">
+            {/* Modal Navigation Buttons */}
+            <div className="d-flex justify-content-between align-items-center pt-2 border-top mt-3">
                 <Button
                     color="secondary"
                     outline
                     type="button"
                     onClick={onBack}
-                    className="w-100 w-sm-auto"
+                    className="d-inline-flex align-items-center gap-1"
                     style={{
                         borderRadius: '6px',
-                        padding: '0.6rem 1.75rem',
+                        padding: '0.55rem 1.5rem',
                         fontWeight: 500,
-                        borderColor: '#b9b9c3',
-                        color: '#6e6b7b'
+                        borderColor: '#cbd5e1',
+                        color: '#475569'
                     }}
                 >
-                    Back
+                    <ArrowLeft size={14} />
+                    <span>Back</span>
                 </Button>
-                <Button
-                    type="button"
-                    disabled={busy}
-                    onClick={onConnectLive}
-                    className="w-100 w-sm-auto fw-bold"
-                    style={{
-                        backgroundColor: '#ff8c21',
-                        borderColor: '#ff8c21',
-                        color: '#ffffff',
-                        borderRadius: '6px',
-                        padding: '0.6rem 2.25rem',
-                        boxShadow: '0 2px 6px rgba(255,140,33,0.3)'
-                    }}
-                >
-                    {busy ? 'Connecting...' : 'Continue With Facebook'}
-                </Button>
+                <span className="small text-muted d-none d-sm-inline" style={{ fontSize: '0.78rem' }}>
+                    <Shield size={12} className="me-1 text-success" />
+                    Encrypted Token Storage
+                </span>
             </div>
         </div>
     )
 }
+export default StepMetaAuthorize
