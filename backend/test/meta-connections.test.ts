@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {database,testConfig} from './helpers';
 import {Providers} from '../src/providers';
 import {MetaConnections} from '../src/meta-connections';
+import {Files} from '../src/files';
 import {Chat} from '../src/chat';
 import {Campaigns} from '../src/campaigns';
 
@@ -45,4 +46,52 @@ test('live connection verifies the number with Meta before persisting encrypted 
   const raw=(await db.query('SELECT token_encrypted FROM meta_connections WHERE id=$1',[result.id])).rows[0].token_encrypted;
   assert.notEqual(raw,'secret-token');assert.equal(JSON.stringify(result).includes('secret-token'),false);
  }finally{await close();}
+});
+
+test('Automated WhatsApp Business Profile Media CDN: processes image to 640x640 JPEG and syncs profile', async () => {
+  const { db, actor, close } = await database();
+  try {
+    const sharp = require('sharp');
+    const sampleImage = await sharp({
+      create: {
+        width: 800,
+        height: 600,
+        channels: 4,
+        background: { r: 37, g: 211, b: 102, alpha: 1 }
+      }
+    }).png().toBuffer();
+
+    const files = new Files(db, testConfig);
+    const providers = new Providers(testConfig, db);
+    const notified: any[] = [];
+    const connections = new MetaConnections(db, testConfig, providers, (tenant, evt) => notified.push(evt), files);
+
+    const conn = await connections.connect(actor, { name: 'CDN Brand', waba_id: '500', phone_number_id: '501' });
+
+    // Upload profile avatar
+    const res = await connections.uploadBusinessProfileAvatar(actor, conn.id, {
+      image_base64: sampleImage.toString('base64'),
+      filename: 'logo.png',
+      about: 'KradChat Cloud API'
+    });
+
+    assert.equal(res.success, true);
+    assert.equal(res.dimensions, '640x640');
+    assert.equal(res.format, 'image/jpeg');
+    assert.match(res.profile_picture_url, /\/api\/files\//);
+
+    // Verify stored profile
+    const profile = await connections.getBusinessProfile(actor, conn.id);
+    assert.equal(profile.phone_number_id, '501');
+    assert.match(profile.profile_picture_url, /\/api\/files\//);
+    assert.equal(profile.about, 'KradChat Cloud API');
+
+    // Delete avatar
+    const delRes = await connections.deleteBusinessProfileAvatar(actor, conn.id);
+    assert.equal(delRes.success, true);
+    const profileAfter = await connections.getBusinessProfile(actor, conn.id);
+    assert.equal(profileAfter.profile_picture_url, null);
+  } finally {
+    await close();
+  }
 });

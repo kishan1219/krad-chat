@@ -491,6 +491,13 @@ export class Api {
       this.requireMethod(method, ['POST'], res);
       return this.metaConnections.syncTemplates(actor, syncTemplates[1]);
     }
+    const profileAvatar = /^whatsapp\/connections\/(\d+)\/profile-avatar$/.exec(path);
+    if (profileAvatar) {
+      this.requireMethod(method, ['GET', 'POST', 'DELETE'], res);
+      if (method === 'GET') return this.metaConnections.getBusinessProfile(actor, profileAvatar[1]);
+      if (method === 'DELETE') return this.metaConnections.deleteBusinessProfileAvatar(actor, profileAvatar[1]);
+      return this.metaConnections.uploadBusinessProfileAvatar(actor, profileAvatar[1], body);
+    }
     if (path === 'whatsapp/webhook-health') {
       this.requireMethod(method, ['GET'], res);
       return this.metaConnections.getWebhookHealth(actor);

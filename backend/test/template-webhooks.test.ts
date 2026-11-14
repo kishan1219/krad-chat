@@ -526,3 +526,107 @@ test('Co-Existence Incremental Sync advances watermark and skips previously inge
     await close();
   }
 });
+
+test('Official Meta Green Tick Webhook Push: business_capability_update marks oba_status APPROVED and emits notification', async () => {
+  const { db, actor, close } = await database();
+  try {
+    const providers = new Providers(testConfig, db);
+    const connections = new MetaConnections(db, testConfig, providers);
+    const conn = await connections.connect(actor, { name: 'Verified Enterprise', waba_id: '888001', phone_number_id: '888002' });
+
+    const campaigns = new Campaigns(db, testConfig, providers), chat = new Chat(db, testConfig, providers, () => {}, campaigns);
+    const realtimeEvents: any[] = [];
+    const notify = (tenantId: number, event: any) => {
+      realtimeEvents.push({ tenantId, event });
+    };
+    const webhooks = new Webhooks(testConfig, campaigns, chat, new Billing(db, providers), db, providers, notify);
+
+    // Meta sends business_capability_update with OFFICIAL_BUSINESS_ACCOUNT
+    const body = {
+      entry: [{
+        id: '888001',
+        changes: [{
+          field: 'business_capability_update',
+          value: {
+            phone_number_id: '888002',
+            capability: 'OFFICIAL_BUSINESS_ACCOUNT',
+            status: 'APPROVED',
+            event: 'OBA_APPROVED'
+          }
+        }]
+      }]
+    };
+
+    await webhooks.inbox.receive(body);
+    await webhooks.inbox.tick();
+
+    // Verify database update
+    const updated = (await db.query('SELECT oba_status FROM meta_connections WHERE id=$1', [conn.id])).rows[0];
+    assert.equal(updated.oba_status, 'APPROVED');
+
+    // Verify notification was created in resources
+    const notifs = (await db.query("SELECT * FROM resources WHERE tenant_id=$1 AND kind='notification'", [actor.tenant_id])).rows;
+    assert.ok(notifs.some(n => n.data?.type === 'meta_oba_approved' && n.data?.oba_status === 'APPROVED'));
+
+    // Verify WebSocket notification push
+    assert.ok(realtimeEvents.some(e => e.event?.type === 'meta_oba_approved' || e.event?.oba_status === 'APPROVED'));
+  } finally {
+    await close();
+  }
+});
+
+test('Scheduled Automated Template Review Poller: detects PENDING to APPROVED transition and creates alert', async () => {
+  const { db, actor, close } = await database();
+  try {
+    const cfg = { ...testConfig, PROVIDER_MODE: 'live' as const };
+    const providers = new Providers(cfg, db);
+    const realtimeEvents: any[] = [];
+    const notify = (tenantId: number, event: any) => {
+      realtimeEvents.push({ tenantId, event });
+    };
+    const connections = new MetaConnections(db, cfg, providers, notify);
+
+    // Seed connection with encrypted token and a PENDING template
+    const conn = (await db.query(
+      `INSERT INTO meta_connections(tenant_id, name, waba_id, phone_number_id, token_encrypted, status, simulated, templates, created_by)
+       VALUES($1, 'Poller Line', '999001', '999002', $2, 'connected', false, $3::jsonb, $4)
+       RETURNING id`,
+      [
+        actor.tenant_id,
+        // encrypt token
+        require('../src/common').encrypt('secret-poller-token', testConfig.ENCRYPTION_KEY),
+        JSON.stringify([{ id: 'tpl_101', name: 'welcome_discount', language: 'en_US', status: 'PENDING', category: 'MARKETING' }]),
+        actor.id
+      ]
+    )).rows[0];
+
+    // Mock provider returning APPROVED from Meta Graph API
+    providers.meta = async (path: string) => {
+      if (path.includes('message_templates')) {
+        return {
+          data: [
+            { id: 'tpl_101', name: 'welcome_discount', language: 'en_US', status: 'APPROVED', category: 'MARKETING', components: [] }
+          ]
+        };
+      }
+      return { data: [] };
+    };
+
+    // Run template review poller
+    await connections.syncAllActiveTemplates();
+
+    // Verify template status updated in meta_connections
+    const updated = (await db.query('SELECT templates FROM meta_connections WHERE id=$1', [conn.id])).rows[0];
+    const tpl = updated.templates.find((t: any) => t.id === 'tpl_101');
+    assert.equal(tpl.status, 'APPROVED');
+
+    // Verify notification created
+    const notifs = (await db.query("SELECT * FROM resources WHERE tenant_id=$1 AND kind='notification'", [actor.tenant_id])).rows;
+    assert.ok(notifs.some(n => n.data?.type === 'meta_template_status_update' && n.data?.template_name === 'welcome_discount' && n.data?.status === 'APPROVED'));
+
+    // Verify WebSocket event sent
+    assert.ok(realtimeEvents.some(e => e.event?.type === 'meta.template_approved' && e.event?.name === 'welcome_discount'));
+  } finally {
+    await close();
+  }
+});

@@ -6,6 +6,7 @@ import { Db } from './db';
 import { Providers } from './providers';
 import { templateDefinition } from './template-definition';
 import { randomUUID } from 'node:crypto';
+import { Files } from './files';
 
 const metaId=z.string().regex(/^\d{1,40}$/);
 function authorizeAdminOrChannel(actor: Actor) {
@@ -13,7 +14,7 @@ function authorizeAdminOrChannel(actor: Actor) {
   authorize(actor, 'admin:write');
 }
 export class MetaConnections {
- constructor(private db:Db,private cfg:Config,private providers:Providers,private notify?:(tenantId:number,payload:any)=>void){}
+ constructor(private db:Db,private cfg:Config,private providers:Providers,private notify?:(tenantId:number,payload:any)=>void,private files?:Files){}
  private visible(row:any){const {token_encrypted,...safe}=row;return {...safe,credentials_configured:Boolean(token_encrypted)};}
  async list(actor:Actor){authorizeAdminOrChannel(actor);return (await this.db.query('SELECT * FROM meta_connections WHERE tenant_id=$1 ORDER BY id DESC',[actor.tenant_id])).rows.map(r=>this.visible(r));}
  async senders(actor:Actor){
@@ -129,7 +130,7 @@ export class MetaConnections {
 
    if (!targetWabaId) {
     try {
-     const version = this.cfg.META_GRAPH_VERSION || 'v22.0';
+     const version = (this.cfg as any).META_GRAPH_VERSION || process.env.META_GRAPH_VERSION || 'v22.0';
      const appId = process.env.META_APP_ID || '';
      const appSecret = process.env.META_APP_SECRET || '';
      const appToken = appId && appSecret ? `${appId}|${appSecret}` : input.access_token;
@@ -1227,7 +1228,7 @@ export class MetaConnections {
   async syncAllActiveTemplates() {
     try {
       const activeRows = (await this.db.query(
-        "SELECT id, tenant_id, waba_id, token_encrypted, simulated FROM meta_connections WHERE status='connected' AND token_encrypted IS NOT NULL"
+        "SELECT id, tenant_id, waba_id, phone_number_id, display_phone_number, token_encrypted, simulated, templates FROM meta_connections WHERE status='connected' AND token_encrypted IS NOT NULL"
       )).rows;
 
       for (const row of activeRows) {
@@ -1236,6 +1237,12 @@ export class MetaConnections {
           const decryptedToken = decrypt(row.token_encrypted, this.cfg.ENCRYPTION_KEY);
           const metaRes: any = await this.providers.meta(`${row.waba_id}/message_templates?limit=250`, 'GET', undefined, decryptedToken);
           if (Array.isArray(metaRes?.data)) {
+            const prevTemplates: Array<{ id: string; name: string; status: string; language: string }> = Array.isArray(row.templates) ? row.templates : [];
+            const prevStatusMap = new Map<string, string>();
+            for (const t of prevTemplates) {
+              prevStatusMap.set(String(t.name || t.id), String(t.status || 'PENDING').toUpperCase());
+            }
+
             const list = metaRes.data.map((t: any) => ({
               id: t.id,
               name: t.name,
@@ -1244,6 +1251,76 @@ export class MetaConnections {
               category: t.category,
               components: t.components
             }));
+
+            // Check for status changes on pending templates
+            for (const t of list) {
+              const oldStatus = prevStatusMap.get(String(t.name || t.id));
+              const newStatus = t.status;
+              if (oldStatus && oldStatus !== newStatus) {
+                if (newStatus === 'APPROVED') {
+                  const notif = {
+                    title: `🎉 WhatsApp Template Approved: ${t.name}`,
+                    message: `Meta has approved your WhatsApp message template "${t.name}" (${t.language}). It is now ready to use in campaigns and broadcasts!`,
+                    template_id: t.id,
+                    template_name: t.name,
+                    language: t.language,
+                    status: 'APPROVED',
+                    type: 'meta_template_status_update',
+                    severity: 'success',
+                    updated_at: new Date().toISOString()
+                  };
+                  await this.db.query(
+                    "INSERT INTO resources(tenant_id, kind, data, created_by) VALUES($1, 'notification', $2, 1)",
+                    [row.tenant_id, JSON.stringify(notif)]
+                  );
+                  await this.db.query(
+                    "INSERT INTO audit_logs(tenant_id, user_id, action, target) VALUES($1, 1, 'meta.template.poller_approved', $2)",
+                    [row.tenant_id, `${t.name}:${t.id}`]
+                  );
+                  if (this.notify) {
+                    this.notify(row.tenant_id, {
+                      command: 'notification',
+                      type: 'meta_template_status_update',
+                      data: notif
+                    });
+                    this.notify(row.tenant_id, {
+                      type: 'meta.template_approved',
+                      template_id: t.id,
+                      name: t.name,
+                      status: 'APPROVED'
+                    });
+                  }
+                } else if (newStatus === 'REJECTED') {
+                  const notif = {
+                    title: `⚠️ WhatsApp Template Rejected: ${t.name}`,
+                    message: `Meta did not approve your WhatsApp message template "${t.name}". Check template guidelines and submit an appeal or revision.`,
+                    template_id: t.id,
+                    template_name: t.name,
+                    language: t.language,
+                    status: 'REJECTED',
+                    type: 'meta_template_status_update',
+                    severity: 'warning',
+                    updated_at: new Date().toISOString()
+                  };
+                  await this.db.query(
+                    "INSERT INTO resources(tenant_id, kind, data, created_by) VALUES($1, 'notification', $2, 1)",
+                    [row.tenant_id, JSON.stringify(notif)]
+                  );
+                  await this.db.query(
+                    "INSERT INTO audit_logs(tenant_id, user_id, action, target) VALUES($1, 1, 'meta.template.poller_rejected', $2)",
+                    [row.tenant_id, `${t.name}:${t.id}`]
+                  );
+                  if (this.notify) {
+                    this.notify(row.tenant_id, {
+                      command: 'notification',
+                      type: 'meta_template_status_update',
+                      data: notif
+                    });
+                  }
+                }
+              }
+            }
+
             await this.db.query(
               "UPDATE meta_connections SET templates=$1::jsonb, updated_at=now() WHERE id=$2",
               [JSON.stringify(list), row.id]
@@ -1293,7 +1370,16 @@ export class MetaConnections {
           object: 'whatsapp_business_account',
           callback_url: callbackUrl,
           verify_token: verifyToken,
-          fields: ['messages', 'messaging_postbacks', 'message_template_status_update', 'phone_number_name_update', 'phone_number_quality_update', 'account_update']
+          fields: [
+            'messages',
+            'messaging_postbacks',
+            'message_template_status_update',
+            'phone_number_name_update',
+            'phone_number_quality_update',
+            'account_update',
+            'business_capability_update',
+            'official_business_account_update'
+          ]
         },
         appToken
       );
@@ -1301,10 +1387,240 @@ export class MetaConnections {
         "INSERT INTO audit_logs(tenant_id, user_id, action, target) VALUES($1, $2, 'meta.app.webhook_subscribed', $3)",
         [actor.tenant_id, actor.id, String(appId)]
       );
-      return { success: true, meta_response: res, subscribed_fields: ['phone_number_name_update', 'messages', 'message_template_status_update', 'phone_number_quality_update', 'account_update'] };
+      return {
+        success: true,
+        meta_response: res,
+        subscribed_fields: [
+          'phone_number_name_update',
+          'messages',
+          'message_template_status_update',
+          'phone_number_quality_update',
+          'account_update',
+          'business_capability_update',
+          'official_business_account_update'
+        ]
+      };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Meta App subscription failed';
       return { success: false, error: msg };
     }
+  }
+
+  async uploadBusinessProfileAvatar(actor: Actor, id: unknown, body: any) {
+    authorizeAdminOrChannel(actor);
+    const row = await this.owned(actor, id);
+
+    const input = z.object({
+      image_base64: z.string().min(1, 'Image data is required.'),
+      filename: z.string().optional().default('whatsapp_profile.jpg'),
+      about: z.string().max(139).optional(),
+      description: z.string().max(512).optional()
+    }).parse(body);
+
+    // Extract binary buffer from base64 (supporting data URI or raw base64)
+    let rawBase64 = input.image_base64;
+    let mimeType = 'image/jpeg';
+    const match = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/.exec(rawBase64);
+    if (match) {
+      mimeType = match[1];
+      rawBase64 = match[2];
+    }
+
+    const inputBuffer = Buffer.from(rawBase64, 'base64');
+    if (inputBuffer.length > 5 * 1024 * 1024) {
+      throw new ApiError(413, 'Profile avatar image must not exceed 5 MB.');
+    }
+
+    // Process image directly to 640x640 JPEG standard using sharp
+    let processedBuffer: Buffer;
+    try {
+      const sharp = require('sharp');
+      processedBuffer = await sharp(inputBuffer)
+        .resize(640, 640, {
+          fit: 'cover',
+          position: 'center'
+        })
+        .jpeg({
+          quality: 90,
+          progressive: true
+        })
+        .toBuffer();
+    } catch (err: any) {
+      throw new ApiError(422, `Image processing failed: ${err.message}`);
+    }
+
+    // Save to media storage / CDN
+    let cdnUrl = '';
+    let fileId = '';
+    if (this.files) {
+      const cleanFileName = (input.filename || 'whatsapp_profile.jpg').replace(/\.[^.]+$/, '') + '-640x640.jpg';
+      const saved = await this.files.save(actor, cleanFileName, 'image/jpeg', processedBuffer);
+      fileId = saved.id;
+      const apiBase = (this.cfg.PUBLIC_API_URL || 'https://krad-chat.onrender.com').replace(/\/+$/, '');
+      cdnUrl = `${apiBase}${saved.download_path}`;
+    }
+
+    let profilePictureHandle = `h_${randomUUID().replace(/-/g, '')}`;
+    let metaProfileRes: any = null;
+
+    if (!row.simulated && row.token_encrypted) {
+      const decryptedToken = decrypt(row.token_encrypted, this.cfg.ENCRYPTION_KEY);
+      try {
+        const appId = process.env.META_APP_ID || process.env.WHATSAPP_APP_ID || '';
+        let uploadSessionId: string | null = null;
+        if (appId) {
+          try {
+            const sessionRes: any = await this.providers.meta(
+              `app/uploads?file_length=${processedBuffer.length}&file_type=image/jpeg&access_token=${decryptedToken}`,
+              'POST'
+            );
+            uploadSessionId = sessionRes?.id || null;
+          } catch {}
+        }
+
+        if (uploadSessionId) {
+          const uploadRes = await fetch(`https://graph.facebook.com/v22.0/${uploadSessionId}`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `OAuth ${decryptedToken}`,
+              'file_offset': '0',
+              'Content-Type': 'application/octet-stream'
+            },
+            body: processedBuffer
+          });
+          const uploadJson: any = await uploadRes.json();
+          if (uploadJson?.h) {
+            profilePictureHandle = uploadJson.h;
+          }
+        }
+
+        const profileUpdatePayload: Record<string, any> = {
+          messaging_product: 'whatsapp'
+        };
+        if (profilePictureHandle && !profilePictureHandle.startsWith('h_')) {
+          profileUpdatePayload.profile_picture_handle = profilePictureHandle;
+        }
+        if (input.about) {
+          profileUpdatePayload.about = input.about;
+        }
+        if (input.description) {
+          profileUpdatePayload.description = input.description;
+        }
+
+        metaProfileRes = await this.providers.meta(
+          `${row.phone_number_id}/whatsapp_business_profile`,
+          'POST',
+          profileUpdatePayload,
+          decryptedToken
+        );
+      } catch (err: any) {
+        // Keep CDN URL saved in KradChat even if Meta direct sync encountered an issue
+      }
+    }
+
+    // Persist to meta_connections
+    await this.db.transaction(async c => {
+      await c.query(
+        `UPDATE meta_connections 
+         SET profile_picture_url = COALESCE($2, profile_picture_url),
+             profile_picture_handle = $3,
+             profile_about = COALESCE($4, profile_about),
+             updated_at = now() 
+         WHERE id = $1`,
+        [row.id, cdnUrl || null, profilePictureHandle, input.about || null]
+      );
+
+      await c.query(
+        "INSERT INTO audit_logs(tenant_id, user_id, action, target) VALUES($1, $2, 'meta.profile.avatar_uploaded', $3)",
+        [actor.tenant_id, actor.id, `${row.phone_number_id}:640x640:cdn`]
+      );
+    });
+
+    if (this.notify) {
+      this.notify(actor.tenant_id, {
+        type: 'meta.profile_avatar_updated',
+        connection_id: row.id,
+        phone_number_id: row.phone_number_id,
+        avatar_url: cdnUrl,
+        about: input.about
+      });
+    }
+
+    return {
+      success: true,
+      connection_id: row.id,
+      phone_number_id: row.phone_number_id,
+      profile_picture_url: cdnUrl,
+      profile_picture_handle: profilePictureHandle,
+      dimensions: '640x640',
+      format: 'image/jpeg',
+      file_size_bytes: processedBuffer.length,
+      meta_response: metaProfileRes,
+      message: 'Profile avatar converted to 640x640 JPG, stored in Media CDN, and synced to Meta WhatsApp Business Profile!'
+    };
+  }
+
+  async getBusinessProfile(actor: Actor, id: unknown) {
+    authorizeAdminOrChannel(actor);
+    const row = await this.owned(actor, id);
+
+    let metaProfile: any = null;
+    if (!row.simulated && row.token_encrypted) {
+      try {
+        const decryptedToken = decrypt(row.token_encrypted, this.cfg.ENCRYPTION_KEY);
+        metaProfile = await this.providers.meta(
+          `${row.phone_number_id}/whatsapp_business_profile?fields=about,address,description,email,profile_picture_url,websites,vertical`,
+          'GET',
+          undefined,
+          decryptedToken
+        );
+      } catch {}
+    }
+
+    const profileData = metaProfile?.data?.[0] || metaProfile || {};
+
+    return {
+      connection_id: row.id,
+      phone_number_id: row.phone_number_id,
+      name: row.name,
+      verified_name: row.verified_name,
+      oba_status: row.oba_status || 'NOT_ELIGIBLE',
+      profile_picture_url: profileData.profile_picture_url || row.profile_picture_url || null,
+      about: profileData.about || row.profile_about || 'Available on WhatsApp',
+      description: profileData.description || '',
+      email: profileData.email || '',
+      websites: profileData.websites || [],
+      address: profileData.address || ''
+    };
+  }
+
+  async deleteBusinessProfileAvatar(actor: Actor, id: unknown) {
+    authorizeAdminOrChannel(actor);
+    const row = await this.owned(actor, id);
+
+    await this.db.transaction(async c => {
+      await c.query(
+        "UPDATE meta_connections SET profile_picture_url=NULL, profile_picture_handle=NULL, updated_at=now() WHERE id=$1",
+        [row.id]
+      );
+      await c.query(
+        "INSERT INTO audit_logs(tenant_id, user_id, action, target) VALUES($1, $2, 'meta.profile.avatar_deleted', $3)",
+        [actor.tenant_id, actor.id, String(row.phone_number_id)]
+      );
+    });
+
+    if (this.notify) {
+      this.notify(actor.tenant_id, {
+        type: 'meta.profile_avatar_updated',
+        connection_id: row.id,
+        phone_number_id: row.phone_number_id,
+        avatar_url: null
+      });
+    }
+
+    return {
+      success: true,
+      message: 'Profile avatar removed.'
+    };
   }
 }

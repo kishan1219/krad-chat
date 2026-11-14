@@ -42,6 +42,7 @@ export async function database() {
   await pg.exec(await readFile(join(migDir, '025_ai_routing_tier_escalation_and_payments.sql'), 'utf8'));
   await pg.exec(await readFile(join(migDir, '026_refunds_tier_countdown_sibling_balancing.sql'), 'utf8'));
   await pg.exec(await readFile(join(migDir, '027_meta_display_name_status.sql'), 'utf8'));
+  await pg.exec(await readFile(join(migDir, '028_meta_profile_media_and_oba_status.sql'), 'utf8'));
   const query = async (text: string, values: unknown[] = []) => {
     if (text.includes('pg_advisory_xact_lock')) return { rows: [], rowCount: 1 };
     const result = await pg.query(text, values);

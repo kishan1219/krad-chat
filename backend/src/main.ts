@@ -118,7 +118,7 @@ export async function createApplication(options: { config?: ReturnType<typeof lo
   };
 
   const files = new Files(db, cfg);
-  const metaConnections = new MetaConnections(db, cfg, providers, notify);
+  const metaConnections = new MetaConnections(db, cfg, providers, notify, files);
   const campaigns = new Campaigns(db, cfg, providers, notify);
   const reports = new Reports(db, files);
   const billing = new Billing(db, providers);
@@ -356,10 +356,10 @@ export async function createApplication(options: { config?: ReturnType<typeof lo
       void commerce.expire().catch(e => logger.error('Order expiry failed:', e, 'Worker'));
     }, WORKER_TICK_INTERVAL_MS);
 
-    // Hourly WABA Template Sync Scheduler (Auto-fetches APPROVED/REJECTED statuses from Meta)
+    // Scheduled Automated Template Review Poller (Re-checks PENDING template approval states every 15 minutes)
     templateSyncTimer = setInterval(() => {
-      void metaConnections.syncAllActiveTemplates().catch((e: any) => logger.error('Hourly template sync failed:', e, 'Worker'));
-    }, 60 * 60 * 1000);
+      void metaConnections.syncAllActiveTemplates().catch((e: any) => logger.error('15-minute template review poller failed:', e, 'Worker'));
+    }, 15 * 60 * 1000);
   }
 
   const shutdown = async () => {

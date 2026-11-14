@@ -25,6 +25,7 @@ interface ConnectionMobileCardProps {
     onOpenIncrementalSync?: (conn: WhatsAppConnection) => void
     onOpenOba?: (conn: WhatsAppConnection) => void
     onOpenReReview?: (conn: WhatsAppConnection) => void
+    onOpenProfileMedia?: (conn: WhatsAppConnection) => void
     onSyncTemplates?: (id: number) => void
 }
 
@@ -40,6 +41,7 @@ export const ConnectionMobileCard: React.FC<ConnectionMobileCardProps> = ({
     onOpenIncrementalSync,
     onOpenOba,
     onOpenReReview,
+    onOpenProfileMedia,
     onSyncTemplates
 }) => {
     const isConnected = conn.status === 'connected' || conn.status === 'verified'
@@ -59,16 +61,28 @@ export const ConnectionMobileCard: React.FC<ConnectionMobileCardProps> = ({
                 <div className="d-flex align-items-center justify-content-between mb-2">
                     <div className="d-flex align-items-center gap-2">
                         <div
-                            className="rounded-3 d-flex align-items-center justify-content-center"
+                            className="rounded-3 d-flex align-items-center justify-content-center overflow-hidden position-relative"
                             style={{
                                 width: '38px',
                                 height: '38px',
                                 backgroundColor: '#ecfdf5',
                                 color: '#059669',
-                                flexShrink: 0
+                                flexShrink: 0,
+                                border: '1px solid #d1fae5',
+                                cursor: onOpenProfileMedia ? 'pointer' : 'default'
                             }}
+                            onClick={() => onOpenProfileMedia?.(conn)}
+                            title="Profile Avatar (640x640 CDN) - Tap to edit"
                         >
-                            <Smartphone size={18} />
+                            {conn.profile_picture_url ? (
+                                <img
+                                    src={conn.profile_picture_url}
+                                    alt={conn.name || 'Brand'}
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                />
+                            ) : (
+                                <Smartphone size={18} />
+                            )}
                         </div>
                         <div>
                             <div className="d-flex align-items-center gap-1 flex-wrap">
@@ -233,6 +247,17 @@ export const ConnectionMobileCard: React.FC<ConnectionMobileCardProps> = ({
                             style={{ fontSize: '0.72rem', padding: '0.25rem 0.5rem', flex: '1 1 auto' }}
                         >
                             Sync Chats
+                        </Button>
+                    )}
+                    {onOpenProfileMedia && (
+                        <Button
+                            type="button"
+                            size="sm"
+                            color="light"
+                            onClick={() => onOpenProfileMedia(conn)}
+                            style={{ fontSize: '0.72rem', padding: '0.25rem 0.5rem', flex: '1 1 auto' }}
+                        >
+                            Avatar
                         </Button>
                     )}
                     {onSyncTemplates && (

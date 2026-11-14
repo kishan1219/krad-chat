@@ -207,7 +207,74 @@ export class Webhooks {
           }
           continue;
         }
-        if (change.field !== 'messages') throw new ApiError(422, 'This event type requires a dedicated handler.');
+
+        // Official Meta Green Tick Webhook Push (business_capability_update / official_business_account_update)
+        if (
+          change.field === 'business_capability_update' ||
+          change.field === 'official_business_account_update' ||
+          (change.field === 'account_update' && (value.event === 'OBA_APPROVED' || value.event === 'OBA_REVOKED' || value.oba_status))
+        ) {
+          const targetPhone = String(value.phone_number_id || value.metadata?.phone_number_id || value.phone_number || '');
+          const wabaId = String(entry.id || '');
+          const event = String(value.event || '').toUpperCase();
+          const capability = String(value.capability || '').toUpperCase();
+          const status = String(value.status || value.decision || value.oba_status || '').toUpperCase();
+
+          const isApproved = event === 'OBA_APPROVED' || status === 'APPROVED' || status === 'ACTIVE' || status === 'VERIFIED' || capability === 'OFFICIAL_BUSINESS_ACCOUNT';
+          const newObaStatus = isApproved ? 'APPROVED' : 'REJECTED';
+
+          const connections = (await this.db.query(
+            "SELECT * FROM meta_connections WHERE status='connected' AND (($1 <> '' AND (phone_number_id=$1 OR display_phone_number=$1)) OR ($1 = '' AND waba_id=$2))",
+            [targetPhone, wabaId]
+          )).rows;
+
+          for (const conn of connections) {
+            await this.db.transaction(async c => {
+              await c.query(
+                "UPDATE meta_connections SET oba_status=$2, updated_at=now() WHERE id=$1",
+                [conn.id, newObaStatus]
+              );
+
+              if (isApproved) {
+                const notif = {
+                  title: '🎉 Meta Green Checkmark Approved!',
+                  message: `Congratulations! Meta has officially approved your Official Business Account (OBA) application for ${conn.display_phone_number || conn.phone_number_id} (${conn.name || conn.verified_name || 'Brand'}). The green checkmark badge is now active!`,
+                  phone_number_id: conn.phone_number_id,
+                  oba_status: 'APPROVED',
+                  type: 'meta_oba_approved',
+                  severity: 'success',
+                  approved_at: new Date().toISOString()
+                };
+                await c.query(
+                  "INSERT INTO resources(tenant_id, kind, data, created_by) VALUES($1, 'notification', $2, $3)",
+                  [conn.tenant_id, JSON.stringify(notif), conn.created_by || 1]
+                );
+                await c.query(
+                  "INSERT INTO audit_logs(tenant_id, user_id, action, target) VALUES($1, $2, 'meta.oba.approved.webhook_push', $3)",
+                  [conn.tenant_id, conn.created_by || 1, `${conn.phone_number_id}:APPROVED`]
+                );
+                if (this.notify) {
+                  this.notify(conn.tenant_id, {
+                    command: 'notification',
+                    type: 'meta_oba_approved',
+                    data: notif
+                  });
+                  this.notify(conn.tenant_id, {
+                    type: 'meta.oba_update',
+                    phone_number_id: conn.phone_number_id,
+                    oba_status: 'APPROVED'
+                  });
+                }
+              }
+            });
+          }
+          continue;
+        }
+
+        if (change.field !== 'messages') {
+          // Gracefully ignore other unhandled Meta webhook events to prevent 422 delivery retries with Meta Graph API
+          continue;
+        }
         if (value.messages?.length) {
           const tenant = await this.chat.tenantForMeta(String(value.metadata?.phone_number_id));
           for (const message of value.messages) {

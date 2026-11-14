@@ -42,6 +42,8 @@ export interface MetaConnection {
     name_status?: 'APPROVED' | 'AVAILABLE_WITHOUT_REVIEW' | 'PENDING_REVIEW' | 'DECLINED' | 'REJECTED' | string
     last_name_status_check?: string
     oba_status?: 'NOT_ELIGIBLE' | 'ELIGIBLE' | 'IN_REVIEW' | 'APPROVED' | string
+    profile_picture_url?: string
+    profile_about?: string
     delivery_rate_24h?: number
     status: 'connected' | 'disconnected' | 'verified' | string
     simulated?: boolean
@@ -381,6 +383,35 @@ function getAuthToken(): string {
     return token
 }
 
+async function refreshAuthToken(): Promise<string | null> {
+    try {
+        let refreshToken = localStorage.getItem('refresh_token') || ''
+        if (refreshToken.startsWith('"')) {
+            try { refreshToken = JSON.parse(refreshToken) } catch {}
+        }
+        if (!refreshToken) return null
+
+        const res = await fetch(`${httpConfig.baseUrl}auth/refresh`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh_token: refreshToken })
+        })
+        if (!res.ok) return null
+        const data = await res.json()
+        const newAccess = data?.data?.access_token || data?.access_token
+        const newRefresh = data?.data?.refresh_token || data?.refresh_token
+        if (newAccess) {
+            localStorage.setItem('access_token', JSON.stringify(newAccess))
+            localStorage.setItem('accessToken', JSON.stringify(newAccess))
+            if (newRefresh) {
+                localStorage.setItem('refresh_token', JSON.stringify(newRefresh))
+            }
+            return newAccess
+        }
+    } catch {}
+    return null
+}
+
 async function requestApi<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const token = getAuthToken()
     const url = `${httpConfig.baseUrl}${endpoint.replace(/^\/+/, '')}`
@@ -400,6 +431,20 @@ async function requestApi<T>(endpoint: string, options: RequestInit = {}): Promi
         const json = await response.json().catch(() => ({}))
 
         if (!response.ok) {
+            const isRetry = Boolean((headers as any)._isRetry)
+            if (response.status === 401 && !isRetry) {
+                const refreshedToken = await refreshAuthToken()
+                if (refreshedToken) {
+                    return requestApi<T>(endpoint, {
+                        ...options,
+                        headers: {
+                            ...headers,
+                            Authorization: `Bearer ${refreshedToken}`,
+                            _isRetry: 'true'
+                        }
+                    })
+                }
+            }
             const errorMessage = json?.message || `Request failed with status ${response.status}`
             throw new Error(errorMessage)
         }
@@ -753,6 +798,51 @@ export const whatsappService = {
     }> {
         return requestApi('whatsapp/webhook-health', {
             method: 'GET'
+        })
+    },
+
+    // Automated WhatsApp Business Profile Media CDN
+    async getBusinessProfile(connectionId: number | string): Promise<{
+        connection_id: number
+        phone_number_id: string
+        name: string
+        verified_name?: string
+        oba_status: string
+        profile_picture_url: string | null
+        about: string
+        description?: string
+        email?: string
+        websites?: string[]
+        address?: string
+    }> {
+        return requestApi(`whatsapp/connections/${connectionId}/profile-avatar`, {
+            method: 'GET'
+        })
+    },
+
+    async uploadProfileAvatar(
+        connectionId: number | string,
+        payload: { image_base64: string; filename?: string; about?: string; description?: string }
+    ): Promise<{
+        success: boolean
+        connection_id: number
+        phone_number_id: string
+        profile_picture_url: string
+        profile_picture_handle: string
+        dimensions: string
+        format: string
+        file_size_bytes: number
+        message: string
+    }> {
+        return requestApi(`whatsapp/connections/${connectionId}/profile-avatar`, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        })
+    },
+
+    async deleteProfileAvatar(connectionId: number | string): Promise<{ success: boolean; message: string }> {
+        return requestApi(`whatsapp/connections/${connectionId}/profile-avatar`, {
+            method: 'DELETE'
         })
     }
 }

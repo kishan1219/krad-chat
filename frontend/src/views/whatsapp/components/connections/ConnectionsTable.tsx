@@ -29,6 +29,7 @@ interface ConnectionsTableProps {
     onOpenIncrementalSync?: (conn: WhatsAppConnection) => void
     onOpenOba?: (conn: WhatsAppConnection) => void
     onOpenReReview?: (conn: WhatsAppConnection) => void
+    onOpenProfileMedia?: (conn: WhatsAppConnection) => void
     onSyncTemplates?: (id: number) => void
     onOpenAddModal: () => void
 }
@@ -46,6 +47,7 @@ export function ConnectionsTable({
     onOpenIncrementalSync,
     onOpenOba,
     onOpenReReview,
+    onOpenProfileMedia,
     onSyncTemplates,
     onOpenAddModal
 }: ConnectionsTableProps) {
@@ -139,6 +141,7 @@ export function ConnectionsTable({
                         onOpenIncrementalSync={onOpenIncrementalSync}
                         onOpenOba={onOpenOba}
                         onOpenReReview={onOpenReReview}
+                        onOpenProfileMedia={onOpenProfileMedia}
                         onSyncTemplates={onSyncTemplates}
                     />
                 ))}
@@ -178,16 +181,28 @@ export function ConnectionsTable({
                                         <td className="py-3 px-3">
                                             <div className="d-flex align-items-center gap-2">
                                                 <div
-                                                    className="rounded-3 d-flex align-items-center justify-content-center"
+                                                    className="rounded-3 d-flex align-items-center justify-content-center overflow-hidden position-relative"
                                                     style={{
-                                                        width: '36px',
-                                                        height: '36px',
+                                                        width: '38px',
+                                                        height: '38px',
                                                         backgroundColor: '#ecfdf5',
                                                         color: '#059669',
-                                                        flexShrink: 0
+                                                        flexShrink: 0,
+                                                        border: '1px solid #d1fae5',
+                                                        cursor: onOpenProfileMedia ? 'pointer' : 'default'
                                                     }}
+                                                    onClick={() => onOpenProfileMedia?.(conn)}
+                                                    title="WhatsApp Business Profile Avatar (640x640 CDN) - Click to customize"
                                                 >
-                                                    <Smartphone size={18} />
+                                                    {conn.profile_picture_url ? (
+                                                        <img
+                                                            src={conn.profile_picture_url}
+                                                            alt={conn.name || 'Brand'}
+                                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                        />
+                                                    ) : (
+                                                        <Smartphone size={18} />
+                                                    )}
                                                 </div>
                                                 <div>
                                                     <div className="d-flex align-items-center gap-1">
@@ -381,6 +396,18 @@ export function ConnectionsTable({
                                                         style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
                                                     >
                                                         Sync
+                                                    </Button>
+                                                )}
+                                                {onOpenProfileMedia && (
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        color="light"
+                                                        onClick={() => onOpenProfileMedia(conn)}
+                                                        title="Manage WhatsApp Business Profile Avatar (640x640 Media CDN)"
+                                                        style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
+                                                    >
+                                                        Avatar
                                                     </Button>
                                                 )}
                                                 {onSyncTemplates && (

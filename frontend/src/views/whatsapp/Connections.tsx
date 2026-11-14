@@ -16,6 +16,7 @@ import { MultiWabaDashboard } from './components/connections/MultiWabaDashboard'
 import { TierUpgradeCountdownModal } from './components/TierUpgradeCountdownModal'
 import { OfficialBusinessAccountModal } from './components/connections/OfficialBusinessAccountModal'
 import { ReReviewModal } from './components/connections/ReReviewModal'
+import { ProfileMediaCdnModal } from './components/connections/ProfileMediaCdnModal'
 import AddWhatsappConfigModal from './AddWhatsappConfigModal'
 import { WhatsAppConnection, whatsappService } from '../../services/whatsappService'
 import { SuccessToast, ErrorToast } from '../../utility/Utils'
@@ -44,6 +45,7 @@ export default function Connections() {
     const [tierUpgradeConn, setTierUpgradeConn] = useState<WhatsAppConnection | null>(null)
     const [obaConn, setObaConn] = useState<WhatsAppConnection | null>(null)
     const [reReviewConn, setReReviewConn] = useState<WhatsAppConnection | null>(null)
+    const [profileMediaConn, setProfileMediaConn] = useState<WhatsAppConnection | null>(null)
 
     const handleSyncTemplates = async (connectionId: number) => {
         try {
@@ -166,6 +168,7 @@ export default function Connections() {
                         onOpenIncrementalSync={(conn) => setIncSyncConn(conn)}
                         onOpenOba={(conn) => setObaConn(conn)}
                         onOpenReReview={(conn) => setReReviewConn(conn)}
+                        onOpenProfileMedia={(conn) => setProfileMediaConn(conn)}
                         onSyncTemplates={handleSyncTemplates}
                         onOpenAddModal={() => setShowAddModal(true)}
                     />
@@ -222,6 +225,14 @@ export default function Connections() {
                 connection={obaConn}
                 isOpen={Boolean(obaConn)}
                 toggle={() => setObaConn(null)}
+            />
+
+            {/* WhatsApp Business Profile & Media CDN Modal */}
+            <ProfileMediaCdnModal
+                conn={profileMediaConn}
+                isOpen={Boolean(profileMediaConn)}
+                toggle={() => setProfileMediaConn(null)}
+                onUpdated={fetchConnections}
             />
 
             {/* Multi-WABA Inbound Router Modal */}
