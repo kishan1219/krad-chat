@@ -626,6 +626,7 @@ export class MetaConnections {
     current_quality: conn.quality_rating || 'GREEN',
     predicted_quality: predictedQuality,
     block_rate_percentage: Number(blockRate.toFixed(2)),
+    delivery_success_rate: Number((100 - blockRate).toFixed(2)),
     threshold_percentage: threshold,
     threshold_exceeded: isExceeded,
     risk_level: riskLevel,

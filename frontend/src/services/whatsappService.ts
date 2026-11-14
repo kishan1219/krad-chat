@@ -41,6 +41,8 @@ export interface MetaConnection {
     code_verification_status?: string
     name_status?: 'APPROVED' | 'AVAILABLE_WITHOUT_REVIEW' | 'PENDING_REVIEW' | 'DECLINED' | 'REJECTED' | string
     last_name_status_check?: string
+    oba_status?: 'NOT_ELIGIBLE' | 'ELIGIBLE' | 'IN_REVIEW' | 'APPROVED' | string
+    delivery_rate_24h?: number
     status: 'connected' | 'disconnected' | 'verified' | string
     simulated?: boolean
     subscribed?: boolean
@@ -111,6 +113,7 @@ export interface QualityForecastResult {
     current_quality: string
     predicted_quality: string
     block_rate_percentage: number
+    delivery_success_rate?: number
     threshold_percentage: number
     threshold_exceeded: boolean
     risk_level: 'LOW' | 'MODERATE' | 'HIGH' | 'CRITICAL'
