@@ -5,6 +5,7 @@ import Emitter from '../Emitter'
 import { isValid, log } from '../helpers/common'
 import { ErrorToast, formatDate, MessageToast, SuccessToast, sanitizeToastText } from '../Utils'
 import defaultHttpConfig from './httpConfig'
+import { renewTokenSilently } from '../auth/tokenManager'
 
 type HttpCallback = (...args: any[]) => void
 

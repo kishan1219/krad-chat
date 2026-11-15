@@ -31,7 +31,8 @@ export class Providers {
           continue;
         }
         if (!response.ok) {
-          throw new ProviderFailure(`Provider returned HTTP ${response.status}`, response.status >= 500, response.status === 429);
+          const detail = (body as any)?.error?.message ? `: ${(body as any).error.message}` : '';
+          throw new ProviderFailure(`Provider returned HTTP ${response.status}${detail}`, response.status >= 500, response.status === 429);
         }
         if (!body) throw new ProviderFailure('Provider response could not be decoded.', true);
         return body;
@@ -83,14 +84,21 @@ export class Providers {
   }
   async exchangeMetaCode(code:string):Promise<string>{
     if(this.cfg.PROVIDER_MODE==='mock')return 'local-simulation-no-live-token';
-    if(code.startsWith('EAAG') || code.startsWith('EAA') || code.length > 80) return code;
+    // Access tokens from Meta start with 'EAA' (EAAG, EAAB, etc.)
+    if(code.startsWith('EAAG') || code.startsWith('EAAB') || code.startsWith('EAA')) return code;
     if(code === 'meta_direct_onboarding_token' || code.startsWith('meta_direct_')) {
       const serverToken = process.env.META_ACCESS_TOKEN || process.env.WHATSAPP_TOKEN || '';
       if(serverToken) return serverToken;
       throw new ProviderFailure('Direct manual onboarding requires a valid Meta access token (starts with EAAG/EAA) or META_ACCESS_TOKEN on the server.');
     }
-    const version=requiredEnv('META_GRAPH_VERSION');if(!/^v\d+\.\d+$/.test(version))throw new ProviderFailure('Invalid Meta Graph version.');
-    const params=new URLSearchParams({client_id:requiredEnv('META_APP_ID'),client_secret:requiredEnv('META_APP_SECRET'),code});
+    const version=process.env.META_GRAPH_VERSION || 'v22.0';
+    if(!/^v\d+\.\d+$/.test(version))throw new ProviderFailure('Invalid Meta Graph version.');
+    const appId = process.env.META_APP_ID;
+    const appSecret = process.env.META_APP_SECRET;
+    if (!appId || !appSecret) {
+      throw new ProviderFailure('META_APP_ID or META_APP_SECRET is not configured on the server.');
+    }
+    const params=new URLSearchParams({client_id: appId, client_secret: appSecret, code});
     const result=await this.request(`https://graph.facebook.com/${version}/oauth/access_token?${params}`,{method:'GET'});
     if(typeof result.access_token!=='string'||!result.access_token)throw new ProviderFailure('Meta did not return an access token.');
     return result.access_token;

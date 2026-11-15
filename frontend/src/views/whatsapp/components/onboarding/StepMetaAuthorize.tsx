@@ -10,7 +10,7 @@ interface StepMetaAuthorizeProps {
     config?: MetaOnboardingConfig | null
     busy: boolean
     capturedCode?: string
-    capturedAssets?: { waba_id: string; phone_number_id: string } | null
+    capturedAssets?: { waba_id: string; phone_number_id: string; business_id?: string; is_on_biz_app?: boolean } | null
     onBack: () => void
     onConnectLive: () => void
     onConnectSandbox?: () => void

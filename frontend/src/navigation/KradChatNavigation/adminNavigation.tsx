@@ -317,20 +317,6 @@ export default [
                 userTypes: [0, 1, 2, 3]
             },
             {
-                id: 'primary-route',
-                title: 'Primary Routes',
-                icon: <ChevronRightOutlined size={12} />,
-                navLink: '/primary-routes',
-                userTypes: [0]
-            },
-            {
-                id: 'secondary-route',
-                title: 'Secondary Routes',
-                icon: <ChevronRightOutlined size={12} />,
-                navLink: '/secondary-routes',
-                userTypes: [0]
-            },
-            {
                 id: 'whatsapp-rate-card',
                 title: 'Message Pricing',
                 icon: <ChevronRightOutlined size={12} />,
@@ -349,20 +335,6 @@ export default [
                 title: 'Webhook Event Logs',
                 icon: <ChevronRightOutlined size={12} />,
                 navLink: '/whatsapp-webhook-events',
-                userTypes: [0]
-            },
-            {
-                id: 'dlr-list',
-                title: 'DLR Return Codes',
-                icon: <ChevronRightOutlined size={12} />,
-                navLink: '/dlr-list',
-                userTypes: [0]
-            },
-            {
-                id: 'get-kannel-status',
-                title: 'Gateway Status',
-                icon: <ChevronRightOutlined size={12} />,
-                navLink: '/get-current-kennel-status',
                 userTypes: [0]
             },
             {

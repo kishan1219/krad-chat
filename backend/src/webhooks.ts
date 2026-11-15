@@ -284,15 +284,67 @@ export class Webhooks {
           continue;
         }
 
+        // Account update handling: Partner removal, WABA disabled, or de-authorization
+        if (change.field === 'account_update' && ['PARTNER_REMOVED', 'DISABLED', 'DELETED', 'SUSPENDED'].includes(String(value.event || '').toUpperCase())) {
+          const wabaId = String(entry.id || '');
+          const eventType = String(value.event).toUpperCase();
+          const targetPhone = String(value.phone_number_id || value.metadata?.phone_number_id || '');
+          await this.db.transaction(async c => {
+            const rows = (await c.query(
+              `UPDATE meta_connections 
+               SET status = 'disconnected', last_error = $1, updated_at = now()
+               WHERE status = 'connected' AND (waba_id = $2 OR ($3 <> '' AND phone_number_id = $3))
+               RETURNING id, tenant_id, phone_number_id, display_phone_number`,
+              [`Meta account event: ${eventType}`, wabaId, targetPhone]
+            )).rows;
+            for (const r of rows) {
+              await c.query("INSERT INTO audit_logs(tenant_id, user_id, action, target) VALUES($1, 1, 'meta.account.disabled', $2)", [r.tenant_id, JSON.stringify({ event: eventType, phone: r.phone_number_id })]);
+              if (this.notify) {
+                this.notify(r.tenant_id, {
+                  command: 'notification',
+                  type: 'meta_account_update',
+                  data: { title: '⚠️ WhatsApp Account Disconnected', message: `Meta reported ${eventType} on line ${r.display_phone_number || r.phone_number_id}. Reconnect in WhatsApp Configuration.` }
+                });
+              }
+            }
+          });
+          continue;
+        }
+
         if (change.field !== 'messages') {
           // Gracefully ignore other unhandled Meta webhook events to prevent 422 delivery retries with Meta Graph API
           continue;
         }
         if (value.messages?.length) {
-          const tenant = await this.chat.tenantForMeta(String(value.metadata?.phone_number_id));
+          const targetPhoneId = String(value.metadata?.phone_number_id || '');
+          const tenant = await this.chat.tenantForMeta(targetPhoneId);
+          const conn = (await this.db.query(
+            "SELECT id, phone_number_id, display_phone_number FROM meta_connections WHERE phone_number_id=$1 AND tenant_id=$2",
+            [targetPhoneId, tenant]
+          )).rows[0];
+          const businessPhoneDigits = (conn?.display_phone_number || '').replace(/[^\d]/g, '');
+
           for (const message of value.messages) {
+            const senderDigits = String(message.from || '').replace(/[^\d]/g, '');
+            const isAppOriginatedEcho = Boolean(
+              message.is_echo ||
+              message.type === 'message_echo' ||
+              (businessPhoneDigits && senderDigits === businessPhoneDigits)
+            );
+
+            if (isAppOriginatedEcho) {
+              // Coexistence SMB Echo: Sent by business owner from mobile phone to customer
+              const recipientPhone = String(message.recipient_id || message.to || '');
+              const text = customerMessageText(message);
+              if (recipientPhone && text) {
+                // Record outbound message in conversation history without firing auto-replies or deducting credits
+                await this.chat.recordExternalOutbound(tenant, recipientPhone, text, message.id, targetPhoneId, message.timestamp);
+              }
+              continue;
+            }
+
             const text = customerMessageText(message);
-            const incoming = await this.chat.incoming(tenant, message.from, text, message.id, String(value.metadata.phone_number_id), message.timestamp);
+            const incoming = await this.chat.incoming(tenant, message.from, text, message.id, targetPhoneId, message.timestamp);
 
             const paymentInfo = extractPaymentInfo(message);
             if (paymentInfo) {

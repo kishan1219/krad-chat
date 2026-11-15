@@ -129,18 +129,38 @@ export class MetaOnboarding {
       if (typeof v !== 'string' && typeof v !== 'number') return undefined;
       const digits = String(v).replace(/[^\d]/g, '');
       return digits.length > 0 ? digits : undefined;
-    })
+    }),
+    connection_mode: z.enum(['dedicated', 'coexistence']).optional(),
+    is_on_biz_app: z.boolean().optional(),
+    business_id: z.string().optional()
   }).parse(body);
   const [id,signature]=input.state.split('.');
   if(!equalSecret(signature,this.signature(id)))throw new ApiError(403,'Invalid onboarding state.');
-  const claimed=await this.db.query("UPDATE meta_onboarding_sessions SET status='exchanging' WHERE id=$1 AND tenant_id=$2 AND user_id=$3 AND session_hash=$4 AND status='issued' AND expires_at>now() RETURNING id",[id,actor.tenant_id,actor.id,sha256(actor.session_id)]);
+  const claimed=await this.db.query("UPDATE meta_onboarding_sessions SET status='exchanging' WHERE id=$1 AND tenant_id=$2 AND user_id=$3 AND session_hash=$4 AND status IN ('issued','failed') AND expires_at>now() RETURNING id, access_token_encrypted",[id,actor.tenant_id,actor.id,sha256(actor.session_id)]);
   if(!claimed.rowCount)throw new ApiError(409,'Onboarding expired, was already used, or belongs to another login. Start again.');
   try{
    const resolved = await this.resolveConfig();
    if (!process.env.META_APP_SECRET && resolved.app_secret) process.env.META_APP_SECRET = resolved.app_secret;
    if (!process.env.META_APP_ID && resolved.app_id) process.env.META_APP_ID = resolved.app_id;
    if (!process.env.META_GRAPH_VERSION && resolved.graph_version) process.env.META_GRAPH_VERSION = resolved.graph_version;
-   const accessToken=await this.providers.exchangeMetaCode(input.code);
+   
+   let accessToken: string;
+   const existingEncToken = claimed.rows[0]?.access_token_encrypted;
+   if (existingEncToken) {
+     try {
+       accessToken = decrypt(existingEncToken, this.cfg.ENCRYPTION_KEY);
+     } catch {
+       accessToken = await this.providers.exchangeMetaCode(input.code);
+     }
+   } else {
+     accessToken = await this.providers.exchangeMetaCode(input.code);
+     try {
+       await this.db.query("UPDATE meta_onboarding_sessions SET access_token_encrypted=$1 WHERE id=$2", [
+         encrypt(accessToken, this.cfg.ENCRYPTION_KEY),
+         id
+       ]);
+     } catch {}
+   }
    let targetWaba = input.waba_id;
    let targetPhone = input.phone_number_id;
 
@@ -198,10 +218,34 @@ export class MetaOnboarding {
        );
        const granularScopes = debugRes?.data?.granular_scopes || [];
        for (const s of granularScopes) {
-         if (s.target_ids?.length) {
+         if (s.scope === 'whatsapp_business_management' && s.target_ids?.length) {
            targetWaba = targetWaba || String(s.target_ids[0]);
-           break;
          }
+         if (s.scope === 'whatsapp_business_messaging' && s.target_ids?.length) {
+           targetPhone = targetPhone || String(s.target_ids[0]);
+         }
+       }
+       if (!targetWaba) {
+         for (const s of granularScopes) {
+           if (s.target_ids?.length) {
+             targetWaba = targetWaba || String(s.target_ids[0]);
+             break;
+           }
+         }
+       }
+     } catch {}
+   }
+
+   if (targetPhone && !targetWaba) {
+     try {
+       const phoneInfo: any = await this.providers.meta(
+         `${targetPhone}?fields=id,display_phone_number,whatsapp_business_account`,
+         'GET',
+         undefined,
+         accessToken
+       );
+       if (phoneInfo?.whatsapp_business_account?.id) {
+         targetWaba = String(phoneInfo.whatsapp_business_account.id);
        }
      } catch {}
    }
@@ -218,20 +262,66 @@ export class MetaOnboarding {
          targetPhone = String(phoneList.data[0].id);
        }
      } catch {}
+     if (!targetPhone) {
+       try {
+         const wabaObj: any = await this.providers.meta(
+           `${targetWaba}?fields=phone_numbers{id,display_phone_number,verified_name}`,
+           'GET',
+           undefined,
+           accessToken
+         );
+         if (wabaObj?.phone_numbers?.data?.length) {
+           targetPhone = String(wabaObj.phone_numbers.data[0].id);
+         }
+       } catch {}
+     }
+   }
+
+   if (!targetWaba || !targetPhone) {
+     try {
+       const detected = await this.connections.detectWaba(actor, { access_token: accessToken });
+       if (detected) {
+         targetWaba = targetWaba || detected.waba_id;
+         if (!targetPhone && detected.phone_numbers?.length) {
+           targetPhone = String(detected.phone_numbers[0].id);
+         }
+       }
+     } catch {}
+   }
+
+   if (!targetWaba || !targetPhone) {
+     try {
+       const wabaAccounts: any = await this.providers.meta('me/whatsapp_business_accounts?fields=id,name,phone_numbers{id,display_phone_number,verified_name}', 'GET', undefined, accessToken);
+       if (wabaAccounts?.data?.length) {
+         const firstAccount = wabaAccounts.data[0];
+         targetWaba = targetWaba || String(firstAccount.id);
+         if (!targetPhone && firstAccount.phone_numbers?.data?.length) {
+           targetPhone = String(firstAccount.phone_numbers.data[0].id);
+         }
+       }
+     } catch {}
    }
 
    if (!targetWaba || !targetPhone) {
      throw new ApiError(422, 'Could not determine WABA or Phone Number ID. Please specify them manually.');
    }
 
-   const connection=await this.connections.connect(actor,{name:input.name,waba_id:targetWaba,phone_number_id:targetPhone,access_token:accessToken});
+   const connection = await this.connections.connect(actor, {
+     name: input.name,
+     waba_id: targetWaba,
+     phone_number_id: targetPhone,
+     access_token: accessToken,
+     connection_mode: input.connection_mode,
+     is_on_biz_app: input.is_on_biz_app,
+     business_id: input.business_id
+   });
 
    // Auto-subscribe WABA to Meta Webhook events including phone_number_name_update
    try {
      await this.providers.meta(
        `${targetWaba}/subscribed_apps`,
        'POST',
-       { subscribed_fields: ['messages', 'messaging_postbacks', 'message_template_status_update', 'phone_number_name_update', 'phone_number_quality_update', 'account_update'] },
+       { subscribed_fields: ['messages', 'messaging_postbacks', 'message_template_status_update', 'phone_number_name_update', 'phone_number_quality_update', 'account_update', 'business_capability_update'] },
        accessToken
      );
      await this.db.query('UPDATE meta_connections SET subscribed=true WHERE id=$1', [connection.id]);
@@ -247,7 +337,7 @@ export class MetaOnboarding {
    return connection;
   }catch(err: any){
    const msg = (err && err.message) || 'Connection could not be verified. Start signup again or reconnect an existing number.';
-   await this.db.query("UPDATE meta_onboarding_sessions SET status='failed',error=$2,completed_at=now() WHERE id=$1",[id, (typeof msg === 'string' ? msg : JSON.stringify(msg)).slice(0, 500)]);
+   await this.db.query("UPDATE meta_onboarding_sessions SET status='failed',error=$2 WHERE id=$1",[id, (typeof msg === 'string' ? msg : JSON.stringify(msg)).slice(0, 500)]).catch(() => {});
    throw (err && err.statusCode ? err : new ApiError(422, msg));
   }
  }

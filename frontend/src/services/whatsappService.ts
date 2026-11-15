@@ -1,4 +1,5 @@
 import httpConfig from '../utility/http/httpConfig'
+import { renewTokenSilently } from '../utility/auth/tokenManager'
 
 export interface MetaOnboardingConfig {
     configured: boolean
@@ -70,6 +71,9 @@ export interface CreateConnectionPayload {
     phone_number_id: string
     display_phone_number?: string
     access_token?: string
+    connection_mode?: 'dedicated' | 'coexistence'
+    is_on_biz_app?: boolean
+    business_id?: string
 }
 
 export interface CompleteOnboardingPayload {
@@ -78,6 +82,9 @@ export interface CompleteOnboardingPayload {
     name: string
     waba_id?: string
     phone_number_id?: string
+    connection_mode?: 'dedicated' | 'coexistence'
+    is_on_biz_app?: boolean
+    business_id?: string
 }
 
 export interface BatchConnectPayload {
@@ -384,32 +391,7 @@ function getAuthToken(): string {
 }
 
 async function refreshAuthToken(): Promise<string | null> {
-    try {
-        let refreshToken = localStorage.getItem('refresh_token') || ''
-        if (refreshToken.startsWith('"')) {
-            try { refreshToken = JSON.parse(refreshToken) } catch {}
-        }
-        if (!refreshToken) return null
-
-        const res = await fetch(`${httpConfig.baseUrl}auth/refresh`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refresh_token: refreshToken })
-        })
-        if (!res.ok) return null
-        const data = await res.json()
-        const newAccess = data?.data?.access_token || data?.access_token
-        const newRefresh = data?.data?.refresh_token || data?.refresh_token
-        if (newAccess) {
-            localStorage.setItem('access_token', JSON.stringify(newAccess))
-            localStorage.setItem('accessToken', JSON.stringify(newAccess))
-            if (newRefresh) {
-                localStorage.setItem('refresh_token', JSON.stringify(newRefresh))
-            }
-            return newAccess
-        }
-    } catch {}
-    return null
+    return await renewTokenSilently()
 }
 
 async function requestApi<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -445,7 +427,13 @@ async function requestApi<T>(endpoint: string, options: RequestInit = {}): Promi
                     })
                 }
             }
-            const errorMessage = json?.message || `Request failed with status ${response.status}`
+            let errorMessage = json?.message || `Request failed with status ${response.status}`
+            if (Array.isArray(json?.details) && json.details.length > 0) {
+                const detailMsg = json.details
+                    .map((d: any) => `${d.path?.join('.') || 'field'}: ${d.message}`)
+                    .join(' | ')
+                errorMessage = `${errorMessage} (${detailMsg})`
+            }
             throw new Error(errorMessage)
         }
 

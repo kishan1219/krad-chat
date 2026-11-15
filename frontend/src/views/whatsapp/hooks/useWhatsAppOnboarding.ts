@@ -37,8 +37,18 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
 
     // Authorization & Captured Assets State (Ensures user has explicit save button)
     const [capturedCode, setCapturedCode] = useState<string>('')
-    const [capturedAssets, setCapturedAssets] = useState<{ waba_id: string; phone_number_id: string } | null>(null)
+    const [capturedAssets, setCapturedAssets] = useState<{
+        waba_id: string
+        phone_number_id: string
+        business_id?: string
+        is_on_biz_app?: boolean
+    } | null>(null)
     const [activeState, setActiveState] = useState<string>('')
+
+    const capturedAssetsRef = useRef(capturedAssets)
+    capturedAssetsRef.current = capturedAssets
+    const capturedCodeRef = useRef(capturedCode)
+    capturedCodeRef.current = capturedCode
 
     // Multi-number selection state
     const [wabaPhoneNumbers, setWabaPhoneNumbers] = useState<MetaWabaPhoneNumber[]>([])
@@ -107,7 +117,7 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
     const completeSingleSignup = useCallback(async (
         state: string,
         code: string,
-        assets?: { waba_id?: string; phone_number_id?: string }
+        assets?: { waba_id?: string; phone_number_id?: string; is_on_biz_app?: boolean; business_id?: string }
     ) => {
         setBusy(true)
         setError('')
@@ -118,7 +128,10 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
                 code,
                 name: cleanName,
                 waba_id: assets?.waba_id ? String(assets.waba_id).trim() : undefined,
-                phone_number_id: assets?.phone_number_id ? String(assets.phone_number_id).trim() : undefined
+                phone_number_id: assets?.phone_number_id ? String(assets.phone_number_id).trim() : undefined,
+                connection_mode: assets?.is_on_biz_app || signupMode === 'coexistence' ? 'coexistence' : 'dedicated',
+                is_on_biz_app: Boolean(assets?.is_on_biz_app || signupMode === 'coexistence'),
+                business_id: assets?.business_id
             })
 
             // If user checked "Enable Auto Response", create initial welcome auto-response rule
@@ -210,28 +223,16 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
             })
 
             let authCode = ''
-            let captured: { waba_id: string; phone_number_id: string } | null = null
+            let captured: { waba_id: string; phone_number_id: string; business_id?: string; is_on_biz_app?: boolean } | null = null
             let isFinalizing = false
 
-            const finish = async (codeToUse: string, assetsToUse?: { waba_id?: string; phone_number_id?: string } | null) => {
+            const finish = async (codeToUse: string, assetsToUse?: { waba_id?: string; phone_number_id?: string; business_id?: string; is_on_biz_app?: boolean } | null) => {
                 if (isFinalizing) return
                 if (!codeToUse) return
                 isFinalizing = true
                 setBusy(true)
 
                 try {
-                    if (assetsToUse?.waba_id) {
-                        const wabaRes = await whatsappService.fetchWabaPhoneNumbers(assetsToUse.waba_id, codeToUse)
-                        if (wabaRes.numbers && wabaRes.numbers.length > 1) {
-                            setCurrentWabaId(assetsToUse.waba_id)
-                            setCurrentTokenOrCode(codeToUse)
-                            setWabaPhoneNumbers(wabaRes.numbers)
-                            setSelectedNumberIds(wabaRes.numbers.map(n => n.id))
-                            setStep(4) // Multi-number selection
-                            setBusy(false)
-                            return
-                        }
-                    }
                     await completeSingleSignup(sess.state, codeToUse, assetsToUse || undefined)
                 } catch {
                     isFinalizing = false
@@ -239,21 +240,44 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
                 }
             }
 
-            // PostMessage listener supporting all Facebook origins and flexible payload formats
+            // Normalization layer handling FINISH, FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING, CANCEL, and ERROR
             const messageHandler = (event: MessageEvent) => {
                 const origin = event.origin || ''
                 if (!origin.endsWith('facebook.com') && !origin.includes('facebook.com')) return
                 try {
                     const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data
-                    if (data?.type === 'WA_EMBEDDED_SIGNUP') {
+                    if (data?.type === 'WA_EMBEDDED_SIGNUP' || data?.event?.toString().toUpperCase().startsWith('FINISH')) {
                         const raw = data.data || data
+                        const eventName = String(data.event || raw.event || '').toUpperCase()
+
+                        if (eventName === 'CANCEL') {
+                            clearTimeout(safetyTimer)
+                            setBusy(false)
+                            setError('Onboarding was cancelled in Facebook.')
+                            return
+                        }
+
+                        if (eventName === 'ERROR') {
+                            clearTimeout(safetyTimer)
+                            setBusy(false)
+                            setError(raw.error_message || 'Meta Embedded Signup returned an error.')
+                            return
+                        }
+
+                        // WABA ID extraction across v4, v5, and Coexistence
                         const wabaId = String(
                             raw.waba_id ||
+                            raw.messaging_account_ids?.[0] ||
+                            raw.primary_waac_ids?.[0] ||
                             raw.wabaId ||
                             raw.target_id ||
                             raw.waba?.id ||
+                            data.waba_id ||
+                            data.messaging_account_ids?.[0] ||
                             ''
-                        )
+                        ).trim()
+
+                        // Phone Number ID extraction
                         const phoneId = String(
                             raw.phone_number_id ||
                             raw.phoneNumberId ||
@@ -262,18 +286,28 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
                             raw.phone_number_ids?.[0] ||
                             raw.phoneId ||
                             ''
+                        ).trim()
+
+                        const bizId = raw.business_id ? String(raw.business_id).trim() : undefined
+                        const isOnBizApp = Boolean(
+                            raw.is_on_biz_app ||
+                            eventName === 'FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING' ||
+                            signupMode === 'coexistence'
                         )
+
                         if (wabaId || phoneId) {
-                            captured = { waba_id: wabaId, phone_number_id: phoneId }
+                            captured = {
+                                waba_id: wabaId,
+                                phone_number_id: phoneId,
+                                business_id: bizId,
+                                is_on_biz_app: isOnBizApp
+                            }
                             setCapturedAssets(captured)
+                            capturedAssetsRef.current = captured
                             if (authCode) {
                                 clearTimeout(safetyTimer)
                                 void finish(authCode, captured)
                             }
-                        } else if (String(data.event).toUpperCase() === 'CANCEL') {
-                            clearTimeout(safetyTimer)
-                            setBusy(false)
-                            setError('Onboarding was cancelled in Facebook.')
                         }
                     }
                 } catch {
@@ -284,11 +318,11 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
             window.addEventListener('message', messageHandler)
             cleanup.current = () => window.removeEventListener('message', messageHandler)
 
-            // Configure extras for Coexistence vs Standard mode
+            // Configure extras for Coexistence vs Standard mode with sessionInfoVersion '5'
             const sessionExtras: Record<string, unknown> = {
                 setup: {},
-                featureType: signupMode === 'coexistence' ? 'coexistence' : '',
-                sessionInfoVersion: '2'
+                featureType: signupMode === 'coexistence' ? 'whatsapp_business_app_onboarding' : '',
+                sessionInfoVersion: '5'
             }
 
             ;(window as any).FB.login(
@@ -300,15 +334,15 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
                         authCode = codeOrToken
                         setCapturedCode(codeOrToken)
                         setBusy(false) // Ready for manual save or auto-finish on popup close
-                        if (captured?.waba_id || captured?.phone_number_id) {
+                        if (captured?.waba_id && captured?.phone_number_id) {
                             void finish(codeOrToken, captured)
                         } else {
-                            // If Meta's postMessage arrives after FB.login callback, finalize automatically
+                            setBusy(false)
                             setTimeout(() => {
-                                if (authCode && !isFinalizing && (captured?.waba_id || captured?.phone_number_id)) {
+                                if (authCode && !isFinalizing && captured?.waba_id && captured?.phone_number_id) {
                                     void finish(authCode, captured)
                                 }
-                            }, 4000)
+                            }, 2500)
                         }
                     } else if (response?.status !== 'connected') {
                         setBusy(false)
@@ -342,8 +376,8 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
             return ''
         }
 
-        const finalWaba = safeStr(customWabaId) || safeStr(capturedAssets?.waba_id) || safeStr(currentWabaId)
-        const finalPhone = safeStr(customPhoneId) || safeStr(capturedAssets?.phone_number_id)
+        const finalWaba = safeStr(customWabaId) || safeStr(capturedAssets?.waba_id) || safeStr(capturedAssetsRef.current?.waba_id) || safeStr(currentWabaId)
+        const finalPhone = safeStr(customPhoneId) || safeStr(capturedAssets?.phone_number_id) || safeStr(capturedAssetsRef.current?.phone_number_id)
         const finalToken = safeStr(customToken)
 
         setBusy(true)
@@ -355,7 +389,9 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
                     name: (typeof name === 'string' ? name.trim() : '') || clientName,
                     waba_id: finalWaba,
                     phone_number_id: finalPhone,
-                    access_token: finalToken
+                    access_token: finalToken,
+                    connection_mode: capturedAssets?.is_on_biz_app || signupMode === 'coexistence' ? 'coexistence' : 'dedicated',
+                    is_on_biz_app: Boolean(capturedAssets?.is_on_biz_app || signupMode === 'coexistence')
                 })
                 SuccessToast('WhatsApp connection saved successfully!')
                 if (onSuccess) onSuccess()
@@ -374,11 +410,13 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
                 }
             }
 
-            const codeToUse = finalToken || capturedCode || currentTokenOrCode || 'meta_direct_onboarding_token'
+            const codeToUse = finalToken || capturedCode || capturedCodeRef.current || currentTokenOrCode || 'meta_direct_onboarding_token'
 
             await completeSingleSignup(stateToUse, codeToUse, {
                 waba_id: finalWaba || undefined,
-                phone_number_id: finalPhone || undefined
+                phone_number_id: finalPhone || undefined,
+                is_on_biz_app: Boolean(capturedAssets?.is_on_biz_app || signupMode === 'coexistence'),
+                business_id: capturedAssets?.business_id
             })
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Could not complete WhatsApp connection'

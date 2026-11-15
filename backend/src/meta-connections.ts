@@ -16,7 +16,22 @@ function authorizeAdminOrChannel(actor: Actor) {
 export class MetaConnections {
  constructor(private db:Db,private cfg:Config,private providers:Providers,private notify?:(tenantId:number,payload:any)=>void,private files?:Files){}
  private visible(row:any){const {token_encrypted,...safe}=row;return {...safe,credentials_configured:Boolean(token_encrypted)};}
- async list(actor:Actor){authorizeAdminOrChannel(actor);return (await this.db.query('SELECT * FROM meta_connections WHERE tenant_id=$1 ORDER BY id DESC',[actor.tenant_id])).rows.map(r=>this.visible(r));}
+ async list(actor:Actor){
+   authorizeAdminOrChannel(actor);
+   if (actor.role === 'admin') {
+     return (await this.db.query('SELECT * FROM meta_connections WHERE tenant_id=$1 ORDER BY id DESC',[actor.tenant_id])).rows.map(r=>this.visible(r));
+   }
+   if (actor.role === 'reseller') {
+     return (await this.db.query(
+       `SELECT mc.* FROM meta_connections mc
+        LEFT JOIN users u ON u.id = mc.created_by
+        WHERE mc.tenant_id = $1 AND (mc.created_by = $2 OR u.parent_user_id = $2)
+        ORDER BY mc.id DESC`,
+       [actor.tenant_id, actor.id]
+     )).rows.map(r=>this.visible(r));
+   }
+   return (await this.db.query('SELECT * FROM meta_connections WHERE tenant_id=$1 AND created_by=$2 ORDER BY id DESC',[actor.tenant_id, actor.id])).rows.map(r=>this.visible(r));
+ }
  async senders(actor:Actor){
   authorize(actor,'campaign:create');
   return (await this.db.query("SELECT id,name,phone_number_id,templates,quality_rating,messaging_limit_tier,verified_name,display_phone_number FROM meta_connections WHERE tenant_id=$1 AND status='connected' ORDER BY name",[actor.tenant_id])).rows.map(r=>({
@@ -26,8 +41,14 @@ export class MetaConnections {
   }));
  }
  private async owned(actor:Actor,id:unknown){
-  authorizeAdminOrChannel(actor);const row=(await this.db.query('SELECT * FROM meta_connections WHERE tenant_id=$1 AND id=$2',[actor.tenant_id,idSchema.parse(id)])).rows[0];
-  if(!row)throw new ApiError(404,'WhatsApp connection not found.');return row;
+  authorizeAdminOrChannel(actor);
+  const parsedId = idSchema.parse(id);
+  const row=(await this.db.query('SELECT * FROM meta_connections WHERE tenant_id=$1 AND id=$2',[actor.tenant_id,parsedId])).rows[0];
+  if(!row)throw new ApiError(404,'WhatsApp connection not found.');
+  if (actor.role !== 'admin' && actor.role !== 'reseller' && row.created_by !== actor.id) {
+    throw new ApiError(404, 'WhatsApp connection not found.');
+  }
+  return row;
  }
  private async call(row:any,path:string,method='GET',body?:unknown){
   if(row.status!=='connected')throw new ApiError(409,'Reconnect this account before using it.');
@@ -59,7 +80,15 @@ export class MetaConnections {
  }
  async connect(actor:Actor,body:any){
   authorizeAdminOrChannel(actor);
-  const input=z.object({name:z.string().trim().min(1).max(150),waba_id:metaId,phone_number_id:metaId,access_token:z.string().min(1).max(4096).optional()}).parse(body);
+  const input=z.object({
+     name:z.string().trim().min(1).max(150),
+     waba_id:metaId,
+     phone_number_id:metaId,
+     access_token:z.string().min(1).max(4096).optional(),
+     connection_mode: z.enum(['dedicated', 'coexistence']).optional(),
+     is_on_biz_app: z.boolean().optional(),
+     business_id: z.string().optional()
+   }).parse(body);
   const simulated=this.cfg.PROVIDER_MODE==='mock';
   if(simulated&&this.cfg.NODE_ENV==='production')throw new ApiError(403,'Simulation is disabled.');
   let phone:any={id:input.phone_number_id,display_phone_number:'Local simulation',quality_rating:'UNKNOWN',messaging_limit_tier:'TIER_10K',verified_name:'Simulated Business',code_verification_status:'VERIFIED',name_status:'APPROVED'};
@@ -81,8 +110,21 @@ export class MetaConnections {
     if(!phone)throw new ApiError(422,'Meta did not confirm that this number belongs to the authorized WABA.');
   }
   return this.db.transaction(async c=>{
-   await c.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[`waba:${input.waba_id}`]);
-   if((await c.query('SELECT 1 FROM meta_connections WHERE waba_id=$1 AND tenant_id<>$2',[input.waba_id,actor.tenant_id])).rowCount)throw new ApiError(409,'This WABA is already connected to another business.');
+   await c.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[`phone:${input.phone_number_id}`]);
+   
+   // Verify WABA ownership and cross-tenant authorization
+   const existingWabaOwner = (await c.query('SELECT tenant_id FROM meta_connections WHERE waba_id=$1 AND tenant_id<>$2 LIMIT 1',[input.waba_id,actor.tenant_id])).rows[0];
+   if (existingWabaOwner) {
+     const isResellerHierarchy = Boolean((await c.query(
+       'SELECT 1 FROM users u WHERE u.id=$1 AND (u.parent_user_id=$2 OR u.tenant_id=$2)',
+       [actor.id, existingWabaOwner.tenant_id]
+     )).rowCount);
+     const isPlatformWaba = input.waba_id === (process.env.META_WABA_ID || '');
+     if (!isResellerHierarchy && !isPlatformWaba && !simulated) {
+       throw new ApiError(409, 'This WABA belongs to another organization and cannot be connected across tenants without Partner authorization.');
+     }
+   }
+
    // Unique provider-number ownership is enforced by PostgreSQL, including concurrent connects.
    const existing=(await c.query('SELECT * FROM meta_connections WHERE phone_number_id=$1 FOR UPDATE',[input.phone_number_id])).rows[0];
    if(existing&&Number(existing.tenant_id)!==actor.tenant_id)throw new ApiError(409,'This number is already connected to another business.');
@@ -91,7 +133,19 @@ export class MetaConnections {
    const row=(await c.query(`INSERT INTO meta_connections(tenant_id,phone_number_id,waba_id,name,display_phone_number,quality_rating,messaging_limit_tier,verified_name,code_verification_status,name_status,token_encrypted,simulated,created_by,last_sync_at,last_name_status_check)
     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,now(),now()) ON CONFLICT(phone_number_id) DO UPDATE SET waba_id=EXCLUDED.waba_id,name=EXCLUDED.name,display_phone_number=EXCLUDED.display_phone_number,quality_rating=EXCLUDED.quality_rating,messaging_limit_tier=EXCLUDED.messaging_limit_tier,verified_name=EXCLUDED.verified_name,code_verification_status=EXCLUDED.code_verification_status,name_status=EXCLUDED.name_status,token_encrypted=EXCLUDED.token_encrypted,simulated=EXCLUDED.simulated,status='connected',last_error=NULL,last_sync_at=now(),last_name_status_check=now(),updated_at=now() WHERE meta_connections.tenant_id=EXCLUDED.tenant_id RETURNING *`,[actor.tenant_id,input.phone_number_id,input.waba_id,input.name,phone.display_phone_number,phone.quality_rating,phone.messaging_limit_tier||'TIER_1K',phone.verified_name||null,phone.code_verification_status||null,nameStatus,encrypted,simulated,actor.id])).rows[0];
    if(!row)throw new ApiError(409,'This number is already connected to another business.');
-   await c.query("INSERT INTO audit_logs(tenant_id,user_id,action,target) VALUES($1,$2,'meta.connect',$3)",[actor.tenant_id,actor.id,String(row.id)]);
+   try {
+      await c.query('SAVEPOINT conn_mode_sp');
+      await c.query('UPDATE meta_connections SET connection_mode=$1, is_on_biz_app=$2, business_id=$3 WHERE id=$4', [
+        input.connection_mode || 'dedicated',
+        Boolean(input.is_on_biz_app),
+        input.business_id || null,
+        row.id
+      ]);
+      await c.query('RELEASE SAVEPOINT conn_mode_sp');
+    } catch {
+      try { await c.query('ROLLBACK TO SAVEPOINT conn_mode_sp'); } catch {}
+    }
+    await c.query("INSERT INTO audit_logs(tenant_id,user_id,action,target) VALUES($1,$2,'meta.connect',$3)",[actor.tenant_id,actor.id,String(row.id)]);
    return this.visible(row);
   });
  }
@@ -139,10 +193,19 @@ export class MetaConnections {
        { method: 'GET' }
      );
      const granularScopes = debugRes?.data?.granular_scopes || [];
+     // Prioritize whatsapp_business_management for WABA ID resolution
      for (const s of granularScopes) {
-       if ((s.scope === 'whatsapp_business_management' || s.scope === 'whatsapp_business_messaging') && s.target_ids?.length) {
+       if (s.scope === 'whatsapp_business_management' && s.target_ids?.length) {
          targetWabaId = String(s.target_ids[0]);
          break;
+       }
+     }
+     if (!targetWabaId) {
+       for (const s of granularScopes) {
+         if (s.scope === 'whatsapp_business_messaging' && s.target_ids?.length) {
+           targetWabaId = String(s.target_ids[0]);
+           break;
+         }
        }
      }
      if (!targetWabaId && granularScopes.length) {

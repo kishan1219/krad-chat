@@ -333,6 +333,30 @@ export class Chat {
     return row;
   }
 
+  async recordExternalOutbound(tenant: number, phone: string, text: string, providerId: string, phoneNumberId = '', rawTimestamp?: unknown) {
+    phone = normalizePhone(phone);
+    const { timestamp } = normalizeProviderTimestamp(rawTimestamp);
+    return this.db.transaction(async c => {
+      await c.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', [`contact:${tenant}:${phone}`]);
+      const conversation = (await c.query(
+        `INSERT INTO conversations(tenant_id, phone, phone_number_id)
+         VALUES($1, $2, $3)
+         ON CONFLICT(tenant_id, phone, phone_number_id)
+         DO UPDATE SET updated_at = now()
+         RETURNING *`,
+        [tenant, phone, phoneNumberId]
+      )).rows[0];
+
+      const outbound = (await c.query(
+        "INSERT INTO chat_messages(tenant_id,conversation_id,direction,message,status,provider_id,created_at) VALUES($1,$2,'out',$3,'delivered',$4,$5) ON CONFLICT(provider_id) DO NOTHING RETURNING *",
+        [tenant, conversation.id, text.slice(0, 10000), providerId, timestamp]
+      )).rows[0];
+
+      if (outbound) this.notify(tenant, { command: 'message', data: outbound });
+      return outbound;
+    });
+  }
+
   async tenantForMeta(phoneId: string) {
     const rows = (await this.db.query("SELECT tenant_id FROM meta_connections WHERE phone_number_id=$1 AND status='connected'", [phoneId])).rows;
     if (rows.length !== 1) throw new ApiError(422, 'Configure exactly one tenant mapping for this WhatsApp phone number.');

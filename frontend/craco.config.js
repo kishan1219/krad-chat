@@ -1,4 +1,5 @@
 const path = require('path')
+const webpack = require('webpack')
 
 // Ensure production flags during production builds
 const isProduction = process.env.NODE_ENV === 'production' || process.argv.includes('build')
@@ -84,6 +85,12 @@ module.exports = {
             )
             webpackConfig.plugins = (webpackConfig.plugins || []).filter(
                 plugin => plugin?.constructor?.name !== 'ESLintWebpackPlugin'
+            )
+            webpackConfig.plugins.push(
+                new webpack.IgnorePlugin({
+                    resourceRegExp: /^\.\/locale$/,
+                    contextRegExp: /moment$/
+                })
             )
             // Deprecation/autoprefixer warnings were suppressed here via ignoreWarnings; the
             // underlying issues are fixed instead (bootstrap 5.3, Sass module migration, sass-loader 17).

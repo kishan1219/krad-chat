@@ -167,13 +167,16 @@ const HomePage: React.FC = () => {
     setOpenFaq(openFaq === index ? null : index)
   }
 
+  const supportPhone = process.env.REACT_APP_SUPPORT_PHONE || '918889990000'
+  const displaySupportPhone = process.env.REACT_APP_DISPLAY_PHONE || '+91 88899 90000'
+
   const handleDemoSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setDemoSubmitted(true)
     const text = encodeURIComponent(
       `Hello KRAD Chat Team! I am interested in getting started.\nName: ${demoForm.name}\nCompany: ${demoForm.company}\nPhone: ${demoForm.phone}\nInterested Package: ${demoForm.package}\nCurrency: ${currency}`
     )
-    window.open(`https://wa.me/919516871900?text=${text}`, '_blank')
+    window.open(`https://wa.me/${supportPhone}?text=${text}`, '_blank')
     setTimeout(() => {
       setDemoSubmitted(false)
       setDemoModalOpen(false)
@@ -192,7 +195,7 @@ const HomePage: React.FC = () => {
       `🎯 Recommended Setup Plan: ${recommendedPlan.title} (${formatMoney(totalMessages <= 20000 ? 15000 : totalMessages <= 100000 ? 30000 : 40000)})\n\n` +
       `Please provide onboarding assistance and help me activate our WhatsApp Cloud API!`
     )
-    window.open(`https://wa.me/919516871900?text=${text}`, '_blank')
+    window.open(`https://wa.me/${supportPhone}?text=${text}`, '_blank')
   }
 
   const handleLiveChatAction = (customPrompt?: string) => {
@@ -201,7 +204,7 @@ const HomePage: React.FC = () => {
     const text = encodeURIComponent(
       `Hi KRAD Chat Specialist! I am browsing your website and need help with:\n"${query}"`
     )
-    window.open(`https://wa.me/919516871900?text=${text}`, '_blank')
+    window.open(`https://wa.me/${supportPhone}?text=${text}`, '_blank')
     setChatInputText('')
     setChatWidgetOpen(false)
   }
@@ -1498,7 +1501,7 @@ const HomePage: React.FC = () => {
               <ul className='krad-footer-contacts'>
                 <li>
                   <Phone size={14} />
-                  <span>+91 9516871900</span>
+                  <span>{displaySupportPhone}</span>
                 </li>
                 <li>
                   <Mail size={14} />
@@ -1755,7 +1758,7 @@ const HomePage: React.FC = () => {
                 ) : (
                   <>
                     <MessageSquare size={16} />
-                    <span>Connect on WhatsApp (+91 9516871900)</span>
+                    <span>Connect on WhatsApp ({displaySupportPhone})</span>
                   </>
                 )}
               </button>
