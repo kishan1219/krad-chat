@@ -184,9 +184,12 @@ export function ManualCredentialsCard({ onSuccess, onClose }: ManualCredentialsC
                             <Label className="small mb-1 fw-bold text-dark">WhatsApp Business Account (WABA) ID *</Label>
                             <Input
                                 type="text"
+                                name="manual_waba_account_id"
+                                autoComplete="off"
+                                inputMode="numeric"
                                 required
                                 value={wabaId}
-                                onChange={(e) => setWabaId(e.target.value)}
+                                onChange={(e) => setWabaId(e.target.value.replace(/[^\d]/g, ''))}
                                 placeholder="e.g. 109876543210987"
                                 bsSize="sm"
                             />
@@ -195,10 +198,13 @@ export function ManualCredentialsCard({ onSuccess, onClose }: ManualCredentialsC
                             <Label className="small mb-1 fw-bold text-dark">Phone Number ID *</Label>
                             <Input
                                 type="text"
+                                name="manual_phone_number_id"
+                                autoComplete="off"
+                                inputMode="numeric"
                                 required
                                 value={phoneNumberId}
-                                onChange={(e) => setPhoneNumberId(e.target.value)}
-                                placeholder="e.g. 105592837482"
+                                onChange={(e) => setPhoneNumberId(e.target.value.replace(/[^\d]/g, ''))}
+                                placeholder="e.g. 1369567429576618"
                                 bsSize="sm"
                             />
                         </Col>

@@ -14,7 +14,7 @@ interface StepMetaAuthorizeProps {
     onBack: () => void
     onConnectLive: () => void
     onConnectSandbox?: () => void
-    onSave?: () => void
+    onSave?: (wabaId?: string, phoneId?: string, token?: string) => void
 }
 
 export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
@@ -30,6 +30,18 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
     onSave
 }) => {
     const [imgError, setImgError] = useState(false)
+    const [manualWabaId, setManualWabaId] = useState(capturedAssets?.waba_id || '')
+    const [manualPhoneId, setManualPhoneId] = useState(capturedAssets?.phone_number_id || '')
+    const [showManualIds, setShowManualIds] = useState(false)
+
+    React.useEffect(() => {
+        if (capturedAssets?.waba_id && !manualWabaId) {
+            setManualWabaId(capturedAssets.waba_id)
+        }
+        if (capturedAssets?.phone_number_id && !manualPhoneId) {
+            setManualPhoneId(capturedAssets.phone_number_id)
+        }
+    }, [capturedAssets])
 
     let brandImgUrl = ''
     try {
@@ -119,16 +131,20 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
                             <Button
                                 type="button"
                                 disabled={busy}
-                                onClick={onSave}
+                                onClick={() => {
+                                    const w = manualWabaId.trim() || undefined
+                                    const p = manualPhoneId.trim() || undefined
+                                    onSave?.(w, p)
+                                }}
                                 className="w-100 py-2 d-flex align-items-center justify-content-center gap-2 shadow-sm"
                                 style={{
-                                    backgroundColor: '#ff8c21',
-                                    borderColor: '#ff8c21',
+                                    backgroundColor: '#25D366',
+                                    borderColor: '#25D366',
                                     color: '#ffffff',
                                     borderRadius: '8px',
                                     fontWeight: 700,
                                     fontSize: '1rem',
-                                    boxShadow: '0 3px 10px rgba(255,140,33,0.35)'
+                                    boxShadow: '0 4px 14px rgba(37,211,102,0.35)'
                                 }}
                             >
                                 <Check size={18} />
@@ -137,6 +153,58 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
                             <small className="text-success text-center d-block mt-1 fw-semibold" style={{ fontSize: '0.78rem' }}>
                                 ✓ Meta authorization received! Click above to save into KradChat.
                             </small>
+
+                            {/* Optional Manual ID Verification/Override */}
+                            <div className="text-center mt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowManualIds(!showManualIds)}
+                                    className="btn btn-link btn-sm text-decoration-none p-0 fw-semibold"
+                                    style={{ color: '#0F172A', fontSize: '0.78rem' }}
+                                >
+                                    {showManualIds ? 'Hide Direct ID Fields' : 'Verify or Enter IDs from Meta Dashboard (Optional)'}
+                                </button>
+                            </div>
+
+                            {showManualIds && (
+                                <div className="mt-2 p-3 border rounded-3 bg-white" style={{ borderColor: '#e2e8f0' }}>
+                                    <div className="mb-2 text-start">
+                                        <label className="form-label small fw-semibold text-muted mb-1" style={{ fontSize: '0.76rem' }}>
+                                            WABA ID (Optional - Auto-detected)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="meta_manual_waba_id"
+                                            autoComplete="off"
+                                            inputMode="numeric"
+                                            className="form-control form-control-sm"
+                                            placeholder="Auto-detected if blank"
+                                            value={manualWabaId}
+                                            onChange={(e) => setManualWabaId(e.target.value.replace(/[^\d]/g, ''))}
+                                            style={{ fontSize: '0.82rem' }}
+                                        />
+                                    </div>
+                                    <div className="text-start">
+                                        <label className="form-label small fw-semibold text-muted mb-1" style={{ fontSize: '0.76rem' }}>
+                                            Phone Number ID (Optional - Auto-detected)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="meta_manual_phone_id"
+                                            autoComplete="off"
+                                            inputMode="numeric"
+                                            className="form-control form-control-sm"
+                                            placeholder="Auto-detected if blank"
+                                            value={manualPhoneId}
+                                            onChange={(e) => setManualPhoneId(e.target.value.replace(/[^\d]/g, ''))}
+                                            style={{ fontSize: '0.82rem' }}
+                                        />
+                                    </div>
+                                    <small className="text-muted d-block mt-1 text-start" style={{ fontSize: '0.72rem' }}>
+                                        ℹ️ If left blank, KradChat automatically resolves your IDs from Meta Graph API.
+                                    </small>
+                                </div>
+                            )}
                         </div>
                     ) : (
                         /* Official Continue with Facebook Button */

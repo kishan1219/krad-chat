@@ -120,8 +120,16 @@ export class MetaOnboarding {
     state:z.string().regex(/^[a-f0-9]{64}\.[a-f0-9]{64}$/),
     code:z.string().min(1).max(4096),
     name:z.string().trim().min(1).max(150),
-    waba_id:z.string().regex(/^\d{1,40}$/).optional(),
-    phone_number_id:z.string().regex(/^\d{1,40}$/).optional()
+    waba_id: z.any().optional().nullable().transform((v) => {
+      if (typeof v !== 'string' && typeof v !== 'number') return undefined;
+      const digits = String(v).replace(/[^\d]/g, '');
+      return digits.length > 0 ? digits : undefined;
+    }),
+    phone_number_id: z.any().optional().nullable().transform((v) => {
+      if (typeof v !== 'string' && typeof v !== 'number') return undefined;
+      const digits = String(v).replace(/[^\d]/g, '');
+      return digits.length > 0 ? digits : undefined;
+    })
   }).parse(body);
   const [id,signature]=input.state.split('.');
   if(!equalSecret(signature,this.signature(id)))throw new ApiError(403,'Invalid onboarding state.');

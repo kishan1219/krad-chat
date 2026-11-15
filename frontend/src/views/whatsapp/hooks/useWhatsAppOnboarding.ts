@@ -112,23 +112,25 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
         setBusy(true)
         setError('')
         try {
+            const cleanName = (typeof name === 'string' ? name.trim() : '') || clientName
             const conn = await whatsappService.completeOnboarding({
                 state,
                 code,
-                name: name.trim() || clientName,
-                waba_id: assets?.waba_id || undefined,
-                phone_number_id: assets?.phone_number_id || undefined
+                name: cleanName,
+                waba_id: assets?.waba_id ? String(assets.waba_id).trim() : undefined,
+                phone_number_id: assets?.phone_number_id ? String(assets.phone_number_id).trim() : undefined
             })
 
             // If user checked "Enable Auto Response", create initial welcome auto-response rule
-            if (enableAutoResponse && autoResponseMessage.trim() && conn.phone_number_id) {
+            const autoMsg = typeof autoResponseMessage === 'string' ? autoResponseMessage.trim() : ''
+            if (enableAutoResponse && autoMsg && conn?.phone_number_id) {
                 try {
                     await whatsappService.createRoutingRule({
                         name: `Welcome Auto-Reply (${conn.name || 'WhatsApp Line'})`,
                         rule_type: 'fallback',
                         match_pattern: '*',
                         target_phone_number_id: conn.phone_number_id,
-                        target_waba_id: conn.waba_id || assets.waba_id,
+                        target_waba_id: conn.waba_id || assets?.waba_id,
                         department: category || 'general',
                         priority: 50,
                         active: true
@@ -138,7 +140,7 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
                 }
             }
 
-            SuccessToast(`Connected! WhatsApp line ${conn.display_phone_number || assets.phone_number_id} is now saved & active!`)
+            SuccessToast(`Connected! WhatsApp line ${conn?.display_phone_number || assets?.phone_number_id || conn?.phone_number_id} is now saved & active!`)
             if (onSuccess) onSuccess()
             if (onClose) onClose()
         } catch (err: unknown) {
@@ -333,10 +335,16 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
     }, [config, signupMode, completeSingleSignup])
 
     // Explicit save trigger when popup completes or direct save is requested
-    const handleManualSave = useCallback(async (customWabaId?: string, customPhoneId?: string, customToken?: string) => {
-        const finalWaba = (customWabaId || capturedAssets?.waba_id || currentWabaId || '').trim()
-        const finalPhone = (customPhoneId || capturedAssets?.phone_number_id || '').trim()
-        const finalToken = (customToken || '').trim()
+    const handleManualSave = useCallback(async (customWabaId?: unknown, customPhoneId?: unknown, customToken?: unknown) => {
+        const safeStr = (v: unknown): string => {
+            if (typeof v === 'string') return v.trim()
+            if (typeof v === 'number') return String(v).trim()
+            return ''
+        }
+
+        const finalWaba = safeStr(customWabaId) || safeStr(capturedAssets?.waba_id) || safeStr(currentWabaId)
+        const finalPhone = safeStr(customPhoneId) || safeStr(capturedAssets?.phone_number_id)
+        const finalToken = safeStr(customToken)
 
         setBusy(true)
         setError('')
@@ -344,7 +352,7 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
             // If direct access token is provided, connect directly via createConnection
             if (finalToken && finalWaba && finalPhone) {
                 await whatsappService.createConnection({
-                    name: name || clientName,
+                    name: (typeof name === 'string' ? name.trim() : '') || clientName,
                     waba_id: finalWaba,
                     phone_number_id: finalPhone,
                     access_token: finalToken
