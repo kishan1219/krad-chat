@@ -285,6 +285,8 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
                             raw.phone_numbers?.[0] ||
                             raw.phone_number_ids?.[0] ||
                             raw.phoneId ||
+                            data.phone_number_id ||
+                            data.phone_numbers?.[0] ||
                             ''
                         ).trim()
 
@@ -420,6 +422,12 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
             })
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Could not complete WhatsApp connection'
+            if (msg.includes('expired') || msg.includes('another login') || msg.includes('Start again')) {
+                try {
+                    const freshSess = await whatsappService.beginOnboarding('live')
+                    setActiveState(freshSess.state)
+                } catch {}
+            }
             setError(msg)
             ErrorToast(msg)
         } finally {

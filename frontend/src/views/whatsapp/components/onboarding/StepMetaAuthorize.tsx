@@ -32,7 +32,8 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
     const [imgError, setImgError] = useState(false)
     const [manualWabaId, setManualWabaId] = useState(capturedAssets?.waba_id || '')
     const [manualPhoneId, setManualPhoneId] = useState(capturedAssets?.phone_number_id || '')
-    const [showManualIds, setShowManualIds] = useState(false)
+    const isAuthorized = Boolean(capturedCode || (capturedAssets?.phone_number_id && capturedAssets?.waba_id))
+    const [showManualIds, setShowManualIds] = useState(!capturedAssets?.phone_number_id || !capturedAssets?.waba_id)
 
     React.useEffect(() => {
         if (capturedAssets?.waba_id && !manualWabaId) {
@@ -41,7 +42,10 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
         if (capturedAssets?.phone_number_id && !manualPhoneId) {
             setManualPhoneId(capturedAssets.phone_number_id)
         }
-    }, [capturedAssets])
+        if (isAuthorized && (!capturedAssets?.phone_number_id || !capturedAssets?.waba_id)) {
+            setShowManualIds(true)
+        }
+    }, [capturedAssets, isAuthorized])
 
     let brandImgUrl = ''
     try {
@@ -51,7 +55,6 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
     }
 
     const businessName = name.trim() || 'KRAD Technology'
-    const isAuthorized = Boolean(capturedCode || (capturedAssets?.phone_number_id && capturedAssets?.waba_id))
 
     return (
         <div className="py-1">

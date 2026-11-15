@@ -136,7 +136,7 @@ export class MetaOnboarding {
   }).parse(body);
   const [id,signature]=input.state.split('.');
   if(!equalSecret(signature,this.signature(id)))throw new ApiError(403,'Invalid onboarding state.');
-  const claimed=await this.db.query("UPDATE meta_onboarding_sessions SET status='exchanging' WHERE id=$1 AND tenant_id=$2 AND user_id=$3 AND session_hash=$4 AND status IN ('issued','failed') AND expires_at>now() RETURNING id, access_token_encrypted",[id,actor.tenant_id,actor.id,sha256(actor.session_id)]);
+  const claimed=await this.db.query("UPDATE meta_onboarding_sessions SET status='exchanging' WHERE id=$1 AND tenant_id=$2 AND user_id=$3 AND session_hash=$4 AND status != 'completed' AND expires_at>now() RETURNING id, access_token_encrypted",[id,actor.tenant_id,actor.id,sha256(actor.session_id)]);
   if(!claimed.rowCount)throw new ApiError(409,'Onboarding expired, was already used, or belongs to another login. Start again.');
   try{
    const resolved = await this.resolveConfig();
@@ -164,6 +164,7 @@ export class MetaOnboarding {
    let targetWaba = input.waba_id;
    let targetPhone = input.phone_number_id;
 
+   // 1. Direct reverse Phone query
    if (!targetWaba && targetPhone) {
      try {
        const phoneInfo = await this.providers.meta(
@@ -178,10 +179,35 @@ export class MetaOnboarding {
      } catch {}
    }
 
+   // 2. Direct user businesses and accounts query (no app secret required)
+   if (!targetWaba || !targetPhone) {
+     try {
+       const meRes = await this.providers.meta(
+         'me?fields=id,name,businesses{id,name,owned_whatsapp_business_accounts{id,name,phone_numbers{id,display_phone_number,verified_name}},client_whatsapp_business_accounts{id,name,phone_numbers{id,display_phone_number,verified_name}}}',
+         'GET',
+         undefined,
+         accessToken
+       );
+       const businesses = meRes?.businesses?.data || [];
+       for (const b of businesses) {
+         const wabas = [...(b.owned_whatsapp_business_accounts?.data || []), ...(b.client_whatsapp_business_accounts?.data || [])];
+         for (const w of wabas) {
+           targetWaba = targetWaba || String(w.id);
+           if (!targetPhone && w.phone_numbers?.data?.length) {
+             targetPhone = String(w.phone_numbers.data[0].id);
+             break;
+           }
+         }
+         if (targetWaba && targetPhone) break;
+       }
+     } catch {}
+   }
+
+   // 3. Direct WABA phone numbers query
    if (targetWaba && !targetPhone) {
      try {
        const phoneList = await this.providers.meta(
-         `${targetWaba}/phone_numbers?fields=id,display_phone_number,verified_name&limit=10`,
+         `${targetWaba}/phone_numbers?fields=id,display_phone_number,verified_name&limit=20`,
          'GET',
          undefined,
          accessToken
@@ -192,6 +218,7 @@ export class MetaOnboarding {
      } catch {}
    }
 
+   // 4. detectWaba fallback
    if (!targetWaba || !targetPhone) {
      try {
        const detected = await this.connections.detectWaba(actor, { access_token: accessToken });
@@ -206,6 +233,7 @@ export class MetaOnboarding {
      }
    }
 
+   // 5. debug_token granular scopes
    if (!targetWaba || !targetPhone) {
      try {
        const version = process.env.META_GRAPH_VERSION || resolved.graph_version || 'v22.0';
@@ -236,20 +264,7 @@ export class MetaOnboarding {
      } catch {}
    }
 
-   if (targetPhone && !targetWaba) {
-     try {
-       const phoneInfo: any = await this.providers.meta(
-         `${targetPhone}?fields=id,display_phone_number,whatsapp_business_account`,
-         'GET',
-         undefined,
-         accessToken
-       );
-       if (phoneInfo?.whatsapp_business_account?.id) {
-         targetWaba = String(phoneInfo.whatsapp_business_account.id);
-       }
-     } catch {}
-   }
-
+   // 6. Secondary phone check if WABA was discovered via debug_token
    if (targetWaba && !targetPhone) {
      try {
        const phoneList: any = await this.providers.meta(
