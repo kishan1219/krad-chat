@@ -243,56 +243,104 @@ export class MetaOnboarding {
          { method: 'GET' }
        );
        const granularScopes = debugRes?.data?.granular_scopes || [];
+       const candidateWabas: string[] = [];
+       const candidatePhones: string[] = [];
+       const otherCandidates: string[] = [];
+
        for (const s of granularScopes) {
-         if ((s.scope === 'whatsapp_business_management' || s.scope === 'whatsapp_business_messaging') && s.target_ids?.length) {
-           targetWaba = targetWaba || String(s.target_ids[0]);
-           break;
+         if (s.scope === 'whatsapp_business_management' && Array.isArray(s.target_ids)) {
+           for (const tid of s.target_ids) if (tid) candidateWabas.push(String(tid));
+         } else if (s.scope === 'whatsapp_business_messaging' && Array.isArray(s.target_ids)) {
+           for (const tid of s.target_ids) if (tid) candidatePhones.push(String(tid));
+         } else if (Array.isArray(s.target_ids)) {
+           for (const tid of s.target_ids) if (tid) otherCandidates.push(String(tid));
          }
        }
-       if (!targetWaba) {
-         for (const s of granularScopes) {
-           if (s.target_ids?.length) {
-             targetWaba = targetWaba || String(s.target_ids[0]);
-             break;
-           }
+
+       const allCandidates = Array.from(new Set([...candidatePhones, ...candidateWabas, ...otherCandidates]));
+
+       for (const cid of allCandidates) {
+         if (targetWaba && targetPhone) break;
+         if (!targetPhone) {
+           try {
+             const pCheck: any = await this.providers.meta(
+               `${cid}?fields=id,display_phone_number,whatsapp_business_account`,
+               'GET',
+               undefined,
+               accessToken
+             );
+             if (pCheck?.id && pCheck?.whatsapp_business_account?.id) {
+               targetPhone = String(pCheck.id);
+               targetWaba = targetWaba || String(pCheck.whatsapp_business_account.id);
+               continue;
+             }
+           } catch {}
+         }
+
+         if (!targetWaba) {
+           try {
+             const wCheck: any = await this.providers.meta(
+               `${cid}?fields=id,name,phone_numbers{id,display_phone_number,verified_name}`,
+               'GET',
+               undefined,
+               accessToken
+             );
+             if (wCheck?.id) {
+               targetWaba = String(wCheck.id);
+               if (!targetPhone && wCheck.phone_numbers?.data?.length) {
+                 targetPhone = String(wCheck.phone_numbers.data[0].id);
+               }
+             }
+           } catch {}
          }
        }
+
+       if (!targetWaba && candidateWabas.length > 0) targetWaba = candidateWabas[0];
+       if (!targetPhone && candidatePhones.length > 0) targetPhone = candidatePhones[0];
      } catch (err: any) {
        console.warn('[MetaOnboarding] debug_token resolution error:', err?.message || err);
      }
    }
 
-   // 3. Resolve phone numbers from the discovered WABA
+   // 3. Resolve phone numbers from the discovered WABA with Eventual Consistency Retry
    if (targetWaba && !targetPhone) {
-     try {
-       const phoneList: any = await this.providers.meta(
-         `${targetWaba}/phone_numbers?fields=id,display_phone_number,verified_name&limit=20`,
-         'GET',
-         undefined,
-         accessToken
-       );
-       if (phoneList?.data?.length) {
-         targetPhone = String(phoneList.data[0].id);
-         console.info('[MetaOnboarding] Discovered phone number from WABA phone_numbers:', targetPhone);
-       }
-     } catch (err: any) {
-       console.warn('[MetaOnboarding] WABA phone_numbers query failed:', err?.message || err);
-     }
-
-     if (!targetPhone) {
+     for (let attempt = 0; attempt < 3; attempt++) {
        try {
-         const wabaObj: any = await this.providers.meta(
-           `${targetWaba}?fields=phone_numbers{id,display_phone_number,verified_name}`,
+         const phoneList: any = await this.providers.meta(
+           `${targetWaba}/phone_numbers?fields=id,display_phone_number,verified_name&limit=20`,
            'GET',
            undefined,
            accessToken
          );
-         if (wabaObj?.phone_numbers?.data?.length) {
-           targetPhone = String(wabaObj.phone_numbers.data[0].id);
-           console.info('[MetaOnboarding] Discovered phone number from WABA node query:', targetPhone);
+         if (phoneList?.data?.length) {
+           targetPhone = String(phoneList.data[0].id);
+           console.info('[MetaOnboarding] Discovered phone number from WABA phone_numbers on attempt', attempt + 1, ':', targetPhone);
+           break;
          }
        } catch (err: any) {
-         console.warn('[MetaOnboarding] WABA node query failed:', err?.message || err);
+         console.warn('[MetaOnboarding] WABA phone_numbers query attempt', attempt + 1, 'failed:', err?.message || err);
+       }
+
+       if (!targetPhone) {
+         try {
+           const wabaObj: any = await this.providers.meta(
+             `${targetWaba}?fields=phone_numbers{id,display_phone_number,verified_name}`,
+             'GET',
+             undefined,
+             accessToken
+           );
+           if (wabaObj?.phone_numbers?.data?.length) {
+             targetPhone = String(wabaObj.phone_numbers.data[0].id);
+             console.info('[MetaOnboarding] Discovered phone number from WABA node query on attempt', attempt + 1, ':', targetPhone);
+             break;
+           }
+         } catch (err: any) {
+           console.warn('[MetaOnboarding] WABA node query attempt', attempt + 1, 'failed:', err?.message || err);
+         }
+       }
+
+       if (attempt < 2 && !targetPhone) {
+         await new Promise((r) => setTimeout(r, 1200 * (attempt + 1)));
        }
      }
    }

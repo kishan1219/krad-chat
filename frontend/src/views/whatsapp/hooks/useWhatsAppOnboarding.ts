@@ -449,37 +449,15 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
         }
     }, [config, signupMode, completeSingleSignup])
 
-    // Explicit save trigger when popup completes or direct save is requested
-    const handleManualSave = useCallback(async (customWabaId?: unknown, customPhoneId?: unknown, customToken?: unknown) => {
-        const safeStr = (v: unknown): string => {
-            if (typeof v === 'string') return v.trim()
-            if (typeof v === 'number') return String(v).trim()
-            return ''
-        }
-
-        const finalWaba = safeStr(customWabaId) || safeStr(capturedAssets?.waba_id) || safeStr(capturedAssetsRef.current?.waba_id) || safeStr(currentWabaId)
-        const finalPhone = safeStr(customPhoneId) || safeStr(capturedAssets?.phone_number_id) || safeStr(capturedAssetsRef.current?.phone_number_id)
-        const finalToken = safeStr(customToken)
+    // Explicit zero-touch save trigger when popup completes or direct save is requested
+    const handleManualSave = useCallback(async () => {
+        const captured = capturedAssetsRef.current || capturedAssets
+        const finalWaba = (captured?.waba_id ? String(captured.waba_id).trim() : '') || (currentWabaId ? String(currentWabaId).trim() : '') || undefined
+        const finalPhone = (captured?.phone_number_id ? String(captured.phone_number_id).trim() : '') || undefined
 
         setBusy(true)
         setError('')
         try {
-            // If direct access token is provided, connect directly via createConnection
-            if (finalToken && finalWaba && finalPhone) {
-                await whatsappService.createConnection({
-                    name: (typeof name === 'string' ? name.trim() : '') || clientName,
-                    waba_id: finalWaba,
-                    phone_number_id: finalPhone,
-                    access_token: finalToken,
-                    connection_mode: capturedAssets?.is_on_biz_app || signupMode === 'coexistence' ? 'coexistence' : 'dedicated',
-                    is_on_biz_app: Boolean(capturedAssets?.is_on_biz_app || signupMode === 'coexistence')
-                })
-                SuccessToast('WhatsApp connection saved successfully!')
-                if (onSuccess) onSuccess()
-                if (onClose) onClose()
-                return
-            }
-
             let stateToUse = activeState
             if (!stateToUse) {
                 try {
@@ -491,13 +469,13 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
                 }
             }
 
-            const codeToUse = finalToken || capturedCode || capturedCodeRef.current || currentTokenOrCode || 'meta_direct_onboarding_token'
+            const codeToUse = capturedCodeRef.current || capturedCode || currentTokenOrCode || 'meta_direct_onboarding_token'
 
             await completeSingleSignup(stateToUse, codeToUse, {
-                waba_id: finalWaba || undefined,
-                phone_number_id: finalPhone || undefined,
-                is_on_biz_app: Boolean(capturedAssets?.is_on_biz_app || signupMode === 'coexistence'),
-                business_id: capturedAssets?.business_id
+                waba_id: finalWaba,
+                phone_number_id: finalPhone,
+                is_on_biz_app: Boolean(captured?.is_on_biz_app || signupMode === 'coexistence'),
+                business_id: captured?.business_id
             })
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Could not complete WhatsApp connection'
@@ -512,7 +490,7 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
         } finally {
             setBusy(false)
         }
-    }, [name, clientName, capturedAssets, currentWabaId, capturedCode, currentTokenOrCode, activeState, completeSingleSignup, onSuccess, onClose])
+    }, [capturedAssets, currentWabaId, capturedCode, currentTokenOrCode, activeState, completeSingleSignup, signupMode])
 
     const handleBatchConnect = useCallback(async () => {
         if (!selectedNumberIds.length || !currentWabaId) return

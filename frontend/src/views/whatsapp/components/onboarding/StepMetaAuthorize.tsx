@@ -14,7 +14,7 @@ interface StepMetaAuthorizeProps {
     onBack: () => void
     onConnectLive: () => void
     onConnectSandbox?: () => void
-    onSave?: (wabaId?: string, phoneId?: string, token?: string) => void
+    onSave?: () => void
 }
 
 export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
@@ -30,22 +30,7 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
     onSave
 }) => {
     const [imgError, setImgError] = useState(false)
-    const [manualWabaId, setManualWabaId] = useState(capturedAssets?.waba_id || '')
-    const [manualPhoneId, setManualPhoneId] = useState(capturedAssets?.phone_number_id || '')
     const isAuthorized = Boolean(capturedCode || (capturedAssets?.phone_number_id && capturedAssets?.waba_id))
-    const [showManualIds, setShowManualIds] = useState(!capturedAssets?.phone_number_id || !capturedAssets?.waba_id)
-
-    React.useEffect(() => {
-        if (capturedAssets?.waba_id && !manualWabaId) {
-            setManualWabaId(capturedAssets.waba_id)
-        }
-        if (capturedAssets?.phone_number_id && !manualPhoneId) {
-            setManualPhoneId(capturedAssets.phone_number_id)
-        }
-        if (isAuthorized && (!capturedAssets?.phone_number_id || !capturedAssets?.waba_id)) {
-            setShowManualIds(true)
-        }
-    }, [capturedAssets, isAuthorized])
 
     let brandImgUrl = ''
     try {
@@ -129,16 +114,12 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
 
                     {/* Primary Action Buttons */}
                     {isAuthorized ? (
-                        /* Save Connection Button */
+                        /* Save Connection Button - Automated Zero-Touch Save */
                         <div className="mb-3">
                             <Button
                                 type="button"
                                 disabled={busy}
-                                onClick={() => {
-                                    const w = manualWabaId.trim() || undefined
-                                    const p = manualPhoneId.trim() || undefined
-                                    onSave?.(w, p)
-                                }}
+                                onClick={() => onSave?.()}
                                 className="w-100 py-2 d-flex align-items-center justify-content-center gap-2 shadow-sm"
                                 style={{
                                     backgroundColor: '#25D366',
@@ -153,63 +134,9 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
                                 <Check size={18} />
                                 <span>{busy ? 'Saving & Activating in KradChat...' : 'Save & Activate WhatsApp Line'}</span>
                             </Button>
-                            <small className="text-success text-center d-block mt-1 fw-semibold" style={{ fontSize: '0.78rem' }}>
-                                {capturedAssets?.waba_id && capturedAssets?.phone_number_id
-                                    ? '✓ Meta authorization received! Click above to save into KradChat.'
-                                    : '✓ Meta authorization received! WABA & Phone Number IDs will be auto-detected upon save.'}
+                            <small className="text-success text-center d-block mt-2 fw-semibold" style={{ fontSize: '0.78rem' }}>
+                                ✓ Meta authorization received! KradChat automatically discovers and activates your WhatsApp Line.
                             </small>
-
-                            {/* Optional Manual ID Verification/Override */}
-                            <div className="text-center mt-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowManualIds(!showManualIds)}
-                                    className="btn btn-link btn-sm text-decoration-none p-0 fw-semibold"
-                                    style={{ color: '#0F172A', fontSize: '0.78rem' }}
-                                >
-                                    {showManualIds ? 'Hide Direct ID Fields' : 'Verify or Enter IDs from Meta Dashboard (Optional)'}
-                                </button>
-                            </div>
-
-                            {showManualIds && (
-                                <div className="mt-2 p-3 border rounded-3 bg-white" style={{ borderColor: '#e2e8f0' }}>
-                                    <div className="mb-2 text-start">
-                                        <label className="form-label small fw-semibold text-muted mb-1" style={{ fontSize: '0.76rem' }}>
-                                            WABA ID (Optional - Auto-detected)
-                                        </label>
-                                        <input
-                                            type="text"
-                                            name="meta_manual_waba_id"
-                                            autoComplete="off"
-                                            inputMode="numeric"
-                                            className="form-control form-control-sm"
-                                            placeholder="Auto-detected if blank (WABA or Business ID)"
-                                            value={manualWabaId}
-                                            onChange={(e) => setManualWabaId(e.target.value.replace(/[^\d]/g, ''))}
-                                            style={{ fontSize: '0.82rem' }}
-                                        />
-                                    </div>
-                                    <div className="text-start">
-                                        <label className="form-label small fw-semibold text-muted mb-1" style={{ fontSize: '0.76rem' }}>
-                                            Phone Number ID (Optional - Auto-detected)
-                                        </label>
-                                        <input
-                                            type="text"
-                                            name="meta_manual_phone_id"
-                                            autoComplete="off"
-                                            inputMode="numeric"
-                                            className="form-control form-control-sm"
-                                            placeholder="Auto-detected if blank"
-                                            value={manualPhoneId}
-                                            onChange={(e) => setManualPhoneId(e.target.value.replace(/[^\d]/g, ''))}
-                                            style={{ fontSize: '0.82rem' }}
-                                        />
-                                    </div>
-                                    <small className="text-muted d-block mt-1 text-start" style={{ fontSize: '0.72rem' }}>
-                                        ℹ️ Leave blank to auto-detect. KradChat automatically resolves WABA, Phone Number, and Business IDs from Meta Graph API.
-                                    </small>
-                                </div>
-                            )}
                         </div>
                     ) : (
                         /* Official Continue with Facebook Button */

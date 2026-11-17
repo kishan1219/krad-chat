@@ -147,6 +147,24 @@ export class MetaConnections {
        }
      } catch {}
 
+     // Check if phone_number_id was actually a WABA node (e.g. IDs were inverted or swapped)
+     if (!phone) {
+       try {
+         const wabaNode: any = await this.providers.meta(
+           `${input.phone_number_id}?fields=id,name,phone_numbers{id,display_phone_number,verified_name,quality_rating,code_verification_status,messaging_limit_tier,name_status}`,
+           'GET',
+           undefined,
+           input.access_token
+         );
+         if (wabaNode?.id && wabaNode.phone_numbers?.data?.length) {
+           input.waba_id = String(wabaNode.id);
+           phone = wabaNode.phone_numbers.data[0];
+           input.phone_number_id = String(phone.id);
+           console.info(`[MetaConnect] Auto-corrected WABA node passed in phone_number_id field: WABA=${input.waba_id}, Phone=${input.phone_number_id}`);
+         }
+       } catch {}
+     }
+
      // Check if waba_id is a Business Portfolio ID (e.g. user entered Business ID)
      if (!phone) {
        try {
