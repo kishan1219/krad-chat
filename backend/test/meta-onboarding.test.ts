@@ -31,7 +31,7 @@ test('Zero-touch automated onboarding resolves WABA and Phone without manual IDs
       if (url.includes('debug_token')) {
         return {
           data: {
-            app_id: '1266340039018485',
+            app_id: '1000000000000001',
             granular_scopes: [
               { scope: 'whatsapp_business_management', target_ids: ['88001'] },
               { scope: 'whatsapp_business_messaging', target_ids: ['99002'] }

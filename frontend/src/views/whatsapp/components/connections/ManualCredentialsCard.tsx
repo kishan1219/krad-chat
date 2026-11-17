@@ -204,7 +204,7 @@ export function ManualCredentialsCard({ onSuccess, onClose }: ManualCredentialsC
                                 required
                                 value={phoneNumberId}
                                 onChange={(e) => setPhoneNumberId(e.target.value.replace(/[^\d]/g, ''))}
-                                placeholder="e.g. 1369567429576618"
+                                placeholder="e.g. 105592837482"
                                 bsSize="sm"
                             />
                         </Col>
