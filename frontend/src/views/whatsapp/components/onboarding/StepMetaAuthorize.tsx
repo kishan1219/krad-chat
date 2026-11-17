@@ -154,7 +154,9 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
                                 <span>{busy ? 'Saving & Activating in KradChat...' : 'Save & Activate WhatsApp Line'}</span>
                             </Button>
                             <small className="text-success text-center d-block mt-1 fw-semibold" style={{ fontSize: '0.78rem' }}>
-                                ✓ Meta authorization received! Click above to save into KradChat.
+                                {capturedAssets?.waba_id && capturedAssets?.phone_number_id
+                                    ? '✓ Meta authorization received! Click above to save into KradChat.'
+                                    : '✓ Meta authorization received! WABA & Phone Number IDs will be auto-detected upon save.'}
                             </small>
 
                             {/* Optional Manual ID Verification/Override */}
@@ -181,7 +183,7 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
                                             autoComplete="off"
                                             inputMode="numeric"
                                             className="form-control form-control-sm"
-                                            placeholder="Auto-detected if blank"
+                                            placeholder="Auto-detected if blank (WABA or Business ID)"
                                             value={manualWabaId}
                                             onChange={(e) => setManualWabaId(e.target.value.replace(/[^\d]/g, ''))}
                                             style={{ fontSize: '0.82rem' }}
@@ -204,7 +206,7 @@ export const StepMetaAuthorize: React.FC<StepMetaAuthorizeProps> = ({
                                         />
                                     </div>
                                     <small className="text-muted d-block mt-1 text-start" style={{ fontSize: '0.72rem' }}>
-                                        ℹ️ If left blank, KradChat automatically resolves your IDs from Meta Graph API.
+                                        ℹ️ Leave blank to auto-detect. KradChat automatically resolves WABA, Phone Number, and Business IDs from Meta Graph API.
                                     </small>
                                 </div>
                             )}

@@ -90,6 +90,85 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
         return () => cleanup.current()
     }, [isOpen, fetchConfig, clientName])
 
+    // Top-level permanent message listener for Meta Embedded Signup popup
+    useEffect(() => {
+        if (!isOpen) return
+
+        const handleMetaMessage = (event: MessageEvent) => {
+            const origin = event.origin || ''
+            if (!origin.endsWith('facebook.com') && !origin.includes('facebook.com')) return
+            try {
+                const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data
+                console.info('[Meta Embedded Signup Event]', origin, data)
+                if (data?.type === 'WA_EMBEDDED_SIGNUP' || data?.event?.toString().toUpperCase().startsWith('FINISH')) {
+                    const raw = data.data || data
+                    const eventName = String(data.event || raw.event || '').toUpperCase()
+
+                    if (eventName === 'CANCEL') {
+                        setBusy(false)
+                        setError('Onboarding was cancelled in Facebook.')
+                        return
+                    }
+
+                    if (eventName === 'ERROR') {
+                        setBusy(false)
+                        setError(raw.error_message || 'Meta Embedded Signup returned an error.')
+                        return
+                    }
+
+                    // WABA ID extraction across v4, v5, and Coexistence
+                    const wabaId = String(
+                        raw.waba_id ||
+                        raw.messaging_account_ids?.[0] ||
+                        raw.primary_waac_ids?.[0] ||
+                        raw.wabaId ||
+                        raw.target_id ||
+                        raw.waba?.id ||
+                        data.waba_id ||
+                        data.messaging_account_ids?.[0] ||
+                        ''
+                    ).trim()
+
+                    // Phone Number ID extraction
+                    const phoneId = String(
+                        raw.phone_number_id ||
+                        raw.phoneNumberId ||
+                        raw.phone_numbers?.[0]?.id ||
+                        raw.phone_numbers?.[0] ||
+                        raw.phone_number_ids?.[0] ||
+                        raw.phoneId ||
+                        data.phone_number_id ||
+                        data.phone_numbers?.[0] ||
+                        ''
+                    ).trim()
+
+                    const bizId = raw.business_id ? String(raw.business_id).trim() : undefined
+                    const isOnBizApp = Boolean(
+                        raw.is_on_biz_app ||
+                        eventName === 'FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING' ||
+                        signupMode === 'coexistence'
+                    )
+
+                    if (wabaId || phoneId) {
+                        const captured = {
+                            waba_id: wabaId,
+                            phone_number_id: phoneId,
+                            business_id: bizId,
+                            is_on_biz_app: isOnBizApp
+                        }
+                        setCapturedAssets(captured)
+                        capturedAssetsRef.current = captured
+                    }
+                }
+            } catch {
+                /* ignore non-json messages */
+            }
+        }
+
+        window.addEventListener('message', handleMetaMessage)
+        return () => window.removeEventListener('message', handleMetaMessage)
+    }, [isOpen, signupMode])
+
     const saveQuickConfig = useCallback(async (e: React.FormEvent) => {
         e.preventDefault()
         setSavingQuickConfig(true)
@@ -320,11 +399,11 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
             window.addEventListener('message', messageHandler)
             cleanup.current = () => window.removeEventListener('message', messageHandler)
 
-            // Configure extras for Coexistence vs Standard mode with sessionInfoVersion '5'
+            // Configure extras for Coexistence vs Standard mode with sessionInfoVersion '3'
             const sessionExtras: Record<string, unknown> = {
                 setup: {},
                 featureType: signupMode === 'coexistence' ? 'whatsapp_business_app_onboarding' : '',
-                sessionInfoVersion: '5'
+                sessionInfoVersion: '3'
             }
 
             ;(window as any).FB.login(

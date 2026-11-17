@@ -95,6 +95,9 @@ export class MetaConnections {
   if(!simulated){
    if(!input.access_token)throw new ApiError(422,'A Meta access token is required.');
    let after:string|undefined;phone=undefined;
+
+   // 1. Standard WABA phone_numbers pagination loop
+   let loopError: any = null;
    try {
      for(let page=0;page<100;page++){
       const info=await this.providers.meta(`${input.waba_id}/phone_numbers?fields=id,display_phone_number,verified_name,quality_rating,code_verification_status,messaging_limit_tier,name_status&limit=100${after?`&after=${encodeURIComponent(after)}`:''}`,'GET',undefined,input.access_token);
@@ -104,10 +107,74 @@ export class MetaConnections {
      }
    } catch (metaErr: any) {
      if (metaErr instanceof ApiError) throw metaErr;
-     const detail = metaErr?.message || 'Meta verification failed';
+     loopError = metaErr;
+   }
+
+   // 2. Self-healing fallback if waba_id was actually a Phone Number ID or Business Portfolio ID (e.g. 400 Unsupported get request)
+   if (!phone && loopError) {
+     // Check if waba_id is actually a phone number ID
+     try {
+       const wabaCheck: any = await this.providers.meta(
+         `${input.waba_id}?fields=id,display_phone_number,whatsapp_business_account`,
+         'GET',
+         undefined,
+         input.access_token
+       );
+       if (wabaCheck?.whatsapp_business_account?.id) {
+         const actualWaba = String(wabaCheck.whatsapp_business_account.id);
+         const actualPhone = String(wabaCheck.id);
+         console.info(`[MetaConnect] Auto-corrected phone ID in WABA field: Phone=${actualPhone}, WABA=${actualWaba}`);
+         if (input.phone_number_id === input.waba_id || !input.phone_number_id) {
+           input.phone_number_id = actualPhone;
+         }
+         input.waba_id = actualWaba;
+       }
+     } catch {}
+
+     // Direct query on phone_number_id node
+     try {
+       const phoneDirect: any = await this.providers.meta(
+         `${input.phone_number_id}?fields=id,display_phone_number,verified_name,quality_rating,code_verification_status,messaging_limit_tier,name_status,whatsapp_business_account`,
+         'GET',
+         undefined,
+         input.access_token
+       );
+       if (phoneDirect?.id) {
+         phone = phoneDirect;
+         if (phoneDirect.whatsapp_business_account?.id) {
+           input.waba_id = String(phoneDirect.whatsapp_business_account.id);
+         }
+       }
+     } catch {}
+
+     // Check if waba_id is a Business Portfolio ID (e.g. user entered Business ID)
+     if (!phone) {
+       try {
+         const bizWabas: any = await this.providers.meta(
+           `${input.waba_id}/owned_whatsapp_business_accounts?fields=id,name,phone_numbers{id,display_phone_number,verified_name,quality_rating,code_verification_status,messaging_limit_tier,name_status}`,
+           'GET',
+           undefined,
+           input.access_token
+         );
+         const candWaba = bizWabas?.data?.[0];
+         if (candWaba?.id) {
+           input.business_id = input.waba_id;
+           input.waba_id = String(candWaba.id);
+           const matchedPhone = candWaba.phone_numbers?.data?.find((p: any) => String(p.id) === input.phone_number_id) || candWaba.phone_numbers?.data?.[0];
+           if (matchedPhone) {
+             phone = matchedPhone;
+             input.phone_number_id = String(matchedPhone.id);
+           }
+         }
+       } catch {}
+     }
+   }
+
+   if (!phone && loopError) {
+     const detail = loopError?.message || 'Meta verification failed';
      throw new ApiError(400, `Meta API error: ${detail}. Please check your Access Token, WABA ID, and Phone Number ID.`);
    }
-    if(!phone)throw new ApiError(422,'Meta did not confirm that this number belongs to the authorized WABA.');
+   if(!phone)throw new ApiError(422,'Meta did not confirm that this number belongs to the authorized WABA.');
   }
   return this.db.transaction(async c=>{
    await c.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[`phone:${input.phone_number_id}`]);
@@ -185,8 +252,20 @@ export class MetaConnections {
    if (!targetWabaId) {
     try {
      const version = (this.cfg as any).META_GRAPH_VERSION || process.env.META_GRAPH_VERSION || 'v22.0';
-     const appId = process.env.META_APP_ID || '';
-     const appSecret = process.env.META_APP_SECRET || '';
+     let appId = process.env.META_APP_ID || process.env.META_ID || process.env.REACT_APP_META_APP_ID || process.env.WHATSAPP_APP_ID || process.env.APP_ID || '';
+     let appSecret = process.env.META_APP_SECRET || process.env.META_SECRET || process.env.META_SECRET_KEY || process.env.SECRET_KEY || process.env.APP_SECRET || '';
+     if (!appId || !appSecret) {
+       try {
+         const rows = (await this.db.query("SELECT key, value_encrypted FROM platform_settings WHERE key IN ('meta_app_id','meta_app_secret')")).rows;
+         for (const r of rows) {
+           try {
+             const val = decrypt(r.value_encrypted, this.cfg.ENCRYPTION_KEY);
+             if (r.key === 'meta_app_id' && !appId) appId = val;
+             if (r.key === 'meta_app_secret' && !appSecret) appSecret = val;
+           } catch {}
+         }
+       } catch {}
+     }
      const appToken = appId && appSecret ? `${appId}|${appSecret}` : input.access_token;
      const debugRes = await (this.providers as any).request(
        `https://graph.facebook.com/${version}/debug_token?input_token=${encodeURIComponent(input.access_token)}&access_token=${encodeURIComponent(appToken)}`,
@@ -216,8 +295,8 @@ export class MetaConnections {
          }
        }
      }
-    } catch {
-     // fallback
+    } catch (err: any) {
+     console.warn('[MetaConnections detectWaba] debug_token fallback failed:', err?.message || err);
     }
    }
 

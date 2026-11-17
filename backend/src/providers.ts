@@ -78,9 +78,11 @@ export class Providers {
     return { provider: 'msg91', id: String(response.message), simulated: false };
   }
   async meta(path: string, method = 'GET', body?: unknown,accessToken?:string) {
-    const version = requiredEnv('META_GRAPH_VERSION');
+    const version = process.env.META_GRAPH_VERSION || process.env.REACT_APP_META_GRAPH_VERSION || 'v22.0';
     if (!/^v\d+\.\d+$/.test(version)) throw new Error('META_GRAPH_VERSION must be explicit, e.g. vXX.0.');
-    return this.request(`https://graph.facebook.com/${version}/${path}`, { method, headers: { Authorization: `Bearer ${accessToken||requiredEnv('META_ACCESS_TOKEN')}`, 'Content-Type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) });
+    const token = accessToken || process.env.META_ACCESS_TOKEN || process.env.WHATSAPP_TOKEN || '';
+    if (!token) throw new ProviderFailure('A Meta access token is required.');
+    return this.request(`https://graph.facebook.com/${version}/${path}`, { method, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) });
   }
   async exchangeMetaCode(code:string):Promise<string>{
     if(this.cfg.PROVIDER_MODE==='mock')return 'local-simulation-no-live-token';
@@ -91,16 +93,34 @@ export class Providers {
       if(serverToken) return serverToken;
       throw new ProviderFailure('Direct manual onboarding requires a valid Meta access token (starts with EAAG/EAA) or META_ACCESS_TOKEN on the server.');
     }
-    const version=process.env.META_GRAPH_VERSION || 'v22.0';
+    const version=process.env.META_GRAPH_VERSION || process.env.REACT_APP_META_GRAPH_VERSION || 'v22.0';
     if(!/^v\d+\.\d+$/.test(version))throw new ProviderFailure('Invalid Meta Graph version.');
-    const appId = process.env.META_APP_ID;
-    const appSecret = process.env.META_APP_SECRET;
+    let appId = process.env.META_APP_ID || process.env.META_ID || process.env.REACT_APP_META_APP_ID || process.env.WHATSAPP_APP_ID || process.env.FACEBOOK_APP_ID || process.env.META_CLIENT_ID || process.env.APP_ID;
+    let appSecret = process.env.META_APP_SECRET || process.env.META_SECRET || process.env.META_SECRET_KEY || process.env.REACT_APP_META_APP_SECRET || process.env.SECRET_KEY || process.env.WHATSAPP_APP_SECRET || process.env.FACEBOOK_APP_SECRET || process.env.APP_SECRET || process.env.META_CLIENT_SECRET;
+    if ((!appId || !appSecret) && this.db) {
+      try {
+        const rows = (await this.db.query("SELECT key, value_encrypted FROM platform_settings WHERE key IN ('meta_app_id','meta_app_secret')")).rows;
+        for (const r of rows) {
+          try {
+            const val = decrypt(r.value_encrypted, this.cfg.ENCRYPTION_KEY);
+            if (r.key === 'meta_app_id' && !appId) appId = val;
+            if (r.key === 'meta_app_secret' && !appSecret) appSecret = val;
+          } catch {}
+        }
+      } catch {}
+    }
     if (!appId || !appSecret) {
-      throw new ProviderFailure('META_APP_ID or META_APP_SECRET is not configured on the server.');
+      throw new ProviderFailure('META_APP_ID or META_APP_SECRET is not configured on the server. Please check your Render environment variables or configure them in Settings.');
     }
     const params=new URLSearchParams({client_id: appId, client_secret: appSecret, code});
-    const result=await this.request(`https://graph.facebook.com/${version}/oauth/access_token?${params}`,{method:'GET'});
-    if(typeof result.access_token!=='string'||!result.access_token)throw new ProviderFailure('Meta did not return an access token.');
+    let result: any;
+    try {
+      result=await this.request(`https://graph.facebook.com/${version}/oauth/access_token?${params}`,{method:'GET'});
+    } catch (err: any) {
+      console.error('[Meta Providers] Code exchange failed:', err?.message || err);
+      throw err;
+    }
+    if(typeof result?.access_token!=='string'||!result?.access_token)throw new ProviderFailure('Meta did not return an access token.');
     return result.access_token;
   }
   private async whatsapp(input: SendInput): Promise<SendResult> {

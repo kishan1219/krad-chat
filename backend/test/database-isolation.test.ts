@@ -7,14 +7,16 @@ import { testConfig } from './helpers';
 
 async function initIsolationDb() {
   const pg = new PGlite();
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const migDir = fs.existsSync('migrations') ? 'migrations' : path.join(__dirname, '../migrations');
   for (let i = 1; i <= 20; i++) {
     const num = String(i).padStart(3, '0');
     // Find matching migration file
-    const fs = await import('node:fs');
-    const files = fs.readdirSync('migrations');
+    const files = fs.readdirSync(migDir);
     const file = files.find(f => f.startsWith(num));
     if (file) {
-      const sql = await readFile(`migrations/${file}`, 'utf8');
+      const sql = await readFile(path.join(migDir, file), 'utf8');
       await pg.exec(sql);
     }
   }

@@ -17,10 +17,10 @@ export class MetaOnboarding {
  private signature(id:string){return createHmac('sha256',this.cfg.JWT_SECRET).update(`meta-onboarding:${id}`).digest('hex');}
 
  private async resolveConfig(): Promise<{ app_id: string | null; config_id: string | null; graph_version: string; app_secret: string | null; configured: boolean }> {
-  let appId = process.env.META_APP_ID || process.env.REACT_APP_META_APP_ID || process.env.WHATSAPP_APP_ID || process.env.FACEBOOK_APP_ID || process.env.META_CLIENT_ID || process.env.APP_ID || null;
-  let configId = process.env.META_CONFIG_ID || process.env.REACT_APP_META_CONFIG_ID || process.env.WHATSAPP_CONFIG_ID || process.env.FACEBOOK_CONFIG_ID || process.env.CONFIG_ID || null;
-  let graphVersion = process.env.META_GRAPH_VERSION || process.env.REACT_APP_META_GRAPH_VERSION || process.env.WHATSAPP_GRAPH_VERSION || 'v22.0';
-  let appSecret = process.env.META_APP_SECRET || process.env.META_SECRET || process.env.REACT_APP_META_APP_SECRET || process.env.WHATSAPP_APP_SECRET || process.env.FACEBOOK_APP_SECRET || process.env.APP_SECRET || process.env.META_CLIENT_SECRET || null;
+  let appId = process.env.META_APP_ID || process.env.META_ID || process.env.REACT_APP_META_APP_ID || process.env.WHATSAPP_APP_ID || process.env.FACEBOOK_APP_ID || process.env.META_CLIENT_ID || process.env.APP_ID || null;
+  let configId = process.env.META_CONFIG_ID || process.env.CONFIG_ID || process.env.META_CONFIG || process.env.REACT_APP_META_CONFIG_ID || process.env.WHATSAPP_CONFIG_ID || process.env.FACEBOOK_CONFIG_ID || null;
+  let graphVersion = process.env.META_GRAPH_VERSION || process.env.REACT_APP_META_GRAPH_VERSION || process.env.WHATSAPP_GRAPH_VERSION || process.env.GRAPH_VERSION || 'v22.0';
+  let appSecret = process.env.META_APP_SECRET || process.env.META_SECRET || process.env.META_SECRET_KEY || process.env.SECRET_KEY || process.env.REACT_APP_META_APP_SECRET || process.env.WHATSAPP_APP_SECRET || process.env.FACEBOOK_APP_SECRET || process.env.APP_SECRET || process.env.META_CLIENT_SECRET || null;
 
   if (!appId || !configId || !appSecret) {
    try {
@@ -164,10 +164,48 @@ export class MetaOnboarding {
    let targetWaba = input.waba_id;
    let targetPhone = input.phone_number_id;
 
-   // 1. Direct reverse Phone query
+   // Self-healing: Check if user-entered WABA ID is actually a Phone Number ID
+   if (targetWaba) {
+     try {
+       const directCheck: any = await this.providers.meta(
+         `${targetWaba}?fields=id,display_phone_number,whatsapp_business_account`,
+         'GET',
+         undefined,
+         accessToken
+       );
+       if (directCheck?.whatsapp_business_account?.id) {
+         const realPhone = String(directCheck.id);
+         const realWaba = String(directCheck.whatsapp_business_account.id);
+         console.info(`[MetaOnboarding] Auto-corrected input WABA ID to Phone=${realPhone}, WABA=${realWaba}`);
+         targetPhone = targetPhone || realPhone;
+         targetWaba = realWaba;
+       }
+     } catch {}
+
+     // Check if user-entered WABA ID is a Business Portfolio ID
+     if (!targetPhone) {
+       try {
+         const bizWabas: any = await this.providers.meta(
+           `${targetWaba}/owned_whatsapp_business_accounts?fields=id,name,phone_numbers{id,display_phone_number,verified_name}`,
+           'GET',
+           undefined,
+           accessToken
+         );
+         const candWaba = bizWabas?.data?.[0];
+         if (candWaba?.id) {
+           targetWaba = String(candWaba.id);
+           if (candWaba.phone_numbers?.data?.length) {
+             targetPhone = String(candWaba.phone_numbers.data[0].id);
+           }
+         }
+       } catch {}
+     }
+   }
+
+   // 1. Direct reverse Phone query if phone number is known
    if (!targetWaba && targetPhone) {
      try {
-       const phoneInfo = await this.providers.meta(
+       const phoneInfo: any = await this.providers.meta(
          `${targetPhone}?fields=id,display_phone_number,whatsapp_business_account`,
          'GET',
          undefined,
@@ -176,10 +214,105 @@ export class MetaOnboarding {
        if (phoneInfo?.whatsapp_business_account?.id) {
          targetWaba = String(phoneInfo.whatsapp_business_account.id);
        }
-     } catch {}
+     } catch (err: any) {
+       console.warn('[MetaOnboarding] Direct phone lookup failed:', err?.message || err);
+     }
    }
 
-   // 2. Direct user businesses and accounts query (no app secret required)
+   // 2. Primary Auto-Detection via /debug_token with App Access Token
+   if (!targetWaba || !targetPhone) {
+     try {
+       const version = process.env.META_GRAPH_VERSION || resolved.graph_version || 'v22.0';
+       const appId = process.env.META_APP_ID || resolved.app_id || '';
+       const appSecret = process.env.META_APP_SECRET || resolved.app_secret || '';
+       let appToken = appId && appSecret ? `${appId}|${appSecret}` : accessToken;
+       if (appId && appSecret) {
+         try {
+           const tokenRes: any = await (this.providers as any).request(
+             `https://graph.facebook.com/${version}/oauth/access_token?client_id=${encodeURIComponent(appId)}&client_secret=${encodeURIComponent(appSecret)}&grant_type=client_credentials`,
+             { method: 'GET' }
+           );
+           if (tokenRes?.access_token) appToken = tokenRes.access_token;
+         } catch (err: any) {
+           console.warn('[MetaOnboarding] client_credentials token request fallback:', err?.message || err);
+         }
+       }
+
+       const debugRes: any = await (this.providers as any).request(
+         `https://graph.facebook.com/${version}/debug_token?input_token=${encodeURIComponent(accessToken)}&access_token=${encodeURIComponent(appToken)}`,
+         { method: 'GET' }
+       );
+       const granularScopes = debugRes?.data?.granular_scopes || [];
+       for (const s of granularScopes) {
+         if ((s.scope === 'whatsapp_business_management' || s.scope === 'whatsapp_business_messaging') && s.target_ids?.length) {
+           targetWaba = targetWaba || String(s.target_ids[0]);
+           break;
+         }
+       }
+       if (!targetWaba) {
+         for (const s of granularScopes) {
+           if (s.target_ids?.length) {
+             targetWaba = targetWaba || String(s.target_ids[0]);
+             break;
+           }
+         }
+       }
+     } catch (err: any) {
+       console.warn('[MetaOnboarding] debug_token resolution error:', err?.message || err);
+     }
+   }
+
+   // 3. Resolve phone numbers from the discovered WABA
+   if (targetWaba && !targetPhone) {
+     try {
+       const phoneList: any = await this.providers.meta(
+         `${targetWaba}/phone_numbers?fields=id,display_phone_number,verified_name&limit=20`,
+         'GET',
+         undefined,
+         accessToken
+       );
+       if (phoneList?.data?.length) {
+         targetPhone = String(phoneList.data[0].id);
+         console.info('[MetaOnboarding] Discovered phone number from WABA phone_numbers:', targetPhone);
+       }
+     } catch (err: any) {
+       console.warn('[MetaOnboarding] WABA phone_numbers query failed:', err?.message || err);
+     }
+
+     if (!targetPhone) {
+       try {
+         const wabaObj: any = await this.providers.meta(
+           `${targetWaba}?fields=phone_numbers{id,display_phone_number,verified_name}`,
+           'GET',
+           undefined,
+           accessToken
+         );
+         if (wabaObj?.phone_numbers?.data?.length) {
+           targetPhone = String(wabaObj.phone_numbers.data[0].id);
+           console.info('[MetaOnboarding] Discovered phone number from WABA node query:', targetPhone);
+         }
+       } catch (err: any) {
+         console.warn('[MetaOnboarding] WABA node query failed:', err?.message || err);
+       }
+     }
+   }
+
+   // 4. detectWaba fallback
+   if (!targetWaba || !targetPhone) {
+     try {
+       const detected = await this.connections.detectWaba(actor, { access_token: accessToken });
+       if (detected) {
+         targetWaba = targetWaba || detected.waba_id;
+         if (!targetPhone && detected.phone_numbers?.length) {
+           targetPhone = String(detected.phone_numbers[0].id);
+         }
+       }
+     } catch (err: any) {
+       console.warn('[MetaOnboarding] detectWaba fallback failed:', err?.message || err);
+     }
+   }
+
+   // 5. Direct user businesses and accounts query fallback
    if (!targetWaba || !targetPhone) {
      try {
        const meRes = await this.providers.meta(
@@ -200,110 +333,12 @@ export class MetaOnboarding {
          }
          if (targetWaba && targetPhone) break;
        }
-     } catch {}
-   }
-
-   // 3. Direct WABA phone numbers query
-   if (targetWaba && !targetPhone) {
-     try {
-       const phoneList = await this.providers.meta(
-         `${targetWaba}/phone_numbers?fields=id,display_phone_number,verified_name&limit=20`,
-         'GET',
-         undefined,
-         accessToken
-       );
-       if (phoneList?.data?.length) {
-         targetPhone = String(phoneList.data[0].id);
-       }
-     } catch {}
-   }
-
-   // 4. detectWaba fallback
-   if (!targetWaba || !targetPhone) {
-     try {
-       const detected = await this.connections.detectWaba(actor, { access_token: accessToken });
-       if (detected) {
-         targetWaba = targetWaba || detected.waba_id;
-         if (!targetPhone && detected.phone_numbers?.length) {
-           targetPhone = String(detected.phone_numbers[0].id);
-         }
-       }
-     } catch {
-       // detection fallback
+     } catch (err: any) {
+       console.warn('[MetaOnboarding] me/businesses fallback failed:', err?.message || err);
      }
    }
 
-   // 5. debug_token granular scopes
-   if (!targetWaba || !targetPhone) {
-     try {
-       const version = process.env.META_GRAPH_VERSION || resolved.graph_version || 'v22.0';
-       const appId = process.env.META_APP_ID || resolved.app_id || '';
-       const appSecret = process.env.META_APP_SECRET || resolved.app_secret || '';
-       const appToken = appId && appSecret ? `${appId}|${appSecret}` : accessToken;
-       const debugRes: any = await (this.providers as any).request(
-         `https://graph.facebook.com/${version}/debug_token?input_token=${encodeURIComponent(accessToken)}&access_token=${encodeURIComponent(appToken)}`,
-         { method: 'GET' }
-       );
-       const granularScopes = debugRes?.data?.granular_scopes || [];
-       for (const s of granularScopes) {
-         if (s.scope === 'whatsapp_business_management' && s.target_ids?.length) {
-           targetWaba = targetWaba || String(s.target_ids[0]);
-         }
-         if (s.scope === 'whatsapp_business_messaging' && s.target_ids?.length) {
-           targetPhone = targetPhone || String(s.target_ids[0]);
-         }
-       }
-       if (!targetWaba) {
-         for (const s of granularScopes) {
-           if (s.target_ids?.length) {
-             targetWaba = targetWaba || String(s.target_ids[0]);
-             break;
-           }
-         }
-       }
-     } catch {}
-   }
-
-   // 6. Secondary phone check if WABA was discovered via debug_token
-   if (targetWaba && !targetPhone) {
-     try {
-       const phoneList: any = await this.providers.meta(
-         `${targetWaba}/phone_numbers?fields=id,display_phone_number,verified_name&limit=20`,
-         'GET',
-         undefined,
-         accessToken
-       );
-       if (phoneList?.data?.length) {
-         targetPhone = String(phoneList.data[0].id);
-       }
-     } catch {}
-     if (!targetPhone) {
-       try {
-         const wabaObj: any = await this.providers.meta(
-           `${targetWaba}?fields=phone_numbers{id,display_phone_number,verified_name}`,
-           'GET',
-           undefined,
-           accessToken
-         );
-         if (wabaObj?.phone_numbers?.data?.length) {
-           targetPhone = String(wabaObj.phone_numbers.data[0].id);
-         }
-       } catch {}
-     }
-   }
-
-   if (!targetWaba || !targetPhone) {
-     try {
-       const detected = await this.connections.detectWaba(actor, { access_token: accessToken });
-       if (detected) {
-         targetWaba = targetWaba || detected.waba_id;
-         if (!targetPhone && detected.phone_numbers?.length) {
-           targetPhone = String(detected.phone_numbers[0].id);
-         }
-       }
-     } catch {}
-   }
-
+   // 6. Direct me/whatsapp_business_accounts query fallback
    if (!targetWaba || !targetPhone) {
      try {
        const wabaAccounts: any = await this.providers.meta('me/whatsapp_business_accounts?fields=id,name,phone_numbers{id,display_phone_number,verified_name}', 'GET', undefined, accessToken);
@@ -314,7 +349,9 @@ export class MetaOnboarding {
            targetPhone = String(firstAccount.phone_numbers.data[0].id);
          }
        }
-     } catch {}
+     } catch (err: any) {
+       console.warn('[MetaOnboarding] me/whatsapp_business_accounts fallback failed:', err?.message || err);
+     }
    }
 
    if (!targetWaba || !targetPhone) {
