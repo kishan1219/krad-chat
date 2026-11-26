@@ -162,7 +162,7 @@ export class Api {
     this.payments = new PaymentProcessor(db, notify);
     this.broadcasts = new Broadcasts(db, campaigns);
     this.features = features || new Features(db);
-    this.organizations = new Organizations(db);
+    this.organizations = new Organizations(db, cfg.PLATFORM_ADMIN_USER_IDS);
     this.plans = new Plans(db);
     this.whiteLabel = new WhiteLabel(db);
     this.resellerService = new ResellerService(db);
