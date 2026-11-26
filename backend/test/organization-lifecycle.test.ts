@@ -4,13 +4,12 @@ import { database, testConfig } from './helpers';
 import { Organizations } from '../src/organizations';
 import { Auth } from '../src/auth';
 import { Providers } from '../src/providers';
-import { hash } from 'bcryptjs';
 
 test('organization lifecycle: state transitions, session revocation, and auth rejection', async (t) => {
   const { db, actor, close } = await database();
   t.after(async () => { await close(); });
 
-  const orgs = new Organizations(db);
+  const orgs = new Organizations(db, String(actor.id));
   const providers = new Providers(testConfig, db);
   const auth = new Auth(db, testConfig, providers);
 
@@ -88,4 +87,33 @@ test('organization lifecycle: state transitions, session revocation, and auth re
       return true;
     }
   );
+});
+
+test('new workspace admins can manage their own workspace without platform access', async (t) => {
+  const { db, actor, close } = await database();
+  t.after(close);
+  const auth = new Auth(db, testConfig, new Providers(testConfig, db));
+  const orgs = new Organizations(db, String(actor.id));
+  const customerA = await auth.signup({
+    email: 'customer-a@test.com', password: 'Long-test-password-123!', name: 'Alice', business_name: 'Customer A'
+  });
+  const customerB = await auth.signup({
+    email: 'customer-b@test.com', password: 'Long-test-password-123!', name: 'Bob', business_name: 'Customer B'
+  });
+  const a = await auth.authenticate(`Bearer ${customerA.access_token}`);
+  const b = await auth.authenticate(`Bearer ${customerB.access_token}`);
+  assert.equal(a.role, 'admin');
+  assert.equal(b.role, 'admin');
+  assert.notEqual(a.tenant_id, b.tenant_id);
+  assert.equal((await orgs.update(a, { name: 'Customer A updated' })).name, 'Customer A updated');
+  await assert.rejects(orgs.list(a, {}), { status: 403 });
+  await assert.rejects(orgs.updateStatus(a, b.tenant_id, 'suspended'), { status: 403 });
+  await assert.rejects(orgs.list(b, {}), { status: 403 });
+  await assert.rejects(orgs.updateStatus(b, a.tenant_id, 'suspended'), { status: 403 });
+  assert.equal((await orgs.get(a)).status, 'active');
+  assert.equal((await orgs.get(b)).name, 'Customer B');
+  assert.equal((await orgs.get(b)).status, 'active');
+  const directory = await orgs.list(actor, {});
+  assert.ok(directory.data.some(organization => organization.id === b.tenant_id));
+  assert.equal((await orgs.updateStatus(actor, b.tenant_id, 'suspended')).status, 'suspended');
 });

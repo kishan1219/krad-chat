@@ -19,6 +19,7 @@ const schema = z.object({
   CORS_ORIGINS: z.string().default('http://localhost:3000,http://127.0.0.1:3000,http://localhost:4000,http://127.0.0.1:4000'),
   PUBLIC_API_URL: z.url().default('http://localhost:4000'),
   ALLOW_SIGNUP: boolean.default(false),
+  PLATFORM_ADMIN_USER_IDS: z.string().trim().regex(/^(?:[1-9]\d*(?:\s*,\s*[1-9]\d*)*)?$/).optional(),
   WORKER_ENABLED: boolean.default(true),
   MOCK_DELIVERY: boolean.default(true),
   SMS_UNIT_PRICE_PAISE: z.coerce.number().int().positive().default(25),

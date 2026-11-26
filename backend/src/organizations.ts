@@ -14,7 +14,17 @@ export const VALID_STATUS_TRANSITIONS: Record<OrganizationStatus, OrganizationSt
 };
 
 export class Organizations {
-  constructor(private db: Db) {}
+  private readonly platformAdminUserIds: Set<string>;
+
+  constructor(private db: Db, platformAdminUserIds = '') {
+    this.platformAdminUserIds = new Set(platformAdminUserIds.split(',').map(id => id.trim()));
+  }
+
+  private requirePlatformAdmin(actor: Actor) {
+    if (actor.role !== 'admin' || !this.platformAdminUserIds.has(String(actor.id))) {
+      throw new ApiError(403, 'Platform administrator access required.');
+    }
+  }
 
   async get(actor: Actor) {
     const tenant = (await this.db.query(
@@ -61,10 +71,7 @@ export class Organizations {
   }
 
   async updateStatus(actor: Actor, tenantId: number, nextStatus: OrganizationStatus, reason?: string) {
-    // Only administrators can mutate organization lifecycle status
-    if (actor.role !== 'admin') {
-      throw new ApiError(403, 'Administrative privileges required to modify organization lifecycle status.');
-    }
+    this.requirePlatformAdmin(actor);
 
     const tenant = (await this.db.query('SELECT * FROM tenants WHERE id=$1', [tenantId])).rows[0];
     if (!tenant) throw new ApiError(404, 'Organization not found.');
@@ -115,7 +122,7 @@ export class Organizations {
   }
 
   async list(actor: Actor, query: any) {
-    if (actor.role !== 'admin') throw new ApiError(403, 'Administrative access required.');
+    this.requirePlatformAdmin(actor);
     const p = pagination(query);
     const statusFilter = query.status ? String(query.status) : null;
 
