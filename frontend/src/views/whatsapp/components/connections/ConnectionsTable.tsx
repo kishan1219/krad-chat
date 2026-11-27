@@ -31,6 +31,7 @@ interface ConnectionsTableProps {
     onOpenReReview?: (conn: WhatsAppConnection) => void
     onOpenProfileMedia?: (conn: WhatsAppConnection) => void
     onSyncTemplates?: (id: number) => void
+    onCreateTemplate?: (conn: WhatsAppConnection) => void
     onOpenAddModal: () => void
 }
 
@@ -49,6 +50,7 @@ export function ConnectionsTable({
     onOpenReReview,
     onOpenProfileMedia,
     onSyncTemplates,
+    onCreateTemplate,
     onOpenAddModal
 }: ConnectionsTableProps) {
     const filtered = connections.filter(c => {
@@ -408,6 +410,19 @@ export function ConnectionsTable({
                                                         style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
                                                     >
                                                         Avatar
+                                                    </Button>
+                                                )}
+                                                {onCreateTemplate && (
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        color="light"
+                                                        onClick={() => onCreateTemplate(conn)}
+                                                        disabled={isBusy || !isConnected}
+                                                        title="Create New WhatsApp Message Template on Meta"
+                                                        style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem', color: '#ff8c21', fontWeight: 600 }}
+                                                    >
+                                                        + Template
                                                     </Button>
                                                 )}
                                                 {onSyncTemplates && (

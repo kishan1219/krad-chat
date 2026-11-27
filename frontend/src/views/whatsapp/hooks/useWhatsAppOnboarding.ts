@@ -9,7 +9,7 @@ import {
 import { SuccessToast, ErrorToast } from '../../../utility/Utils'
 import { ensureFreshToken } from '../../../utility/auth/tokenManager'
 
-export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, onClose?: () => void) {
+export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void | Promise<void>, onClose?: () => void) {
     const user = useSelector((state: any) => state.auth?.userData)
     const clientName = user?.company_name || user?.name || user?.username || 'KRAD Technology'
 
@@ -233,7 +233,7 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
             }
 
             SuccessToast(`Connected! WhatsApp line ${conn?.display_phone_number || assets?.phone_number_id || conn?.phone_number_id} is now saved & active!`)
-            if (onSuccess) onSuccess()
+            if (onSuccess) await Promise.resolve(onSuccess())
             if (onClose) onClose()
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Failed to save WhatsApp connection to KradChat'
@@ -507,7 +507,7 @@ export function useWhatsAppOnboarding(isOpen: boolean, onSuccess?: () => void, o
                 numbers
             })
             SuccessToast(`Successfully connected ${res.count} phone numbers!`)
-            if (onSuccess) onSuccess()
+            if (onSuccess) await Promise.resolve(onSuccess())
             if (onClose) onClose()
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Batch connect failed'

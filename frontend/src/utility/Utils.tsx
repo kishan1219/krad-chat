@@ -1,3 +1,4 @@
+import React from 'react'
 import moment from 'moment'
 import toast from 'react-hot-toast'
 import { AlertCircle, CheckCircle, X } from 'react-feather'
@@ -106,8 +107,10 @@ export const getHomeRouteForLoggedInUser = user => {
 export const sanitizeToastText = (raw: unknown): string => {
     if (!raw) return ''
     if (typeof raw !== 'string') {
-        if (typeof raw === 'object' && raw !== null && 'message' in raw) {
-            return sanitizeToastText((raw as any).message)
+        if (typeof raw === 'object' && raw !== null) {
+            if ('message' in raw) return sanitizeToastText((raw as any).message)
+            if ('text' in raw) return sanitizeToastText((raw as any).text)
+            return ''
         }
         return String(raw)
     }
@@ -289,6 +292,9 @@ export const SuccessToast = (message, settings = {}, comp = null) => {
     )
 }
 export const MessageToast = (message, settings = {}) => {
+    if (React.isValidElement(message)) {
+        return SuccessToast('', settings, message)
+    }
     return SuccessToast(message, settings)
 }
 

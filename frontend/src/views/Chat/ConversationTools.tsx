@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react'
-import { Sliders } from 'react-feather'
+import { Sliders, FilePlus } from 'react-feather'
 import { Alert, Button, Input, Label, Modal, ModalBody, ModalHeader } from 'reactstrap'
 import httpConfig from '../../utility/http/httpConfig'
 import KeyValueFields from '../components/KeyValueFields'
+import { whatsappService, WhatsAppConnection } from '../../services/whatsappService'
+import { CreateTemplateModal } from '../whatsapp/components/connections/CreateTemplateModal'
 
 export default function ConversationTools({ conversationId }: { conversationId?: number }) {
     const [open, setOpen] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState(''), [notice, setNotice] = useState('')
     const [conversation, setConversation] = useState<any>(null), [agents, setAgents] = useState<any[]>([]), [notes, setNotes] = useState<any[]>([]), [templates, setTemplates] = useState<any[]>([])
     const [labels, setLabels] = useState(''), [fields, setFields] = useState<[string, string][]>([]), [note, setNote] = useState(''), [template, setTemplate] = useState(''), [parameters, setParameters] = useState('')
+    const [connections, setConnections] = useState<WhatsAppConnection[]>([])
+    const [showCreateTemplate, setShowCreateTemplate] = useState(false)
     async function api(path: string, method = 'GET', body?: any) {
         const token = JSON.parse(localStorage.getItem('access_token') || 'null')
         const response = await fetch(`${httpConfig.baseUrl}${path}`, { method, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) })
@@ -16,9 +20,16 @@ export default function ConversationTools({ conversationId }: { conversationId?:
         return result.data
     }
     async function refresh() {
-        const [c, a, n, t] = await Promise.all([api(`inbox/conversations/${conversationId}`), api('inbox/agents'), api(`inbox/conversations/${conversationId}/notes`), api(`inbox/conversations/${conversationId}/templates`)])
-        setConversation(c); setAgents(a); setNotes(n); setTemplates(t); setLabels(c.labels.join(', ')); setFields(Object.entries(c.custom_fields))
+        const [c, a, n, t, conns] = await Promise.all([
+            api(`inbox/conversations/${conversationId}`),
+            api('inbox/agents'),
+            api(`inbox/conversations/${conversationId}/notes`),
+            api(`inbox/conversations/${conversationId}/templates`),
+            whatsappService.getConnections().catch(() => [] as WhatsAppConnection[])
+        ])
+        setConversation(c); setAgents(a); setNotes(n); setTemplates(t); setConnections(conns); setLabels(c.labels.join(', ')); setFields(Object.entries(c.custom_fields))
     }
+    const activeConnection = connections.find(c => c.status === 'connected' && (!conversation?.phone_number_id || c.phone_number_id === conversation.phone_number_id)) || connections.find(c => c.status === 'connected') || null
     async function action(work: () => Promise<void>) {
         setBusy(true); setError(''); setNotice('')
         try { await work() } catch (e: any) { setError(e.message) } finally { setBusy(false) }
@@ -128,7 +139,21 @@ export default function ConversationTools({ conversationId }: { conversationId?:
 
                             {/* Approved Templates */}
                             <div className='card border p-3 shadow-none mb-0'>
-                                <h6 className='fw-bold text-dark mb-1'>Send Approved WhatsApp Template</h6>
+                                <div className='d-flex flex-wrap align-items-center justify-content-between gap-2 mb-1'>
+                                    <h6 className='fw-bold text-dark mb-0'>Send Approved WhatsApp Template</h6>
+                                    <Button
+                                        size='sm'
+                                        color='primary'
+                                        outline
+                                        disabled={busy || !activeConnection}
+                                        onClick={() => setShowCreateTemplate(true)}
+                                        className='d-inline-flex align-items-center gap-1'
+                                        title={activeConnection ? 'Create and submit a new WhatsApp template to Meta' : 'Connect a WhatsApp line first'}
+                                    >
+                                        <FilePlus size={14} />
+                                        <span>Create New Template</span>
+                                    </Button>
+                                </div>
                                 <p className='text-muted small mb-2'>
                                     Required when messaging outside the 24-hour customer service window.
                                 </p>
@@ -232,6 +257,15 @@ export default function ConversationTools({ conversationId }: { conversationId?:
                     )}
                 </ModalBody>
             </Modal>
+            <CreateTemplateModal
+                connection={activeConnection}
+                isOpen={showCreateTemplate}
+                onClose={() => setShowCreateTemplate(false)}
+                onSuccess={async () => {
+                    await refresh()
+                    setNotice('Template submitted to Meta! Once approved, select it below to send.')
+                }}
+            />
         </>
     )
 }

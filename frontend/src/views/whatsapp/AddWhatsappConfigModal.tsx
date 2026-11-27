@@ -13,7 +13,7 @@ interface AddWhatsappConfigModalProps {
     isOpen: boolean
     onClose?: () => void
     toggle?: () => void
-    onSuccess?: () => void
+    onSuccess?: () => void | Promise<void>
 }
 
 export default function AddWhatsappConfigModal({

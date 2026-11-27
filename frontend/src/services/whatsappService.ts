@@ -576,6 +576,27 @@ export const whatsappService = {
         )
     },
 
+    async createTemplate(
+        connectionId: string | number,
+        payload: {
+            name: string
+            language: string
+            category: 'UTILITY' | 'MARKETING'
+            text: string
+            examples?: string[]
+            header?: string
+            footer?: string
+        }
+    ): Promise<{ id: string; name: string; language: string; status: string; category: string }> {
+        return requestApi<{ id: string; name: string; language: string; status: string; category: string }>(
+            `whatsapp/connections/${connectionId}/templates`,
+            {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            }
+        )
+    },
+
     async deleteTemplate(connectionId: string | number, templateId: string, name: string): Promise<void> {
         await requestApi(`whatsapp/connections/${connectionId}/templates/delete`, {
             method: 'POST',

@@ -18,6 +18,7 @@ import { OfficialBusinessAccountModal } from './components/connections/OfficialB
 import { ReReviewModal } from './components/connections/ReReviewModal'
 import { ProfileMediaCdnModal } from './components/connections/ProfileMediaCdnModal'
 import { WhatsAppStickerCreatorModal } from './components/stickers/WhatsAppStickerCreatorModal'
+import { CreateTemplateModal } from './components/connections/CreateTemplateModal'
 import AddWhatsappConfigModal from './AddWhatsappConfigModal'
 import { WhatsAppConnection, whatsappService } from '../../services/whatsappService'
 import { SuccessToast, ErrorToast } from '../../utility/Utils'
@@ -48,6 +49,7 @@ export default function Connections() {
     const [obaConn, setObaConn] = useState<WhatsAppConnection | null>(null)
     const [reReviewConn, setReReviewConn] = useState<WhatsAppConnection | null>(null)
     const [profileMediaConn, setProfileMediaConn] = useState<WhatsAppConnection | null>(null)
+    const [createTemplateConn, setCreateTemplateConn] = useState<WhatsAppConnection | null>(null)
 
     const handleSyncTemplates = async (connectionId: number) => {
         try {
@@ -192,6 +194,7 @@ export default function Connections() {
                         onOpenReReview={(conn) => setReReviewConn(conn)}
                         onOpenProfileMedia={(conn) => setProfileMediaConn(conn)}
                         onSyncTemplates={handleSyncTemplates}
+                        onCreateTemplate={(conn) => setCreateTemplateConn(conn)}
                         onOpenAddModal={() => setShowAddModal(true)}
                     />
                 </>
@@ -268,6 +271,14 @@ export default function Connections() {
             <WhatsAppStickerCreatorModal
                 isOpen={showStickerModal}
                 toggle={() => setShowStickerModal(false)}
+            />
+
+            {/* Meta WhatsApp Template Creation Modal */}
+            <CreateTemplateModal
+                connection={createTemplateConn}
+                isOpen={Boolean(createTemplateConn)}
+                onClose={() => setCreateTemplateConn(null)}
+                onSuccess={fetchConnections}
             />
         </div>
     )
